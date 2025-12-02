@@ -1,0 +1,65 @@
+---
+alwaysApply: false
+---
+# Division Block의 Block_Type 수정 
+(프론트엔드 및 block 테이블에도 적용)
+
+
+블록 타입 구조 (프론트엔드에서)
+{
+    block_type: 4,
+    cols: [
+        {
+            header: {
+                // cell_element_type
+            },
+            rows: [ // 해당 열의 행들 
+                { // row
+                    // cell_elemet_type
+                },
+                {},...
+            ]
+        },
+        {},...
+    ]
+}
+
+DB에서는,
+block (table)
+- header_cells, body_cells 삭제
+- cols : jsonb 컬럼 추가
+-- cols 컬럼에는 
+{
+            header: {
+                // cell_element_type
+            },
+            rows: [ // 해당 열의 행들 
+                { // row
+                    // cell_elemet_type
+                },
+                {},...
+            ]
+        },
+        {},...
+        해당 형태로 저장 
+
+
+구분 블록은
+{
+    header: [ // 헤더 열들 
+        {
+            // cell_element_type
+        }
+    ],
+    children: [
+        {
+            elements: {
+
+            },
+            children: [
+
+            ]
+        },
+        {},...
+    ]
+}

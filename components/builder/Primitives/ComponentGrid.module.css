@@ -1,0 +1,169 @@
+.grid {
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #d1d5db;
+}
+
+.tableCell {
+  border: 1px solid #d1d5db;
+  padding: 0;
+}
+
+.emptyCell {
+  min-height: 2.5rem;
+}
+
+.blockNameCell {
+  padding: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 2.5rem;
+  transition: all 0.2s ease-in-out;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.blockNameCell:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.blockActions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.blockNameCell:hover .blockActions {
+  opacity: 1;
+}
+
+/* 결합 모드일 때는 항상 버튼들이 보이도록 */
+.blockActions.combineMode {
+  opacity: 1;
+}
+
+.deleteButton {
+  background-color: #dc2626;
+  color: white;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.deleteButton:hover {
+  background-color: #b91c1c;
+}
+
+.addColumnButton {
+  background-color: #16a34a;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: background-color 0.2s;
+}
+
+.addColumnButton:hover {
+  background-color: #15803d;
+}
+
+.headerCell {
+  padding: 0.5rem;
+  background-color: #eff6ff;
+  min-height: 2.5rem;
+}
+
+.bodyCell {
+  padding: 0.5rem;
+  min-height: 2.5rem;
+  position: relative;
+}
+
+.bodyCellHighlighted {
+  background-color: #dbeafe;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.rowAddButton {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0.75rem;
+  background-color: #f3f4f6;
+  cursor: pointer;
+  opacity: 0.3;
+  transition: all 0.2s;
+  border-top: 1px solid #e5e7eb;
+}
+
+.rowAddButton:hover {
+  background-color: #93c5fd;
+  opacity: 1;
+  border-top-color: #60a5fa;
+}
+
+.combineButton {
+  background-color: #2563eb;
+  color: white;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.combineButton:hover {
+  background-color: #1d4ed8;
+}
+
+.combineButtonSource {
+  background-color: #eab308;
+}
+
+.combineButtonSource:hover {
+  background-color: #ca8a04;
+}
+
+.combineButtonTarget {
+  background-color: #16a34a;
+}
+
+.combineButtonTarget:hover {
+  background-color: #15803d;
+}
+
+.combineButtons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.combineDirectionButton {
+  background-color: #16a34a;
+  color: white;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.combineDirectionButton:hover {
+  background-color: #15803d;
+}

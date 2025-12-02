@@ -1,0 +1,10 @@
+.input {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  min-width: 80px;
+  max-width: 300px;
+  transition: width 0.2s ease-in-out;
+  box-sizing: border-box;
+}

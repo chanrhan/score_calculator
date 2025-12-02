@@ -1,0 +1,273 @@
+.container {
+  width: 100%;
+  height: calc(100vh - 64px);
+}
+
+.header {
+  height: 3rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: white;
+}
+
+.headerLeft {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pipelineName {
+  color: #111827;
+}
+
+.pipelineId {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.savedNotice {
+  font-size: 0.875rem;
+  color: #16a34a;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.calculationControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.calculationModeToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+}
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.toggleLabel:hover {
+  background-color: #e5e7eb;
+}
+
+.toggleInput {
+  margin: 0;
+}
+
+.toggleInput:checked + .toggleText {
+  color: #111827;
+  font-weight: 500;
+}
+
+.toggleText {
+  user-select: none;
+}
+
+.studentIdInput {
+  display: flex;
+  align-items: center;
+}
+
+.studentIdField {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  width: 200px;
+  transition: border-color 0.2s;
+}
+
+.studentIdField:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.studentIdField::placeholder {
+  color: #9ca3af;
+}
+
+.calculateButton {
+  padding: 0.5rem 1rem;
+  background-color: #16a34a;
+  color: white;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.calculateButton:hover {
+  background-color: #15803d;
+}
+
+.calculateButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.saveButton {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.saveButton:hover {
+  background-color: #1d4ed8;
+}
+
+.saveButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.canvasContainer {
+  height: calc(100% - 3rem);
+}
+
+.loadingContainer {
+  width: 100%;
+  height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingContent {
+  text-align: center;
+}
+
+.loadingSpinner {
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingText {
+  color: #6b7280;
+}
+
+.errorContainer {
+  width: 100%;
+  height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.errorContent {
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.errorTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.errorMessage {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.retryButton {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.retryButton:hover {
+  background-color: #1d4ed8;
+}
+
+.notFoundContainer {
+  width: 100%;
+  height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notFoundContent {
+  text-align: center;
+}
+
+.notFoundIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #9ca3af;
+}
+
+.notFoundTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.notFoundMessage {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.backButton {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background-color: #1d4ed8;
+}

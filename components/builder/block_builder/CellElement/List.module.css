@@ -1,0 +1,51 @@
+.listContainer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.listActions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.addButton {
+  padding: 0.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  background-color: white;
+}
+
+.addButton:hover {
+  background-color: #f9fafb;
+}
+
+.removeButton {
+  padding: 0.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  background-color: white;
+  color: #ef4444;
+}
+
+.removeButton:hover {
+  background-color: #f9fafb;
+}
+
+.icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.errorText {
+  font-size: 0.75rem;
+  color: #ef4444;
+}

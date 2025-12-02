@@ -1,0 +1,8 @@
+node_modules/
+*.log
+*.tmp
+*.pdf
+.idea/
+.cursor/
+block_prototype_images/
+docs/

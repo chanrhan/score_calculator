@@ -1,0 +1,21 @@
+.cell {
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background-color: white;
+}
+
+.cellContent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.cellContentBlock {
+  display: block;
+}
+
+.errorText {
+  font-size: 0.75rem;
+  color: #ef4444;
+}

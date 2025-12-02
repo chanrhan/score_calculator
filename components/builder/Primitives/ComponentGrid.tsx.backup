@@ -1,0 +1,1190 @@
+'use client'
+
+import * as React from 'react'
+import { FlowBlock } from '@/types/domain'
+import { Cell } from './Cell'
+import { HierarchicalCellComponent } from '@/components/builder/Blocks/Common/HierarchicalCell'
+import { HierarchicalCell, HierarchicalCellUtils } from '@/types/hierarchicalCell'
+import { 
+  calculateBlocksLayout, 
+  generateGridStyle,
+  generateHierarchicalGridStyle,
+  getBlockNameGridArea,
+  getHeaderGridArea,
+  getBodyGridArea,
+  calculateHierarchicalLayout,
+  getHierarchicalCellGridArea,
+  isDivisionBlock,
+  ComponentGridInfo,
+  BlockGridInfo 
+} from '@/lib/grid/GridCalculator'
+import { BlockGridCalculator } from '@/lib/blockManager'
+import { logBlockAsDbFormat } from '@/utils/blockToDbConverter'
+import { Trash2, Link2, ArrowLeft, ArrowRight, X, Eye } from 'lucide-react'
+
+// Connection 타입 정의
+interface Connection {
+  id: string
+  sourceGridId: number
+  targetGridId: number
+  sourceHandle: 'left' | 'right'
+  targetHandle: 'left' | 'right'
+}
+
+// DivisionGrid 전용 간단 상태 (ComponentGrid_Rules만 준수)
+type DivisionCellMerge = { rowspan: number; hidden: boolean }
+type DivisionGridState = {
+  rows: number
+  cols: number
+  merges: Record<number, Record<number, DivisionCellMerge>>
+}
+
+interface ComponentGridProps {
+  blocks: FlowBlock[]
+  gridId?: number
+  onBlockChange?: (blockId: number, path: (string | number)[], value: any) => void
+  initialHierarchicalDataMap?: Record<number, HierarchicalCell[]>
+  onBlockCombine?: (blockId: number, side?: 'left' | 'right') => void
+  onAddColumn?: (blockId: number) => void
+  onInsertRow?: (rowIndex: number) => void
+  combineState?: {
+    isCombineMode: boolean
+    sourceBlockId: string | null
+    targetBlockId: string | null
+  }
+  onBlockDelete?: (blockId: number) => void
+  connections?: Connection[]
+  onConnectionCreate?: (sourceId: number, targetId: number) => void
+  onConnectionDelete?: (connectionId: string) => void
+}
+
+export const ComponentGrid: React.FC<ComponentGridProps> = ({
+  blocks,
+  gridId,
+  onBlockChange,
+  initialHierarchicalDataMap,
+  onBlockCombine,
+  onAddColumn,
+  onInsertRow,
+  combineState,
+  onBlockDelete,
+  connections = [],
+  onConnectionCreate,
+  onConnectionDelete
+}) => {
+  // 안정적인 gridId 생성 (props에서 제공되지 않은 경우)
+  const stableGridId = React.useMemo(() => {
+    if (gridId !== undefined) {
+      return gridId
+    }
+    
+    // blocks 기반으로 안정적인 ID 생성
+    if (blocks.length > 0) {
+      const blockIds = blocks.map(b => b.id).sort().join('-')
+      const hash = blockIds.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0)
+        return a & a
+      }, 0)
+      return Math.abs(hash) % 100000 // 0-99999 범위의 양수
+    }
+    
+    // fallback: 현재 시간 기반 ID (페이지 로드당 한 번만 생성)
+    return Date.now() % 100000
+  }, [gridId, blocks])
+  
+  // DivisionBlock 전용 간단 테이블 상태
+  const [divisionGridStateMap, setDivisionGridStateMap] = React.useState<Record<number, DivisionGridState>>({})
+  
+  const gridInfo = React.useMemo(() => calculateBlocksLayout(blocks, divisionGridStateMap), [blocks, divisionGridStateMap])
+
+  // 각 블록의 계층 데이터 상태 관리 (구분 블록용)
+  const [hierarchicalDataMap, setHierarchicalDataMap] = React.useState<Record<number, HierarchicalCell[]>>(() => initialHierarchicalDataMap ?? {})
+
+  // 외부에서 전달된 초기 맵이 바뀌면 동기화 (최초 로드/재로드 반영)
+  React.useEffect(() => {
+    if (initialHierarchicalDataMap) {
+      setHierarchicalDataMap(prev => ({ ...initialHierarchicalDataMap, ...prev }))
+    }
+  }, [initialHierarchicalDataMap])
+  
+  // blocks가 변경될 때 divisionGridStateMap 초기화
+  React.useEffect(() => {
+    const newDivisionGridStateMap: Record<number, DivisionGridState> = {}
+    
+    blocks.forEach(block => {
+      if (isDivisionBlock(block)) {
+        // BlockGridCalculator를 사용하여 정확한 크기 계산
+        const gridSize = BlockGridCalculator.calculateGridSize(block)
+        
+        newDivisionGridStateMap[block.id] = {
+          rows: gridSize.rows,
+          cols: gridSize.cols,
+          merges: {}
+        }
+        
+        // merges 초기화 (모든 셀을 기본값으로 설정)
+        for (let r = 0; r < gridSize.rows; r++) {
+          newDivisionGridStateMap[block.id].merges[r] = {}
+          for (let c = 0; c < gridSize.cols; c++) {
+            newDivisionGridStateMap[block.id].merges[r][c] = {
+              rowspan: 1,
+              hidden: false
+            }
+          }
+        }
+      }
+    })
+    
+    setDivisionGridStateMap(newDivisionGridStateMap)
+  }, [blocks])
+  
+  // 연결 드래그 상태 관리 (useRef로 즉시 접근 가능하게)
+  const connectionDragRef = React.useRef({
+    isDragging: false,
+    sourceGridId: null as number | null,
+    sourceHandle: null as 'left' | 'right' | null,
+    targetGridId: null as number | null,
+    targetHandle: null as 'left' | 'right' | null
+  })
+  
+  const [connectionDragState, setConnectionDragState] = React.useState<{
+    isDragging: boolean
+    sourceGridId: number | null
+    sourceHandle: 'left' | 'right' | null
+    targetGridId: number | null
+    targetHandle: 'left' | 'right' | null
+  }>({
+    isDragging: false,
+    sourceGridId: null,
+    sourceHandle: null,
+    targetGridId: null,
+    targetHandle: null
+  })
+
+  // 내부 연결 상태 관리 (props로 전달되지 않은 경우 대비)
+  const [internalConnections, setInternalConnections] = React.useState<Connection[]>([])
+  const activeConnections = connections?.length ? connections : internalConnections
+
+  // blocks가 변경될 때마다 새로운 구분 블록에 대해 초기 데이터 생성
+  React.useEffect(() => {
+    const newMap = { ...hierarchicalDataMap }
+    const newDivisionMap = { ...divisionGridStateMap }
+    let hasChanges = false
+    let hasDivisionChanges = false
+    
+    blocks.forEach(block => {
+      if (isDivisionBlock(block) && !newMap[block.id]) {
+        // 구분 블록인데 아직 데이터가 없는 경우 샘플 계층 데이터 생성
+        newMap[block.id] = (hierarchicalDataMap[block.id] ?? createSampleHierarchy())
+        hasChanges = true
+      }
+      if (isDivisionBlock(block) && !newDivisionMap[block.id]) {
+        // DivisionGrid 기본 상태: 1행, 블록의 현재 헤더 개수
+        const cols = Math.max(1, Array.isArray(block.type.header) ? block.type.header.length : 1)
+        newDivisionMap[block.id] = { rows: 1, cols, merges: {} }
+        hasDivisionChanges = true
+      }
+    })
+    
+    if (hasChanges) {
+      setHierarchicalDataMap(newMap)
+    }
+    if (hasDivisionChanges) {
+      setDivisionGridStateMap(newDivisionMap)
+    }
+  }, [blocks, hierarchicalDataMap, divisionGridStateMap])
+
+  // 구분 블록용 열 추가 핸들러
+  const handleAddColumnForDivisionBlock = React.useCallback((blockId: number) => {
+    // 간단 테이블 상태(colCount) 업데이트
+    setDivisionGridStateMap(prev => {
+      const cur = prev[blockId]
+      if (!cur) return prev
+      const next: DivisionGridState = {
+        rows: cur.rows,
+        cols: cur.cols + 1,
+        merges: { ...cur.merges }
+      }
+      // 새 열의 모든 행은 hidden: false, rowspan: 1 기본
+      for (let r = 0; r < next.rows; r++) {
+        next.merges[r] = next.merges[r] || {}
+        next.merges[r][cur.cols] = { rowspan: 1, hidden: false }
+      }
+      return { ...prev, [blockId]: next }
+    })
+
+    setHierarchicalDataMap(prev => {
+      const blockData = prev[blockId] || []
+      
+      // 새로운 루트 레벨 셀 생성 (새 열을 위한)
+      const newRootCell: HierarchicalCell = {
+        id: HierarchicalCellUtils.generateId(),
+        type: '',
+        value: {},
+        level: 0,
+        children: [],
+        parent: undefined
+      }
+      
+      const updatedData = [...blockData, newRootCell]
+      return { ...prev, [blockId]: HierarchicalCellUtils.updateRowspans(updatedData) }
+    })
+
+    // 블록의 header 데이터도 업데이트 (onBlockChange 호출)
+    const targetBlock = blocks.find(b => b.id === blockId)
+    if (targetBlock && isDivisionBlock(targetBlock)) {
+      // 현재 header 배열에 새로운 헤더 요소 추가
+      const currentHeaders = targetBlock.type.header || []
+      const newHeaderElement = {
+        type: 'Token' as const,
+        menu_key: 'division_criteria',
+        value: '',
+        visible: true,
+        optional: false
+      }
+      const updatedHeaders = [...currentHeaders, newHeaderElement]
+      
+      // hierarchicalDataMap 업데이트 후 즉시 최신 데이터 사용
+      setHierarchicalDataMap(prev => {
+        const updatedData = prev[blockId] || []
+        
+        // 업데이트된 블록 타입으로 onBlockChange 호출 (최신 children 데이터 포함)
+        const updatedBlockType = {
+          ...targetBlock.type,
+          header: updatedHeaders,
+          children: updatedData
+        }
+        onBlockChange?.(blockId, ['type'], updatedBlockType)
+        
+        return prev // hierarchicalDataMap은 이미 위에서 업데이트됨
+      })
+    }
+  }, [blocks, onBlockChange, hierarchicalDataMap])
+
+  // DivisionGrid: 전역 행 삽입 + 병합 규칙 적용 (N,M 기준)
+  const handleDivisionAddRow = React.useCallback((blockId: number, row: number, col: number) => {
+    // 전역 행 삽입 (N+1)
+    onInsertRow?.(row + 1)
+
+    setDivisionGridStateMap(prev => {
+      const cur = prev[blockId]
+      if (!cur) return prev
+
+      // 행 삽입을 위해 merges를 아래로 쉬프트
+      const nextMerges: Record<number, Record<number, DivisionCellMerge>> = {}
+      for (let r = 0; r < cur.rows + 1; r++) {
+        if (r <= row) {
+          nextMerges[r] = { ...(cur.merges[r] || {}) }
+        } else {
+          // r > n: 기존 r-1 행을 복사해서 아래로 이동
+          nextMerges[r] = { ...(cur.merges[r - 1] || {}) }
+        }
+      }
+
+      // 새로 삽입된 N+1 행의 초기화: hidden: false, rowspan: 1
+      nextMerges[row + 1] = nextMerges[row + 1] || {}
+      for (let c = 0; c < cur.cols; c++) {
+        nextMerges[row + 1][c] = { rowspan: 1, hidden: false }
+      }
+
+      // 병합 규칙: M > 0이면 (N,M-1) rowspan += 1 및 (N+1,M-1) hidden
+      if (col > 0) {
+        nextMerges[row] = nextMerges[row] || {}
+        nextMerges[row][col - 1] = nextMerges[row][col - 1] || { rowspan: 1, hidden: false }
+        nextMerges[row][col - 1].rowspan = Math.max(1, nextMerges[row][col - 1].rowspan) + 1
+
+        nextMerges[row + 1] = nextMerges[row + 1] || {}
+        nextMerges[row + 1][col - 1] = { rowspan: 1, hidden: true }
+      }
+
+      const next: DivisionGridState = {
+        rows: cur.rows + 1,
+        cols: cur.cols,
+        merges: nextMerges
+      }
+      return { ...prev, [blockId]: next }
+    })
+  }, [onInsertRow])
+
+  // 연결 드래그 핸들러들
+  const handleConnectionStart = React.useCallback((sourceGridId: number, handle: 'left' | 'right') => {
+    const newState = {
+      isDragging: true,
+      sourceGridId: sourceGridId,
+      sourceHandle: handle,
+      targetGridId: null,
+      targetHandle: null
+    }
+    
+    // ref를 즉시 업데이트
+    connectionDragRef.current = newState
+    
+    // state도 업데이트 (UI 반영용)
+    setConnectionDragState(newState)
+  }, [stableGridId])
+
+  const handleConnectionEnd = React.useCallback((targetGridId: number, targetHandle: 'left' | 'right') => {
+    const currentDragState = connectionDragRef.current
+    
+    if (currentDragState.isDragging && currentDragState.sourceGridId !== null && currentDragState.sourceHandle !== null) {
+      // 같은 그리드에 연결하는 것은 방지
+      if (currentDragState.sourceGridId !== targetGridId) {
+        // Connection 객체 생성
+        const newConnection: Connection = {
+          id: `connection-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          sourceGridId: currentDragState.sourceGridId,
+          targetGridId: targetGridId,
+          sourceHandle: currentDragState.sourceHandle,
+          targetHandle: targetHandle
+        }
+        
+        // 내부 상태 업데이트 (props로 connections가 관리되지 않는 경우)
+        if (!connections || connections.length === 0) {
+          setInternalConnections(prev => {
+            const updated = [...prev, newConnection]
+            return updated
+          })
+        }
+        
+        onConnectionCreate?.(currentDragState.sourceGridId, targetGridId)
+      }
+    }
+    
+    // ref와 state 모두 초기화
+    const resetState = {
+      isDragging: false,
+      sourceGridId: null,
+      sourceHandle: null,
+      targetGridId: null,
+      targetHandle: null
+    }
+    connectionDragRef.current = resetState
+    setConnectionDragState(resetState)
+  }, [onConnectionCreate, connections, internalConnections])
+
+  const handleConnectionCancel = React.useCallback(() => {
+    const resetState = {
+      isDragging: false,
+      sourceGridId: null,
+      sourceHandle: null,
+      targetGridId: null,
+      targetHandle: null
+    }
+    connectionDragRef.current = resetState
+    setConnectionDragState(resetState)
+  }, [])
+
+  // Escape 키로 드래그 취소
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && connectionDragState.isDragging) {
+        handleConnectionCancel()
+      }
+    }
+
+    if (connectionDragState.isDragging) {
+      document.addEventListener('keydown', handleEscape)
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [connectionDragState.isDragging, handleConnectionCancel])
+
+  // 내부 연결 삭제 핸들러
+  const handleInternalConnectionDelete = React.useCallback((connectionId: string) => {
+    setInternalConnections(prev => prev.filter(conn => conn.id !== connectionId))
+    onConnectionDelete?.(connectionId)
+  }, [onConnectionDelete])
+
+  // 유효하지 않은 연결 정리 (주기적으로 실행)
+  React.useEffect(() => {
+    const cleanupInvalidConnections = () => {
+      if (internalConnections.length === 0) return
+
+      const allGridElements = document.querySelectorAll('[data-grid-id]')
+      const existingGridIds = new Set<string>()
+      allGridElements.forEach(element => {
+        const gridId = element.getAttribute('data-grid-id')
+        if (gridId) existingGridIds.add(gridId)
+      })
+
+      const validConnections = internalConnections.filter(connection => {
+        const sourceExists = existingGridIds.has(String(connection.sourceGridId))
+        const targetExists = existingGridIds.has(String(connection.targetGridId))
+        return sourceExists && targetExists
+      })
+
+      if (validConnections.length !== internalConnections.length) {
+        setInternalConnections(validConnections)
+      }
+    }
+
+    // 5초마다 정리 작업 실행
+    const cleanupInterval = setInterval(cleanupInvalidConnections, 5000)
+    
+    return () => clearInterval(cleanupInterval)
+  }, [internalConnections])
+
+  // 전체 그리드 크기 계산
+  const gridDimensions = React.useMemo(() => {
+    // 블록명 행 개수는 무조건 1개
+    const blockNameRows = 1
+    
+    // 헤더 행 개수는 무조건 1개
+    const headerRows = 1
+    
+    // 구분 블록의 리프 셀 개수 계산
+    let maxBodyRows = 1 // 기본값: 구분 블록이 없는 경우 1개
+    
+    blocks.forEach(block => {
+      if (isDivisionBlock(block)) {
+        // 구분 블록의 리프 셀 개수 계산
+        const hierarchicalData = hierarchicalDataMap[block.id] || []
+        const leafCells = HierarchicalCellUtils.getLeafCells(hierarchicalData)
+        maxBodyRows = Math.max(maxBodyRows, leafCells.length)
+      }
+    })
+    
+    // 모든 블록의 열 개수 합계 계산
+    let totalCols = 0
+    blocks.forEach(block => {
+      const gridSize = BlockGridCalculator.calculateGridSize(block)
+      totalCols += gridSize.cols
+    })
+    
+    // ComponentGrid 총 행 수 = 블록명 행(1개) + 헤더 행 개수 + 바디 행 개수
+    const totalRows = blockNameRows + headerRows + maxBodyRows
+    console.log('🔧 ComponentGrid 크기:', {
+      '블록명 행 수': blockNameRows,
+      '헤더 행 수': headerRows,
+      '바디 행 수': maxBodyRows,
+      '총 행 수': totalRows,
+      '총 열 수': totalCols,
+    })
+    
+    return {
+      totalRows,
+      totalCols,
+      blockNameRows,
+      headerRows,
+      bodyRows: maxBodyRows
+    }
+  }, [blocks, hierarchicalDataMap])
+
+  // 블록 변경 시 그리드 크기 콘솔 출력
+  // React.useEffect(() => {
+  //   if (blocks.length > 0) {
+  //     console.log('🔧 ComponentGrid 크기:', {
+  //       '총 행 수': gridDimensions.totalRows,
+  //       '총 열 수': gridDimensions.totalCols,
+  //       '블록명 행 수': gridDimensions.blockNameRows,
+  //       '헤더 행 수': gridDimensions.headerRows,
+  //       '바디 행 수': gridDimensions.bodyRows,
+  //       '블록 수': blocks.length,
+  //       '구분 블록 수': blocks.filter(isDivisionBlock).length,
+  //       '일반 블록 수': blocks.filter(block => !isDivisionBlock(block)).length
+  //     })
+  //   }
+  // }, [gridDimensions, blocks])
+
+  // 그리드 스타일 계산
+  const gridStyle = React.useMemo(() => {
+    return {
+      display: 'grid',
+      gridTemplateColumns: `repeat(${gridDimensions.totalCols}, 1fr)`,
+      gridTemplateRows: `repeat(${gridDimensions.totalRows}, auto)`,
+      gap: '1px',
+      border: '1px solid #3b82f6',
+    }
+  }, [gridDimensions])
+
+  // (r,c) 좌표에 해당하는 블록과 셀 정보를 찾는 헬퍼 함수
+  const findCellAtPosition = React.useCallback((row: number, col: number) => {
+    // 블록명 행인지 확인
+    const isBlockNameRow = row < gridDimensions.blockNameRows
+    // 헤더 행인지 확인
+    const isHeaderRow = row >= gridDimensions.blockNameRows && row < gridDimensions.blockNameRows + gridDimensions.headerRows
+    
+    for (const block of blocks) {
+      const blockInfo = gridInfo.blocks.find(b => b.blockId === block.id)
+      if (!blockInfo) continue
+      
+      // 해당 블록의 범위 확인
+      const blockStartCol = blockInfo.startCol
+      const blockEndCol = blockInfo.startCol + blockInfo.colSpan - 1
+      
+      if (col < blockStartCol || col > blockEndCol) continue
+      
+      const relativeCol = col - blockStartCol
+      
+      if (isHeaderRow) {
+        // 헤더 셀 처리
+        if (isDivisionBlock(block)) {
+          return {
+            type: 'header',
+            block,
+            blockInfo,
+            cell: { elements: [...(block.type.header || [])] },
+            onChange: (elementIndex: number, value: any) => {
+              onBlockChange?.(block.id, ['type', 'header', elementIndex], value)
+            }
+          }
+        } else if (block.type.cols && block.type.cols[relativeCol]) {
+          return {
+            type: 'header',
+            block,
+            blockInfo,
+            cell: block.type.cols[relativeCol].header,
+            onChange: (elementIndex: number, value: any) => {
+              onBlockChange?.(block.id, ['type', 'cols', relativeCol, 'header', 'elements', elementIndex], value)
+            }
+          }
+        }
+      } else if (!isBlockNameRow) {
+        // 바디 셀 처리
+        const bodyRow = row - gridDimensions.blockNameRows - gridDimensions.headerRows
+        
+        if (isDivisionBlock(block)) {
+          const cols = Array.isArray(block.type.header) ? block.type.header.length : 1
+          if (relativeCol >= cols) return null
+
+          const leaves = HierarchicalCellUtils.getLeafCells(hierarchicalDataMap[block.id] || [])
+          if (bodyRow < leaves.length) {
+            const leaf = leaves[bodyRow] as any
+            const element = (leaf.value?.elements || [])[relativeCol]
+            if (element) {
+              return {
+                type: 'body',
+                block,
+                blockInfo,
+                cell: { elements: [element] },
+                onChange: (elementIndex: number, value: any) => {
+                  onBlockChange?.(block.id, ['type', 'children'], (block.type as any).children)
+                }
+              }
+            }
+          }
+          return null
+        } else if (block.type.cols && block.type.cols[relativeCol]) {
+          const colData = block.type.cols[relativeCol]
+          if (colData.rows && colData.rows[bodyRow]) {
+            return {
+              type: 'body',
+              block,
+              blockInfo,
+              cell: colData.rows[bodyRow],
+              onChange: (elementIndex: number, value: any) => {
+                onBlockChange?.(block.id, ['type', 'cols', relativeCol, 'rows', bodyRow, 'elements', elementIndex], value)
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return null
+  }, [blocks, gridInfo, gridDimensions, divisionGridStateMap, onBlockChange])
+  
+  // 블록명 렌더링
+  const renderBlockNames = () => {
+    return gridInfo.blocks.map((blockInfo) => (
+      <div
+        key={`block-name-${blockInfo.blockId}`}
+        style={{ 
+          gridArea: getBlockNameGridArea(blockInfo),
+          backgroundColor: blocks.find(b => b.id === blockInfo.blockId)?.type.color || '#blue',
+        }}
+        className="p-2 text-center text-xs font-semibold text-white bg-blue-500 border border-gray-300 flex items-center justify-between"
+      >
+        <span>{blockInfo.blockName}</span>
+        <div className="flex items-center gap-1">
+          {/* 열 추가 버튼 */}
+          {blocks.find(b => b.id === blockInfo.blockId)?.type.col_editable && onAddColumn && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                const targetBlock = blocks.find(b => b.id === blockInfo.blockId)
+                if (targetBlock && isDivisionBlock(targetBlock)) {
+                  // 구분 블록인 경우 hierarchicalDataMap도 업데이트
+                  handleAddColumnForDivisionBlock(blockInfo.blockId)
+                }
+                onAddColumn(blockInfo.blockId)
+              }}
+              className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700"
+              title="열 추가"
+            >
+              +열
+            </button>
+          )}
+          {/* 데이터 보기 버튼 (삭제 버튼 왼쪽) */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              const targetBlock = blocks.find(b => b.id === blockInfo.blockId)
+              if (targetBlock) {
+                logBlockAsDbFormat(targetBlock, 1, blockInfo.blockId)
+              }
+            }}
+            className="bg-blue-600 text-white p-1 rounded hover:bg-blue-700"
+            title="데이터 보기"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          {/* 삭제 버튼 (결합 버튼의 왼쪽) */}
+          {onBlockDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onBlockDelete(blockInfo.blockId)
+              }}
+              className="bg-red-600 text-white p-1 rounded hover:bg-red-700"
+              title="삭제"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+          {/* 결합 버튼 */}
+          {onBlockCombine && (
+            <CombineButton 
+              blockId={blockInfo.blockId} 
+              combineState={combineState}
+              onCombine={onBlockCombine}
+            />
+          )}
+        </div>
+      </div>
+    ))
+  }
+  
+  // 헤더 셀들 렌더링 (이중 반복문 구조)
+  const renderHeaders = () => {
+    const cells: React.ReactNode[] = []
+    
+    // 헤더 행들을 순회 (블록명 행 다음부터)
+    for (let row = gridDimensions.blockNameRows; row < gridDimensions.blockNameRows + gridDimensions.headerRows; row++) {
+      for (let col = 0; col < gridDimensions.totalCols; col++) {
+        const cellInfo = findCellAtPosition(row, col)
+        console.log(`${row} ${col} ${cellInfo?.type} ${cellInfo?.cell}`)
+        
+        if (cellInfo && cellInfo.type === 'header' && cellInfo.cell) {
+          const relativeRow = row - gridDimensions.blockNameRows
+          const gridArea = getHeaderGridArea(cellInfo.blockInfo, relativeRow, col - cellInfo.blockInfo.startCol)
+          
+          cells.push(
+            <Cell
+              key={`header-${row}-${col}`}
+              cell={cellInfo.cell}
+              style={{ gridArea }}
+              className="bg-gray-50"
+              onChange={cellInfo.onChange}
+            />
+          )
+        }
+      }
+    }
+    
+    return cells
+  }
+  
+  // 바디 셀들 렌더링 (이중 반복문 구조)
+  const renderBodies = () => {
+    const cells: React.ReactNode[] = []
+    
+    // 바디 행들을 순회 (블록명 + 헤더 행 다음부터)
+    const bodyStartRow = gridDimensions.blockNameRows + gridDimensions.headerRows
+    for (let row = bodyStartRow; row < gridDimensions.totalRows; row++) {
+      for (let col = 0; col < gridDimensions.totalCols; col++) {
+        const cellInfo = findCellAtPosition(row, col)
+        
+        if (cellInfo && cellInfo.type === 'body') {
+          const bodyRow = row - bodyStartRow
+          const relativeCol = col - cellInfo.blockInfo.startCol
+          const gridArea = getBodyGridArea(cellInfo.blockInfo, bodyRow, relativeCol, gridDimensions.headerRows)
+          
+          if (cellInfo.cell) {
+            // 일반 셀 렌더링
+            cells.push(
+              <Cell
+                key={`body-${row}-${col}`}
+                cell={cellInfo.cell}
+                style={{ gridArea }}
+                className="bg-white border border-green-400/60"
+                onChange={cellInfo.onChange}
+              />
+            )
+          } else if ((cellInfo as any).merge) {
+            // DivisionBlock의 기본 셀 렌더링 (행 추가 버튼 포함)
+            const rowSpan = Math.max(1, (cellInfo as any).merge.rowspan || 1)
+            cells.push(
+              <div
+                key={`body-${row}-${col}`}
+                style={{ gridArea }}
+                className="relative bg-white border border-green-400/60"
+              >
+                <div className="text-xs text-gray-400 p-2">컬럼 유형을 선택하세요</div>
+                <button
+                  className="absolute bottom-0 left-0 right-0 h-[20%] bg-green-500 hover:bg-green-600 text-white text-xs"
+                  onClick={(e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    handleDivisionAddRow(cellInfo.block.id, (cellInfo as any).bodyRow, (cellInfo as any).relativeCol) 
+                  }}
+                  title="행 추가"
+                >
+                  행 추가 
+                </button>
+                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+                <style jsx>{`
+                  div[style*="grid-area"] { grid-row-end: span ${rowSpan}; }
+                `}</style>
+              </div>
+            )
+          }
+        }
+      }
+    }
+    
+    return cells
+  }
+  
+  if (blocks.length === 0) {
+    return null
+  }
+  
+  return (
+    <>
+      <div 
+        style={{
+          ...gridStyle,
+          position: 'relative'
+        }} 
+        className="component-grid"
+        data-grid-id={stableGridId}
+      >
+        {renderBlockNames()}
+        {renderHeaders()}
+        {renderBodies()}
+        
+        {/* 연결 핸들 */}
+        <ConnectionHandle
+          position="left"
+          gridId={stableGridId}
+          onConnectionStart={handleConnectionStart}
+          onConnectionEnd={handleConnectionEnd}
+          isDragging={connectionDragState.isDragging && connectionDragState.sourceGridId === stableGridId}
+        />
+        <ConnectionHandle
+          position="right"
+          gridId={stableGridId}
+          onConnectionStart={handleConnectionStart}
+          onConnectionEnd={handleConnectionEnd}
+          isDragging={connectionDragState.isDragging && connectionDragState.sourceGridId === stableGridId}
+        />
+      </div>
+      
+      {/* 연결선 렌더링 */}
+      <ConnectionLine 
+        connections={activeConnections}
+        onConnectionDelete={handleInternalConnectionDelete}
+      />
+    </>
+  )
+}
+
+// DivisionDataConverter 대체 함수들
+const createSampleHierarchy = (): HierarchicalCell[] => {
+  return [
+    {
+      id: 'sample-1',
+      type: 'Token',
+      value: { value: '샘플', menu_key: 'division_values', optional: false, visible: true },
+      level: 0,
+      children: [],
+      parent: undefined
+    }
+  ]
+}
+
+const hierarchicalToFlat = (hierarchicalData: HierarchicalCell[]) => {
+  const rows: any[] = []
+  
+  const processCell = (cell: HierarchicalCell, depth: number = 0) => {
+    const row: any = {
+      elements: [cell.value],
+      depth,
+      children: cell.children.length
+    }
+    rows.push(row)
+    
+    cell.children.forEach(child => processCell(child, depth + 1))
+  }
+  
+  hierarchicalData.forEach(cell => processCell(cell))
+  
+  return { rows }
+}
+
+// 결합 버튼 컴포넌트
+interface CombineButtonProps {
+  blockId: number
+  combineState?: {
+    isCombineMode: boolean
+    sourceBlockId: string | null
+    targetBlockId: string | null
+  }
+  onCombine: (blockId: number, side?: 'left' | 'right') => void
+}
+
+const CombineButton: React.FC<CombineButtonProps> = ({ blockId, combineState, onCombine }) => {
+  const isCombineMode = combineState?.isCombineMode || false
+  const isCombining = combineState?.sourceBlockId === String(blockId)
+  
+  const getCombineButtonStyle = () => {
+    if (!isCombineMode) {
+      return "bg-blue-600 text-white p-1 rounded hover:bg-blue-700"
+    }
+    
+    if (isCombining) {
+      return "bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600"
+    }
+    
+    return "bg-green-500 text-white p-1 rounded hover:bg-green-600"
+  }
+  
+  if (!isCombineMode) {
+    return (
+      <button 
+        className={getCombineButtonStyle()}
+        onClick={(e) => {
+          e.stopPropagation()
+          onCombine(blockId)
+        }}
+        title="결합"
+      >
+        <Link2 className="w-4 h-4" />
+      </button>
+    )
+  }
+  
+  if (isCombining) {
+    return (
+      <button 
+        className={getCombineButtonStyle()}
+        onClick={(e) => {
+          e.stopPropagation()
+          onCombine(blockId)
+        }}
+        title="결합 취소"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    )
+  }
+  
+  return (
+    <div className="flex gap-1">
+      <button 
+        className={getCombineButtonStyle()}
+        onClick={(e) => {
+          e.stopPropagation()
+          onCombine(blockId, 'left')
+        }}
+        title="왼쪽에 결합"
+      >
+        <ArrowLeft className="w-4 h-4" />
+      </button>
+      <button 
+        className={getCombineButtonStyle()}
+        onClick={(e) => {
+          e.stopPropagation()
+          onCombine(blockId, 'right')
+        }}
+        title="오른쪽에 결합"
+      >
+        <ArrowRight className="w-4 h-4" />
+      </button>
+    </div>
+  )
+}
+
+// 연결 핸들 컴포넌트
+interface ConnectionHandleProps {
+  position: 'left' | 'right'
+  gridId: number
+  onConnectionStart: (gridId: number, handle: 'left' | 'right') => void
+  onConnectionEnd: (gridId: number, handle: 'left' | 'right') => void
+  isDragging: boolean
+}
+
+const ConnectionHandle: React.FC<ConnectionHandleProps> = ({
+  position,
+  gridId,
+  onConnectionStart,
+  onConnectionEnd,
+  isDragging
+}) => {
+  const [isHovered, setIsHovered] = React.useState(false)
+
+  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    onConnectionStart(gridId, position)
+    
+    // 전역 마우스업 이벤트 리스너 추가
+    const handleGlobalMouseUp = (globalEvent: MouseEvent) => {
+      // 마우스업이 발생한 위치에서 다른 핸들 찾기
+      const elementUnderMouse = document.elementFromPoint(globalEvent.clientX, globalEvent.clientY)
+      
+      const targetHandle = elementUnderMouse?.closest('[data-connection-handle]')
+      
+      if (targetHandle) {
+        const targetGridId = parseInt(targetHandle.getAttribute('data-grid-id') || '0')
+        const targetPosition = targetHandle.getAttribute('data-position') as 'left' | 'right'
+        
+        if (targetGridId !== gridId) {
+          onConnectionEnd(targetGridId, targetPosition)
+        } else {
+          onConnectionEnd(gridId, position) // 취소
+        }
+      } else {
+        // 다른 방법으로 핸들 찾기 시도
+        const allHandles = document.querySelectorAll('[data-connection-handle]')
+        
+        let foundTarget = false
+        allHandles.forEach(handle => {
+          const rect = handle.getBoundingClientRect()
+          const distance = Math.sqrt(
+            Math.pow(globalEvent.clientX - (rect.left + rect.width / 2), 2) +
+            Math.pow(globalEvent.clientY - (rect.top + rect.height / 2), 2)
+          )
+          
+          if (distance < 20) { // 20px 이내면 연결 대상으로 간주
+            const targetGridId = parseInt(handle.getAttribute('data-grid-id') || '0')
+            const targetPosition = handle.getAttribute('data-position') as 'left' | 'right'
+            
+            
+            if (targetGridId !== gridId) {
+              onConnectionEnd(targetGridId, targetPosition)
+              foundTarget = true
+            }
+          }
+        })
+        
+        if (!foundTarget) {
+          onConnectionEnd(gridId, position) // 취소
+        }
+      }
+      
+      // 이벤트 리스너 제거
+      document.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+    
+    document.addEventListener('mouseup', handleGlobalMouseUp)
+  }, [gridId, position, onConnectionStart, onConnectionEnd])
+
+  const handleStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '12px',
+    height: '12px',
+    borderRadius: '50%',
+    backgroundColor: isDragging ? '#10b981' : isHovered ? '#22c55e' : '#3b82f6',
+    border: '2px solid white',
+    cursor: isDragging ? 'grabbing' : 'grab',
+    zIndex: 10,
+    transition: 'background-color 0.2s ease',
+    ...(position === 'left' ? { left: '-6px' } : { right: '-6px' })
+  }
+
+  return (
+    <div
+      style={handleStyle}
+      onMouseDown={handleMouseDown}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      data-connection-handle="true"
+      data-grid-id={gridId}
+      data-position={position}
+      title={`${position === 'left' ? '왼쪽' : '오른쪽'} 연결 핸들 - 드래그하여 연결하세요`}
+    />
+  )
+}
+
+// 연결선 렌더링 컴포넌트
+interface ConnectionLineProps {
+  connections: Connection[]
+  onConnectionDelete?: (connectionId: string) => void
+}
+
+const ConnectionLine: React.FC<ConnectionLineProps> = ({ connections, onConnectionDelete }) => {
+  const [lineElements, setLineElements] = React.useState<React.ReactNode[]>([])
+
+  React.useEffect(() => {
+    if (connections.length === 0) {
+      setLineElements([])
+      return
+    }
+
+    // 현재 DOM에 존재하는 모든 그리드 ID 수집
+    const allGridElements = document.querySelectorAll('[data-grid-id]')
+    const existingGridIds = new Set<string>()
+    allGridElements.forEach(element => {
+      const gridId = element.getAttribute('data-grid-id')
+      if (gridId) existingGridIds.add(gridId)
+    })
+    
+    // 유효한 연결만 필터링
+    const validConnections = connections.filter(connection => {
+      const sourceExists = existingGridIds.has(String(connection.sourceGridId))
+      const targetExists = existingGridIds.has(String(connection.targetGridId))
+      
+      if (!sourceExists || !targetExists) {
+        console.warn('유효하지 않은 연결 발견:', {
+          connectionId: connection.id,
+          sourceGridId: connection.sourceGridId,
+          targetGridId: connection.targetGridId,
+          sourceExists,
+          targetExists
+        })
+        return false
+      }
+      return true
+    })
+
+
+    if (validConnections.length === 0) {
+      setLineElements([])
+      return
+    }
+
+    // 재시도 로직으로 안정성 강화
+    let retryCount = 0
+    const maxRetries = 3
+    const retryDelay = 100
+
+    const processConnections = () => {
+      const elements = validConnections.map((connection) => {
+        // 소스와 타겟 그리드 요소 찾기
+        const sourceElement = document.querySelector(`[data-grid-id="${connection.sourceGridId}"]`)
+        const targetElement = document.querySelector(`[data-grid-id="${connection.targetGridId}"]`)
+        
+        
+        if (!sourceElement || !targetElement) {
+          console.warn(`요소를 찾을 수 없음 (시도 ${retryCount + 1}/${maxRetries}):`, {
+            sourceGridId: connection.sourceGridId,
+            targetGridId: connection.targetGridId,
+            sourceElement: !!sourceElement,
+            targetElement: !!targetElement
+          })
+          return null
+        }
+
+        const sourceRect = sourceElement.getBoundingClientRect()
+        const targetRect = targetElement.getBoundingClientRect()
+        
+        // 연결점 계산
+        const sourceX = connection.sourceHandle === 'left' 
+          ? sourceRect.left 
+          : sourceRect.right
+        const sourceY = sourceRect.top + sourceRect.height / 2
+        
+        const targetX = connection.targetHandle === 'left' 
+          ? targetRect.left 
+          : targetRect.right
+        const targetY = targetRect.top + targetRect.height / 2
+
+
+        // SVG 경로 생성 (베지어 곡선)
+        const midX = (sourceX + targetX) / 2
+        const path = `M ${sourceX} ${sourceY} Q ${midX} ${sourceY} ${midX} ${targetY} Q ${midX} ${targetY} ${targetX} ${targetY}`
+
+        return (
+          <g key={connection.id}>
+            {/* 연결선 */}
+            <path
+              d={path}
+              stroke="#3b82f6"
+              strokeWidth="3"
+              fill="none"
+              markerEnd="url(#arrowhead)"
+            />
+            {/* 삭제 버튼 */}
+            <circle
+              cx={midX}
+              cy={(sourceY + targetY) / 2}
+              r="10"
+              fill="#ef4444"
+              className="cursor-pointer hover:fill-red-600"
+              onClick={() => onConnectionDelete?.(connection.id)}
+            />
+            <text
+              x={midX}
+              y={(sourceY + targetY) / 2 + 2}
+              textAnchor="middle"
+              fontSize="12"
+              fill="white"
+              className="pointer-events-none"
+              fontWeight="bold"
+            >
+              ×
+            </text>
+          </g>
+        )
+      })
+
+      const validElements = elements.filter(Boolean)
+      
+      // 모든 연결이 성공적으로 처리되었거나 최대 재시도에 도달한 경우
+      if (validElements.length === validConnections.length || retryCount >= maxRetries) {
+        setLineElements(validElements)
+      } else {
+        // 일부 요소를 찾지 못한 경우 재시도
+        retryCount++
+        setTimeout(processConnections, retryDelay)
+      }
+    }
+
+    const timer = setTimeout(processConnections, 100)
+
+    return () => clearTimeout(timer)
+  }, [connections, onConnectionDelete])
+
+  if (connections.length === 0) return null
+
+  return (
+    <svg
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 1000
+      }}
+    >
+      {/* 화살표 마커 정의 */}
+      <defs>
+        <marker
+          id="arrowhead"
+          markerWidth="10"
+          markerHeight="7"
+          refX="9"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon
+            points="0 0, 10 3.5, 0 7"
+            fill="#3b82f6"
+          />
+        </marker>
+      </defs>
+      <g style={{ pointerEvents: 'auto' }}>
+        {lineElements}
+      </g>
+    </svg>
+  )
+}

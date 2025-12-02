@@ -1,0 +1,23 @@
+---
+alwaysApply: false
+---
+
+# ComponentGrid에서의 행,열 규칙 
+
+# 행(Row) 추가 
+- 행 추가는 DivisionBlock 영역의 Cell에서만 할 수 있다. 
+    - 그 외 Block은 DivisionBlock과 같은 ComponentGrid에 속하지 않는 이상, 무조건 1개의 행을 가진다.
+- DivisionBlock의 Cell에서 행 추가(삽입) 시, ComponentGrid 전체(모든 열(col)에 대해)에 행이 삽입된다. 
+
+## 행 추가 시 HierarchicalCell 의 동작 
+- N번째 행, M번째 열의 Cell에서 '행 추가' 버튼을 눌렀다면, 
+    - N+1번째에 행이 삽입된다. 
+    - (M > 0 인 경우) (N, M-1) Cell과 (N+1, M-1) Cell이 병합된다. 
+
+# 열(Column) 추가
+- 열 추가는 BlockType의 col_editable 속성이 true인 Block의 블록명 Cell에서만 가능하다.
+- 열 추가를 한 Block의 최대 열(col)에서 1개 열을 추가한다.
+    - ex) DivisionBlock의 열이 M개라면, M+1번째에 1개의 열을 추가한다. 
+        - 추가된 열은 해당 Cell의 기본값을 가진다. 
+
+

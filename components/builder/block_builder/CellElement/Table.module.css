@@ -1,0 +1,81 @@
+.tableContainer {
+  /* 기본 컨테이너 스타일 */
+}
+
+.tableInfo {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+.tableWrapper {
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.table {
+  width: auto;
+  min-width: 100%;
+  font-size: 0.75rem;
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+.tableRow {
+  /* 기본 행 스타일 */
+}
+
+.tableRowHeader {
+  background-color: #f9fafb;
+}
+
+.tableCell {
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 60px;
+  max-width: 200px;
+}
+
+.tableInput {
+  width: 100%;
+  background-color: transparent;
+  outline: none;
+  font-size: 0.75rem;
+  border: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.removeButton {
+  color: #ef4444;
+  font-size: 0.75rem;
+}
+
+.removeButton:hover {
+  color: #dc2626;
+}
+
+.removeButtonDisabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.addButton {
+  color: #3b82f6;
+  font-size: 0.75rem;
+}
+
+.addButton:hover {
+  color: #1d4ed8;
+}
+
+.tableActions {
+  padding: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}

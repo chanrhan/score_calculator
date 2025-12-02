@@ -1,0 +1,10 @@
+.container {
+  height: 100vh;
+  background-color: #f9fafb;
+}
+
+.main {
+  position: relative;
+  padding: 0.5rem;
+  height: 93vh;
+}

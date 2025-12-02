@@ -1,0 +1,8 @@
+---
+alwaysApply: false
+---
+
+# ComponentGrid에서의 행,열 규칙 2
+
+## Block Combine (블록 결합) 시
+- 블록 결합 시 ComponentGrid의 행 개수에 맞게 Block에 맞는 Cell들이 렌더링되어야 한다. 

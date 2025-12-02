@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\Primitives/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\Primitives/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\Blocks\\Specific/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\Blocks\\Specific/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\Blocks\\Specific/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\PipelineEditor/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\Blocks\\Specific/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\utils/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\Primitives/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\types/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\types/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\.claude\\rules/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\components\\builder\\Blocks\\Common/**)",
+      "Read(/C:\\Users\\km1104rs\\Desktop\\jinhak_project\\types/**)",
+      "Read(//c/Users/km1104rs/Desktop/jinhak_project/lib/adapters/**)",
+      "Read(//c/Users/km1104rs/Desktop/jinhak_project/components/builder/PipelineEditor/**)",
+      "Read(//c/Users/km1104rs/Desktop/jinhak_project/store/**)"
+    ]
+  },
+  "outputStyle": "default"
+}

@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://postgres:0915@localhost:5432/score_calculator"
+}
+
+model student_base_info {
+  identifyNumber       String
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime
+  mogib1_code          String
+  school_code          String
+  mogib2_code          String
+  applicantScCode      Int?
+  collegeAdmissionYear Int?
+  correctionRegisterYN String?
+  examNumber           String?
+  graduateYear         Int?
+  masterSchoolYN       String?
+  pictureFileName      String?
+  seleScCode           String?
+  socialNumber         String?
+  specializedSchoolYN  String?
+  uniqueFileName       String?
+  graduateGrade        Int?
+  subject_score        subject_score[]
+
+  @@id([mogib1_code, mogib2_code, identifyNumber])
+}
+
+model subject_score {
+  identifyNumber        String
+  year                  Int?
+  grade                 Int?
+  organizationCode      String?
+  organizationName      String?
+  subjectCode           String
+  subjectName           String?
+  unit                  Float?
+  assessment            String?
+  rank                  Int?
+  sameRank              Int?
+  studentCount          Int?
+  originalScore         Float?
+  avgScore              Float?
+  standardDeviation     Float?
+  rankingGrade          String?
+  rankingGradeCode      String?
+  achievement           String?
+  achievementCode       String?
+  achievementRatio      Float?
+  subjectSeparationCode String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime
+  mogib1_code           String
+  mogib2_code           String
+  seq_number            Int
+  courceCode            String?
+  term                  Int?
+  student_base_info     student_base_info @relation(fields: [mogib1_code, mogib2_code, identifyNumber], references: [mogib1_code, mogib2_code, identifyNumber], onDelete: Cascade)
+
+  @@id([mogib1_code, mogib2_code, identifyNumber, seq_number])
+}
+
+model univ {
+  id                    String                 @id @db.Char(3)
+  name                  String
+  created_at            DateTime               @default(now())
+  admissions            admission[]
+  majors                major[]
+  pipelines             pipelines[]
+  subject_organizations subject_organization[]
+  token_menus           token_menu[]
+  token_menu_items      token_menu_item[]
+  pipeline_variables    pipeline_variable[]
+}
+
+model admission {
+  univ_id    String   @db.Char(3)
+  code       String   @db.Char(2)
+  name       String
+  created_at DateTime @default(now())
+  univ       univ     @relation(fields: [univ_id], references: [id], onDelete: Cascade)
+
+  @@id([univ_id, code])
+}
+
+model major {
+  univ_id    String   @db.Char(3)
+  code       String   @db.Char(2)
+  name       String
+  created_at DateTime @default(now())
+  univ       univ     @relation(fields: [univ_id], references: [id], onDelete: Cascade)
+
+  @@id([univ_id, code])
+}
+
+model subject_organization {
+  univ_id           String   @db.Char(3)
+  organization_code String
+  organization_name String
+  subject_code      String
+  subject_name      String
+  subject_group     String?  @db.Text
+  course_code       String   @db.Char(3)
+  created_at        DateTime @default(now())
+  univ              univ     @relation(fields: [univ_id], references: [id], onDelete: Cascade)
+
+  @@id([univ_id, organization_code, subject_code, course_code])
+}
+
+model pipelines {
+  id            BigInt           @unique @default(autoincrement())
+  name          String
+  version       String
+  created_at    DateTime         @default(now())
+  config_name   String
+  univ_id       String           @db.Char(3)
+  components    component_grid[]
+  grade_results grade_results[]
+  calculation_settings calculation_settings?
+  univ          univ             @relation(fields: [univ_id], references: [id], onDelete: Cascade)
+  variables     pipeline_variable[]
+
+  @@id([univ_id, config_name])
+}
+
+model component_grid {
+  pipeline_id  BigInt
+  component_id Int
+  order        Int
+  x            Int       @default(0)
+  y            Int       @default(0)
+  created_at   DateTime  @default(now())
+  blocks       block[]
+  pipeline     pipelines @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
+
+  @@id([pipeline_id, component_id])
+  @@index([pipeline_id, order])
+}
+
+model block {
+  pipeline_id  BigInt
+  component_id Int
+  block_id     Int
+  order        Int
+  block_type   Int
+  created_at   DateTime       @default(now())
+  body_cells   Json?
+  header_cells Json?
+  component    component_grid @relation(fields: [pipeline_id, component_id], references: [pipeline_id, component_id], onDelete: Cascade)
+
+  @@id([pipeline_id, component_id, block_id])
+  @@index([pipeline_id, component_id, order])
+  @@index([block_type])
+}
+
+model grade_results {
+  student_id     String
+  final_score    Float     @db.DoublePrecision
+  rank           Int?
+  tie_breaker    Json?
+  created_at     DateTime  @default(now())
+  id             BigInt    @id @default(autoincrement())
+  pipeline_id    BigInt
+  meta_variables Json
+  subjects       Json
+  updated_at     DateTime
+  pipeline       pipelines @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
+
+  @@unique([pipeline_id, student_id])
+  @@index([pipeline_id, rank])
+  @@index([pipeline_id, final_score])
+}
+
+model token_menu {
+  id         Int               @default(autoincrement())
+  key        String
+  name       String
+  created_at DateTime          @default(now())
+  univ_id    String            @db.Char(3)
+  scope      Int               @default(0)
+  univ       univ              @relation(fields: [univ_id], references: [id], onDelete: Cascade)
+  items      token_menu_item[]
+
+  @@id([univ_id, key])
+}
+
+model token_menu_item {
+  id         Int        @default(autoincrement())
+  order      Int
+  label      String
+  value      String
+  created_at DateTime   @default(now())
+  menu_key   String
+  univ_id    String     @db.Char(3)
+  univ       univ       @relation(fields: [univ_id], references: [id], onDelete: Cascade)
+  menu       token_menu @relation(fields: [univ_id, menu_key], references: [univ_id, key], onDelete: Cascade)
+
+  @@id([univ_id, menu_key, order])
+  @@index([menu_key, order])
+}
+
+model element_type {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  @@map("element_type")
+}
+
+model block_data {
+  block_type       Int      @id // 블록 타입 ID (1: Division, 2: ApplySubject, ...)
+  block_name       String
+  header_cell_type Json?   // Cell Type 정보 (Map for Division, element_type[] for general)
+  body_cell_type   Json?   // Cell Type 정보 (Map for Division, element_type[] for general)
+  init_row         Int      @default(1) // 초기 행 수
+  init_col         Int      @default(1) // 초기 열 수
+  col_editable     Boolean  @default(false) // 동적 열 추가/삭제 가능 여부
+  group_name       String?  // 그룹 유형 ('구분', '점수 계산', '과목 반영', '기타')
+  color            String?  // 컬러 값 (#ffffff 형식)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+}
+
+model calculation_settings {
+  id              BigInt    @id @default(autoincrement())
+  pipeline_id     BigInt    @unique
+  is_conditional  Boolean   @default(false)
+  admission_codes String?
+  unit_codes      String?
+  grad_year_start Int?
+  grad_year_end   Int?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  pipeline        pipelines @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
+
+  @@index([pipeline_id])
+}
+
+model pipeline_variable {
+  univ_id       String   @db.Char(3)
+  pipeline_id   BigInt
+  variable_name String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  univ     univ      @relation(fields: [univ_id], references: [id], onDelete: Cascade)
+  pipeline pipelines @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
+
+  @@id([pipeline_id, variable_name])
+  @@index([univ_id, pipeline_id])
+}
+
+model subject_separation {
+  univ_id                 String @db.Char(3)
+  subject_name            String @db.Text
+  subject_code            String? @db.Text
+  subject_separation_code String @db.Text
+
+  @@id([univ_id, subject_name])
+}

@@ -1,0 +1,26 @@
+---
+alwaysApply: false
+---
+# DB 테이블 설계 규칙
+- 화면의 ComponentGrid, DB의 테이블, 그리고 runPipeline (계산 로직) 에서 데이터를 모두 잘 활용할 수 있도록 DB 테이블을 설계해야 한다. 
+- 테이블은 Component, Block 이렇게 2개로만 구성한다. 
+- Component 테이블에는 모든 셀의 데이터가 2차원 배열 형태의 json으로 저장된다. 
+-- Cell도 json 형태로 저장된다. 
+-- 구분 블록의 경우 Block Table의 body_cells에서, rowspan 속성을 알맞게 저장해야 한다. 
+
+
+## 예시 테이블
+Component Table
+- pipeline_id : number 
+- component_id : number
+- order : number (연결선에 따른 순서)
+
+
+Block Table
+- pipeline_id : number
+- component_id : number
+- block_id : number
+- order : number (1,2,3,..., Component 내에서의 순서)
+- block_type : number (ApplyTerm, Division, ScoreMap 등의 블록 유형, 1,2,3,... 의 숫자코드로 표현)
+- header_cells : jsonb (2차원 배열의 헤더 셀, 1 * M)
+- body_cells : jsonb (2차원 배열의 바디 셀, N * M)

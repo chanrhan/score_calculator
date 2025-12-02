@@ -1,0 +1,223 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+
+# 교과성적 산출방법 빌더 — 개정판 사양 v1.2 
+본 문서는 “대학교 교과성적 산출방법 빌더”의 **정확성·일관성·검증 가능성**을 높이기 위해 개념·데이터·블록·실행 의미론을 재정의한 개정판입니다. 에디터(UI)와 실행엔진(Backend)이 동일한 규칙으로 동작하도록 하는 것이 목적입니다. 
+--- ## 1) 목적 및 범위 
+- 파이프라인, 컴포넌트, 블록, 컨텍스트의 **정의/타입/입출력/결합 규칙** 표준화 
+- 계산 **순서와 의미론** 고정 
+- **유효성 검증**과 **감사 로그(Audit)** 스펙 제공 
+- 예시 시나리오로 엔드투엔드 동작을 구체화 
+--- ## 2) 핵심 용어(표준화) 
+- **파이프라인(Pipeline)**: 1개 이상의 컴포넌트로 구성된 유향 비순환 그래프(DAG). 
+- **컴포넌트(Component)**: 캔버스에서 하나의 노드. 내부에 1개 이상의 블록을 좌→우로 결합(Combine). 선행 컴포넌트는 최대 1개, 후행 컴포넌트는 0개 이상. 
+- **블록(Block)**: Division / Function / Condition / Aggregation / Variable 의 5종(선택 확장: Finalize). 좌우 포트를 통해 결합. 
+- **컨텍스트(Context)**: 실행 중 전달되는 데이터 묶음. **삭제 금지**(추가/수정만 허용). 
+- **케이스(Case)**: Division 블록의 리프(마지막 행) 단위. 각 케이스별로 오른쪽 블록 체인이 독립 실행됨. 
+
+### 2.1 컨텍스트 스키마(고정)
+json
+{
+  "student": {
+    "admission": "string",         // 전형
+    "major": "string",             // 전공(Major)
+    "graduateYear": 2025,
+    "applicantScCode": "string",   // 지원자 유형 코드
+    "identifyNumber": "string"
+  },
+  "subjects": [
+    {
+      "subjectName": "string",
+      "organizationName": "string",
+      "subjectSeparationCode": "string",   // 과목구분 코드 (Separation)
+      "grade": 1,               // 이수 학년
+      "term": 1,                // 이수 학기(1~2)
+      "credit": 2,              // 이수단위(Credit)
+      "originalScore": 85.0,    // 원점수
+      "rankingGrade": 3,        // 석차 등급
+      "achievement": "A",      // 성취도 등급
+      "assessment": "string",  // 평어 등급
+      "studentCount": 25,
+      "avgScore": 78.2,
+      "standardDeviation": 6.5,
+      "achievementRatio": 0.32,
+      // 계산 과정에서 추가되는 표준 필드(엔진 생성)
+      "score": {
+        "converted": null,   // 배점표/수식 등 변환 후 점수
+        "weighted": null,    // 비율 적용 등 과목 단위 가중치 반영 뒤 점수
+        "final": null        // 집계 직전 과목 단위 최종 점수
+      }
+    }
+  ],
+  "metrics": {},   // 집계·조건 평가 등으로 생성되는 스칼라 값 저장
+  "vars": {}       // Variable 블록으로 저장되는 사용자 변수(스칼라)
+}
+
+
+### 2.2 타입 시스템(포트 타입) 
+- **subjects**: 과목 레코드 배열 
+- **scalar**: 숫자/문자열/불리언 단일값 
+- **table**: 2행 이상 N열의 배점표 등 2D 테이블(편집용) 
+— 실행 시 엔진이 내부 구조로 직렬화 
+- **dict**: 키-값 매핑(매개변수용) 
+--- ## 3) 블록 사양(입출력/포트/유효성) 
+
+### 3.1 Division Block(구분) 
+- **목적**: subjects를 케이스별 서브셋으로 분할. 
+- **입력**: subjects 
+- **출력**: subjects (케이스별로 체인을 독립 실행) 
+- **구성**: 테이블 형태로 **왼→오** 계층. 헤더=구분유형, 셀=구분항목.
+- **구분유형**(샘플): 졸업년도, 전형, 전공, 교과군, 과목구분, 지원자유형, 이수단위(범위/정수) 
+- **미정의 구분유형**은 "전체"로 간주(무제한 매칭) 
+- **케이스 식별키**: 각 리프의 조건을 직렬화한 문자열(ex. GY:2024-2025|SG:수학/과학) - **유효성**: 케이스가 0개면 경고. 케이스별 후보 과목 수가 0이면 스킵/에러 정책 선택. 
+
+### 3.2 Function Block(함수)
+Function은 **두 계열**: [필터]와 [점수 계산]. 입력/출력 모두 **subjects**. 
+
+### A) 과목 필터 함수 
+1. **반영교과(ApplySubject)** 
+- 파라미터: { 모드: 포함|제외, 교과군[] } 
+- 로직: subject.organizationName 또는 교과군 맵 기준 필터 
+2. **반영학기(ApplyTerm)** 
+- 파라미터: { 학기 토글(1-1~3-2), 우수학기N(옵션) } 
+- 로직: 토글된 학기만 남김 → 우수학기N 지정 시 **정렬 기준**(아래 6.2)으로 상위 N개 학기만 유지 
+3. **우수 N 과목(TopSubject)** 
+- 파라미터: { N, 모드: 교과군별 상위N | 전체 상위N, 정렬 기준 지정 } 
+- 로직: 지정 기준으로 정렬 후 상위 N 과목 선택(타이브레이커 규칙 적용) 
+
+### B) 점수 계산 함수 
+1. **배점표(ScoreMap)** 
+- 파라미터: { 입력유형: 원점수|등급|백분위|사용자식, 매칭방식: 정확일치|구간[이상/미만]|선형보간, 범위외: clip|error } 
+- 출력: 각 과목의 score.converted 채움 
+2. **학년별 반영비율(GradeRatio)** 
+- 파라미터: { g1,g2,g3 } (0~100) 
+- 로직: 과목 학년에 따라 score.weighted = score.converted * (gi/100) 
+3. **교과군별 반영비율(SubjectGroupRatio)** 
+- 파라미터(행 단위): { 교과군들[], 비율들[] } — 각 행 합=100 
+- 로직: 과목의 교과군이 속한 행의 비율을 찾아 score.weighted에 곱 
+4. **과목구분별 반영비율(SeparationRatio)** 
+- 파라미터: { 일반/진로/예체능 비율(0~100) } 
+- 로직: 동일 
+5. **반영비율(MultiplyRatio)** 
+- 파라미터: { ratio: 0~100 } 
+- 로직: score.weighted *= (ratio/100) (초기값 없으면 converted 사용) 
+
+1. **수식(Formula)** 
+- 파라미터: { DSL 문자열 }
+ - 참조 가능: 과목 필드, score.converted/weighted/final, 컨텍스트 vars/metrics 
+ - 로직: 평가 결과를 score.final 또는 지정 필드에 기록 > 적용 순서 권고: 배점표→(학년/교과군/구분 비율)→반영비율→수식→score.final 확정 
+ ### 3.3 Condition Block(조건) 
+ - **입력**: scalar 또는 subjects(+표현식) 
+ - **출력**: 조건식이 true인 경우에만 **오른쪽 블록 체인 실행** 
+ - **체인 규칙**: 다중 조건은 **위→아래 순차 평가**, 최초 매칭만 실행. 마지막에 **else 경로** 선택 가능(없으면 스킵). 
+ - **표현식 DSL**: 5장 참조 ### 3.4 Aggregation Block(집계) 
+ - **입력**: subjects 
+ - **출력**: scalar (컨텍스트.metrics에 저장도 가능) 
+ - **유형**: SUM/AVG/COUNT/MAX/MIN/STD(옵션) 
+ - **대상 필드**: 예) score.final, originalScore 등 + (선택)필터 표현식 
+ - **컨텍스트 반영**: 이름을 지정하면 metrics[name] = 결과 저장 
+ 
+ ### 3.5 Variable Block(변수) 
+ - **입력**: scalar 
+ - **출력**: 없음(컨텍스트 저장) 
+ - **파라미터**: { name, scope: component|pipeline, overwrite: allow|deny } - **동작**: vars[name] = 값 (스코프 정책에 따라 이름 충돌 방지) ### 3.6 (선택) Finalize Block 
+ - **목적**: 파이프라인 조기 종료 또는 결과 스냅샷 확정(리포트용) 
+ - **입력**: scalar/subjects 
+ - **출력**: 없음(로그/결과 저장 후 종료) 
+ --- 
+ ## 4) 결합(Combine) 규칙 & 포트 호환 매트릭스 
+ - 좌우 포트 타입이 호환되어야 결합 허용.
+  - 이미 생성된 블록을 결합하면 **가장 왼쪽 블록의 컴포넌트로 병합**.
+   | From → To | Division | Function | Condition | Aggregation | Variable | Finalize | | --- | --- | --- | --- | --- | --- | --- | | **Division (subjects)** | ❌ | ✅ | ✅* | ✅ | ❌ | ✅ | | **Function (subjects)** | ❌ | ✅ | ✅* | ✅ | ❌ | ✅ | | **Condition (scalar/expr)** | ❌ | ✅ | ✅(체인) | ✅ | ✅(expr 결과) | ✅ | | **Aggregation (scalar)** | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ | | **Variable (none)** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 
+   
+   - Condition은 입력이 subjects인 경우, DSL 내 집계함수로 평가 가능(예: AVG(score.final) >= 80). 
+   ---
+
+   ## 5) 실행 의미론(엔진 기준) 
+   
+   ### 5.1 컴포넌트 실행 순서 
+   1. 선행 컴포넌트의 컨텍스트를 수신(참조로 전달, 삭제 금지) 
+   2. 블록을 좌→우로 순차 실행 
+   3. 각 Block 실행 전후 **Audit 스냅샷** 기록(7장) 
+   4. 후행 컴포넌트로 컨텍스트 전달 
+   
+   ### 5.2 Division 의미론 
+   - Division은 각 **케이스**별 subject 서브셋을 생성하고, **오른쪽 체인을 케이스마다 독립 실행**. 
+   - 결과 스칼라는 metrics["<caseKey>.<name>"] 형태로 저장 가능. 
+   
+   ### 5.3 점수 컬럼 합의 
+   - 엔진은 다음 우선순위로 과목 단위 최종점수를 확정 
+   1. score.final 존재 시 사용 
+   2. score.weighted 존재 시 사용 
+   3. score.converted 존재 시 사용 
+   
+   ### 5.4 의사코드
+ctx = initial_context_from_db(studentId)
+for component in topo_sorted(pipeline):
+  run_component(component, ctx)
+
+function run_component(comp, ctx):
+  local_subjects = ctx.subjects
+  for block in comp.blocks_left_to_right:
+    snapshot_before(block, ctx)
+    switch block.kind:
+      case Division:
+        for case in block.cases:
+          sub = filter_by_case(local_subjects, case)
+          run_chain(block.right_chain, ctx.with_subjects(sub))
+        return // Division consumes its right chain
+      case Function:
+        local_subjects = apply_function(block, local_subjects, ctx)
+      case Aggregation:
+        value = aggregate(block, local_subjects)
+        maybe_store(ctx.metrics, block.outputName, value)
+        last_scalar = value
+      case Condition:
+        if eval(block.expr, ctx, local_subjects, last_scalar):
+          continue // run right chain
+        else if block.has_else: run_else_chain(...)
+      case Variable:
+        store(ctx.vars, block.name, last_scalar)
+      case Finalize:
+        finalize(ctx); return
+    snapshot_after(block, ctx)
+
+--- 
+## 6) 정렬 기준 & 타이브레이커(TopN/우수학기) 
+
+### 6.1 후보 선정 
+- TopN/우수학기에서 **정렬 기준 필수**: 
+- 기본: score.final → 없으면 score.weighted → 없으면 score.converted → 없으면 originalScore 
+- 사용자 지정: 수식/필드명 
+### 6.2 타이브레이커 순서(권고) 
+1. standardDeviation 내림차순(더 어려운 과목 가산) 
+2. credit 내림차순(이수단위 가중) 
+3. subjectName 오름차순(안정적 정렬) 
+
+--- 
+
+## 7) 조건식 DSL 
+- **리터럴**: 숫자, 문자열('...'), 불리언(true/false) 
+- **연산자**: + - * / %, 비교 == != > >= < <=, 논리 && || !
+- **집계함수**(subjects 입력 시): SUM(expr), AVG(expr), COUNT(), MAX(expr), MIN(expr) 
+- **필드 참조**: subject.field, subject.score.final, metrics.name, vars.name 
+- **예시**: - AVG(subject.score.final) >= 80 && vars.passLine == 80 - metrics.math_avg > metrics.korean_avg 
+--- 
+## 8) 집계 블록 타깃 필드 지정 
+- **필수 옵션**: 대상 필드 선택자(예: score.final) 
+- **선택 옵션**: 필터 표현식(예: subject.grade == 3) 
+- **출력 이름**: 저장 시 metrics[outputName] 
+
+--- 
+## 9) 유효성 검증 체크리스트 
+- 타입 호환: subjects↔scalar 연결 금지(Condition 예외) 
+- Division 케이스 ≥ 1, 각 케이스 후보 과목 수 0 시 처리정책 필요 
+- TopN: N ≤ 후보 과목 수 - 반영비율: 0~100, 행 합=100 
+- ScoreMap: 키 중복 금지/정렬/범위외 처리 지정 
+- Formula: 참조 변수/필드 존재, 0으로 나누기 등 오류 방지 
+- 그래프: 사이클 금지, 컴포넌트 선행=≤1 
+- 변수: 이름 중복 방지, overwrite 정책 준수 
+- 필드명: subjectSeparationCode, credit 등 표준명 일치 

@@ -1,0 +1,339 @@
+.header {
+  background-color: white;
+  height: 7vh;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.headerContainer {
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .headerContainer {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .headerContainer {
+    padding: 0 2rem;
+  }
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logoTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.desktopNav {
+  display: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .desktopNav {
+    display: flex;
+  }
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  position: relative;
+  text-decoration: none;
+}
+
+.navLinkActive {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.navLinkInactive {
+  color: #6b7280;
+}
+
+.navLinkInactive:hover {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.navIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.navIconActive {
+  color: #2563eb;
+}
+
+.navIconInactive {
+  color: #6b7280;
+}
+
+.navLinkInactive:hover .navIconInactive {
+  color: #374151;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  margin-bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.5rem;
+  background-color: #111827;
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.navLink:hover .tooltip {
+  opacity: 1;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.universitySelect {
+  display: none;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background-color: white;
+  color: #374151;
+  cursor: pointer;
+}
+
+.universitySelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+@media (min-width: 640px) {
+  .universitySelect {
+    display: block;
+  }
+}
+
+.mobileMenuButton {
+  display: block;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  color: #6b7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobileMenuButton:hover {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+@media (min-width: 768px) {
+  .mobileMenuButton {
+    display: none;
+  }
+}
+
+.mobileMenu {
+  display: block;
+  border-top: 1px solid #e5e7eb;
+  background-color: white;
+}
+
+@media (min-width: 768px) {
+  .mobileMenu {
+    display: none;
+  }
+}
+
+.mobileMenuContent {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mobileUniversitySection {
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .mobileUniversitySection {
+    display: none;
+  }
+}
+
+.mobileUniversityLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.mobileUniversitySelect {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background-color: white;
+  color: #374151;
+  cursor: pointer;
+}
+
+.mobileNavLink {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.mobileNavLinkActive {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.mobileNavLinkInactive {
+  color: #374151;
+}
+
+.mobileNavLinkInactive:hover {
+  background-color: #f9fafb;
+}
+
+.mobileNavIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.mobileNavIconActive {
+  color: #2563eb;
+}
+
+.mobileNavIconInactive {
+  color: #6b7280;
+}
+
+.mobileNavText {
+  font-weight: 500;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.modalContent {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modalTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modalInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.modalInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.modalButton {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.modalButtonCancel {
+  color: #6b7280;
+  background: none;
+}
+
+.modalButtonCancel:hover {
+  color: #374151;
+}
+
+.modalButtonSubmit {
+  background-color: #2563eb;
+  color: white;
+}
+
+.modalButtonSubmit:hover {
+  background-color: #1d4ed8;
+}
+
+.modalButtonSubmit:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}

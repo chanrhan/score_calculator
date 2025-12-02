@@ -1,0 +1,69 @@
+.dropzone {
+  border: 2px dashed;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropzoneActive {
+  border-color: #60a5fa;
+  background-color: #eff6ff;
+}
+
+.dropzoneInactive {
+  border-color: #d1d5db;
+}
+
+.dropzoneInactive:hover {
+  border-color: #9ca3af;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.iconContainer {
+  margin: 0 auto;
+  width: 3rem;
+  height: 3rem;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.iconActive {
+  color: #3b82f6;
+}
+
+.iconInactive {
+  color: #9ca3af;
+}
+
+.textContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.description {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}

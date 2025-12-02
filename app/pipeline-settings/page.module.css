@@ -1,0 +1,75 @@
+.container {
+  padding: 1.5rem;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #6b7280;
+}
+
+.noSelectionContainer {
+  padding: 1.5rem;
+}
+
+.noSelectionContent {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.noSelectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.noSelectionDescription {
+  color: #6b7280;
+}
+
+.tabsContainer {
+  width: 100%;
+}
+
+.tabsList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 100%;
+  background-color: #f1f5f9;
+  border-radius: 0.375rem;
+  padding: 0.25rem;
+}
+
+.tabsTrigger {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tabsTrigger[data-state="active"],
+.tabsTriggerActive {
+  background-color: white;
+  color: #0f172a;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+}
+
+.tabsContent {
+  margin-top: 1.5rem;
+}
