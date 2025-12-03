@@ -24,14 +24,12 @@ export class runCaseExecution {
     rightChainBlocks: any[]
   ): Promise<Context> {
 
-
     const context = { ...ctx };
     let currentCtx = { ...context };
     let currentSubjects = [...ctx.subjects];
-    // console.log('currentSubjects.length', currentSubjects.length);
 
     if (!divisionBlock) {
-      calcLog(`  🌳 Single Case 실행 시작`);
+      calcLog(`  🌳 구분 블록 없는 케이스 실행`);
       const filteredSubjectsCount = currentSubjects.filter(subject => subject.filtered_block_id > 0).length;
       const result = await this.executeCaseBlocks(ctx, currentSubjects, rightChainBlocks, 0);
 
@@ -66,22 +64,19 @@ export class runCaseExecution {
 
     for (let i = 0; i < leafCases.length; i++) {
       const case_ = leafCases[i];
-      calcLog(`  🔍 케이스 ${i + 1}/${leafCases.length} 실행 중: ${case_.caseName}`);
-
       try {
         // 1) 케이스에 이미 필터링된 과목들과 context가 포함되어 있음
-        const filteredSubjects = case_.filteredSubjects || [];
-        if (filteredSubjects.length === 0) {
-          calcLog(`    ❌ 케이스 ${i + 1} 실행 실패: 필터링된 과목이 없음`);
+        const processingSubjects = case_.processingSubjects || [];
+        if (processingSubjects.length === 0) {
+          calcLog(`    ❌ (${i+1}/${leafCases.length})번째 케이스 실행 실패: 포함된 과목이 없음`);
           continue;
         }
-        const filteredContext = currentCtx;
-        calcLog(`    📊 케이스별 필터링된 과목: ${filteredSubjects.length}개`);
+        calcLog(`    📊 (${i+1}/${leafCases.length})번째 케이스 실행, 포함된 과목 수 : ${processingSubjects.length}개`);
 
         // 2) 필터링된 copy_subject[]와 context를 가지고 케이스(블록 실행기들)를 실행
         const caseResult = await this.executeCaseBlocks(
           currentCtx,
-          filteredSubjects,
+          processingSubjects,
           rightChainBlocks,
           i // N번째 케이스
         );
@@ -126,7 +121,7 @@ export class runCaseExecution {
     const traverse = (
       cell: HierarchicalCell,
       path: string[] = [],
-      filteredSubjects: Subject[] = initialSubjects,
+      processingSubjects: Subject[] = initialSubjects,
       currentContext: Context = initialContext
     ) => {
       // calcLog("cell");
@@ -138,16 +133,16 @@ export class runCaseExecution {
       const headerCell = divisionBlock.header_cells?.[cell.colIndex]?.[0];
 
 
-      const currentFilteredSubjects = this.filterSubjectsByCell(
+      const currentProcessingSubjects = this.filterSubjectsByCell(
         cell,
-        filteredSubjects,
+        processingSubjects,
         currentContext,
         headerCell
       );
 
-      const filteredSubjectsCount = filteredSubjects.filter(subject => subject.filtered_block_id > 0).length;
+      const filteredSubjectsCount = processingSubjects.filter(subject => subject.filtered_block_id > 0).length;
       // console.log(`filteredSubjectsCount: ${filteredSubjectsCount}`);
-      calcLog(`        🔍 방문 - ${filteredSubjects.length}개 -> ${currentFilteredSubjects.length}개 (제외된 과목: ${filteredSubjectsCount}개)`);
+      calcLog(`        🔍 구분 - ${processingSubjects.length}개 -> ${currentProcessingSubjects.length}개 (제외된 과목: ${filteredSubjectsCount}개)`);
 
       // 리프 셀인 경우 (자식이 없는 경우)
       if (!cell.children || cell.children.length === 0) {
@@ -160,16 +155,16 @@ export class runCaseExecution {
           caseName,
           criteria,
           leafCellId: cell.id,
-          filteredSubjects: currentFilteredSubjects, // 필터링된 과목들을 케이스에 포함
-          filteredContext: currentContext            // 참조용 context를 케이스에 포함
+          processingSubjects: currentProcessingSubjects, // 처리된 과목들
+          processingContext: currentContext            // 처리된 context
         });
 
         // console.log(`    📋 리프 셀 발견: ${caseName}, 최종 과목 수: ${currentFilteredSubjects.length}개`);
       } else {
-        // 자식들을 재귀적으로 처리 (필터링된 과목들과 참조용 context를 전달)
+        // 자식들을 재귀적으로 처리 (처리된 과목들과 처리된 context를 전달)
         if (cell.children && cell.children.length > 0) {
           cell.children.forEach(child =>
-            traverse(child, currentPath, currentFilteredSubjects, currentContext)
+            traverse(child, currentPath, currentProcessingSubjects, currentContext)
           );
         }
       }
@@ -249,6 +244,10 @@ export class runCaseExecution {
         const admissionCodes: Array<string> = cellValue as Array<string> || [];
         // console.log(`admissionCodes: ${admissionCodes}, compared: ${context.admissionCode}`);
         if (admissionCodes.includes("*") || admissionCodes.includes(context.admissionCode)) {
+          const excludeAdmissionCodes: Array<string> = cell.values[2] as Array<string> || [];
+          if (excludeAdmissionCodes.includes(context.admissionCode)) {
+            return [];
+          }
           return subjects;
         }
         return [];
@@ -381,14 +380,14 @@ export class runCaseExecution {
    */
   private async executeCaseBlocks(
     ctx: Context,
-    filteredSubjects: Subject[],
+    processingSubjects: Subject[],
     rightChainBlocks: any[],
     caseIndex: number
   ): Promise<{ ctx: Context; subjects: Subject[] }> {
     let currentCtx = { ...ctx };
-    let currentSubjects = [...filteredSubjects];
+    let currentSubjects = [...processingSubjects];
 
-    calcLog(`    🔗 RightChain 블록 ${rightChainBlocks.length}개 실행 중...`);
+    calcLog(`      🔗 ${rightChainBlocks.length}개의 블록 실행 중...`);
 
     // 각 블록의 N번째 행을 순차적으로 실행
     for (const block of rightChainBlocks) {
@@ -409,21 +408,14 @@ export class runCaseExecution {
         } else {
           console.warn(`        ⚠️ 블록 타입 ${block.block_type}에 대한 실행기를 찾을 수 없음`);
         }
-        // 블록 실행기 실행
-        // const blockExecutor = this.blockExecutorRegistry.getExecutor(block.block_type);
-        // if (blockExecutor) {
-        //   const result = await blockExecutor(currentCtx, currentSubjects, bodyCellValue, headerCellValue, block.block_id, caseIndex);
-        //   currentCtx = result.ctx;
-        //   currentSubjects = result.subjects;
-        //   // console.log(`        ✅ 블록 ${block.block_id} 실행 완료`);
-        // } else {
-        //   // console.warn(`        ⚠️ 블록 타입 ${block.block_type}에 대한 실행기를 찾을 수 없음`);
-        // }
       } catch (error) {
         console.error(`        ❌ 블록 ${block.block_id} 실행 실패:`, error);
         throw error;
       }
     }
+    const filteredSubjectsCount = processingSubjects.filter(subject => subject.filtered_block_id > 0).length;
+    const currentFilteredSubjectsCount = currentSubjects.filter(subject => subject.filtered_block_id > 0).length;
+    calcLog(`      ✅ 실행 완료, 과목 필터링 정보 (${filteredSubjectsCount}개 -> ${currentFilteredSubjectsCount}개)`);
 
     return { ctx: currentCtx, subjects: currentSubjects };
   }

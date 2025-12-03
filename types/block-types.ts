@@ -31,6 +31,8 @@ export const BLOCK_TYPE_MAP = {
   [BLOCK_TYPE.VARIABLE]: '변수',
   [BLOCK_TYPE.CONDITION]: '조건',
   [BLOCK_TYPE.AGGREGATION]: '집계',
+  [BLOCK_TYPE.RATIO]: '반영비율',
+  [BLOCK_TYPE.DECIMAL]: '소수점 처리',
 } as const;
 
 // 타입 정의

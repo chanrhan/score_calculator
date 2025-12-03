@@ -1,6 +1,7 @@
 import { CalculationLog, Context, Subject } from "@/types/domain";
 import { BlockExecutor } from "./BlockExecutor";
 import { BLOCK_TYPE } from "@/types/block-types";
+import { CalculationLogManager } from "./CalculationLogManager";
 
 export class ApplyTermBlockExecutor extends BlockExecutor {
     public override readonly type : number = BLOCK_TYPE.APPLY_TERM;
@@ -15,16 +16,13 @@ export class ApplyTermBlockExecutor extends BlockExecutor {
     }
 
     public override execute(ctx: Context, subjects: Subject[]) : { ctx: Context, subjects: Subject[] } {
-        const map : Map<number, CalculationLog[]> = new Map();
+        const logManager = new CalculationLogManager();
 
         const terms = this.termsString.split('|');
         subjects.forEach(subject => {
         if(!terms.includes(`${subject.grade}-${subject.term}`)){
             subject.filtered_block_id = this.blockId;
-            if(!map.has(subject.seqNumber)){
-            map.set(subject.seqNumber, []);
-            }
-            map.get(subject.seqNumber)!.push({
+            logManager.addLog(subject.seqNumber, {
             input_key: null,
             input: `${subject.grade}-${subject.term}`,
             output_key: null,
@@ -43,10 +41,7 @@ export class ApplyTermBlockExecutor extends BlockExecutor {
             }
             if(index >= this.topTerms){
             subject.filtered_block_id = this.blockId;
-            if(!map.has(subject.seqNumber)){
-                map.set(subject.seqNumber, []);
-            }
-            map.get(subject.seqNumber)!.push({
+            logManager.addLog(subject.seqNumber, {
                 input_key: null,
                 input: `학기별 상위 (${index+1}/${this.topTerms})등`,
                 output_key: null,
@@ -57,16 +52,7 @@ export class ApplyTermBlockExecutor extends BlockExecutor {
         });
         }
 
-        
-
-        map.forEach((logs, seqNumber) => {
-            subjects.find(subject => subject.seqNumber === seqNumber)?.snapshot.push({
-            block_id: this.blockId,
-            case_index: this.caseIndex,
-            block_type: this.type,
-            logs: logs
-            });
-        });
+        logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, this.type);
        
         return { ctx, subjects };
     }

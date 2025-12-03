@@ -2,6 +2,7 @@ import { calcLog } from "@/lib/utils/calcLogger";
 import { BlockExecutor } from "./BlockExecutor";
 import { CalculationLog, Context, Subject } from "@/types/domain";
 import { BLOCK_TYPE } from "@/types/block-types";
+import { CalculationLogManager } from "./CalculationLogManager";
 
 export class AggregationBlockExecutor extends BlockExecutor {
     public override readonly type: number = BLOCK_TYPE.AGGREGATION;
@@ -19,7 +20,7 @@ export class AggregationBlockExecutor extends BlockExecutor {
     }
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {
-        const map: Map<number, CalculationLog[]> = new Map();
+        const logManager = new CalculationLogManager();
         let scoreSum = 0;
         let result: number = 0;
         if (this.func == 0) { // 이수단위 가중평균
@@ -29,8 +30,6 @@ export class AggregationBlockExecutor extends BlockExecutor {
                     return;
                 }
                 const inputValue = subject[this.inputType as keyof Subject]
-                calcLog(`  🔍 집계 중 : ${subject.subjectName} ${this.inputType}: ${inputValue}, ${subject.unit}단위`);
-
 
                 let log: CalculationLog = {
                     input_key: this.inputType,
@@ -49,12 +48,8 @@ export class AggregationBlockExecutor extends BlockExecutor {
                     unitSum += subject.unit || 0
                     log.output = score;
                 }
-                if (!map.has(subject.seqNumber)) {
-                    map.set(subject.seqNumber, []);
-                }
-                map.get(subject.seqNumber)!.push(log);
+                logManager.addLog(subject.seqNumber, log);
             });
-            calcLog(`     🔧 ${subjects.filter(subject => subject.filtered_block_id == 0).length}개 : scoreSum: ${scoreSum}, unitSum: ${unitSum}`);
 
             result = unitSum > 0 ? scoreSum / unitSum : 0;
         } else if (this.func == 1) { // 평균 
@@ -79,10 +74,7 @@ export class AggregationBlockExecutor extends BlockExecutor {
                         log.output = score;
                         len++;
                     }
-                    if (!map.has(subject.seqNumber)) {
-                        map.set(subject.seqNumber, []);
-                    }
-                    map.get(subject.seqNumber)!.push(log);
+                    logManager.addLog(subject.seqNumber, log);
                 });
             result = len > 0 ? scoreSum / len : 0;
         }
@@ -94,14 +86,7 @@ export class AggregationBlockExecutor extends BlockExecutor {
 
         this.setContextProperty(ctx, subjects, this.outputType as string, result);
 
-        map.forEach((logs, seqNumber) => {
-            subjects.find(subject => subject.seqNumber === seqNumber)?.snapshot.push({
-                block_id: this.blockId,
-                case_index: this.caseIndex,
-                block_type: 12,
-                logs: logs
-            });
-        });
+        logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, 12);
 
         return { ctx, subjects };
     }

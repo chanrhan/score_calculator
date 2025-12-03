@@ -46,6 +46,7 @@ export type Subject = {
   subjectSeparationCode: string;
   filtered_block_id: number;
   score: number | null;
+  vars?: Map<string, any>;
   snapshot: Snapshot[];
 
   // 기존 호환성을 위한 필드들 (선택적)
@@ -204,7 +205,7 @@ export type ComponentGridResult = {
 /** Case 실행 결과 */
 export type CaseResult = {
   ctx: Context;
-  filteredSubjects: Subject[];
+  processingSubjects: Subject[];
 };
 
 /** Division 블록의 리프 셀 (케이스) */
@@ -213,8 +214,8 @@ export type DivisionCase = {
   caseName: string;
   criteria: string;
   leafCellId: string;
-  filteredSubjects?: Subject[]; // DFS 탐색을 통해 필터링된 과목들
-  filteredContext?: Context;    // 참조용 context
+  processingSubjects?: Subject[]; // DFS 탐색을 통해 처리된 과목들
+  processingContext?: Context;    // 참조용 context
 };
 
 /** 블록 실행기 인터페이스 */
