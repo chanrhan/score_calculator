@@ -21,18 +21,23 @@
   margin-bottom: 1rem;
 }
 
+/* ------------------------------
+ * Main Layout
+ * ------------------------------ */
+
 .mainContainer {
   width: 100%;
-  height: 91vh;
+  height: calc(100vh - 65px); /* 헤더 높이를 뺀 나머지 */
   display: flex;
   flex-direction: column;
+  background-color: #f9fafb;
 }
 
 .header {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
   background-color: white;
-  height: 7vh;
+  flex-shrink: 0;
 }
 
 .headerContent {
@@ -40,6 +45,36 @@
   align-items: center;
   gap: 0.75rem;
 }
+
+.contentArea {
+  flex-grow: 1;
+  display: flex;
+  min-height: 0; /* Important for flex children scrolling */
+}
+
+/* Left Panel (Master) */
+.leftPanel {
+  width: 480px;
+  flex-shrink: 0;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden; /* Ensure content doesn't overflow if child has scroll */
+}
+
+/* Right Panel (Detail) */
+.rightArea {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ------------------------------
+ * Header Components
+ * ------------------------------ */
 
 .headerLeft {
   flex: 1 1 0%;
@@ -67,85 +102,14 @@
   width: 18rem;
 }
 
-.selectTrigger {
-  width: 100%;
-  height: 2.25rem;
-  font-size: 0.875rem;
-}
-
-.selectContent {
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.selectItem {
-  padding: 0.5rem 0.75rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.selectItem:hover {
-  background-color: #f9fafb;
-}
-
-.selectItemContent {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.selectItemLeft {
-  display: flex;
-  flex-direction: column;
-}
-
-.selectItemName {
-  font-weight: 500;
-  font-size: 0.875rem;
-  color: #111827;
-}
-
-.selectItemMeta {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.selectItemDate {
-  font-size: 0.625rem;
-  color: #9ca3af;
-  margin-left: 1rem;
+.selectTrigger, .selectContent, .selectItem, .selectItemContent, .selectItemLeft, .selectItemName, .selectItemMeta, .selectItemDate {
+  /* These are handled by shadcn UI, but keeping for reference if needed */
 }
 
 .headerActions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.actionButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  background-color: white;
-  color: #374151;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.actionButton:hover {
-  background-color: #f9fafb;
-}
-
-.actionButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .actionButtonIcon {
@@ -162,43 +126,44 @@
   100% { transform: rotate(360deg); }
 }
 
-.contentArea {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  height: 20vh;
+/* ------------------------------
+ * Right Panel Panes
+ * ------------------------------ */
+
+.rightTopPane {
+  flex-grow: 1; /* Canvas takes remaining space */
+  min-height: 200px; /* Minimum height for the canvas */
+  position: relative; /* For positioning canvas overlays if any */
 }
 
-.leftPanel {
-  position: relative;
-  flex: 0 0 460px;
-  width: 460px;
-  background-color: white;
-  border-right: 1px solid #e5e7eb;
+.rightBottomPane {
+  flex-shrink: 0;
+  height: 45%; /* Logs take bottom 45% of the right area */
+  border-top: 2px solid #d1d5db;
+  background-color: #f9fafb;
+}
+
+.logViewerContainer {
+  display: flex;
   height: 100%;
-  min-height: 0;
-  overflow-y: hidden;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
-.rightArea {
-  flex: 1 1 auto;
+.logViewer {
+  width: 50%;
+  flex-grow: 1;
+  height: 100%;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+  overflow: hidden; /* Let the child component handle scrolling */
 }
-
-.canvasArea {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
+.logViewer:first-child {
+  border-right: 1px solid #d1d5db;
 }
 
 .canvasContainer {
   width: 100%;
   height: 100%;
+  background-color: #f9fafb;
 }
 
 .canvasPlaceholder {
@@ -208,86 +173,6 @@
   align-items: center;
   justify-content: center;
   font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.contextLogPanel {
-  height: 25vh;
-  min-height: 180px;
-  max-height: 300px;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-  background-color: white;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.bottomPanel {
-  height: 30vh;
-  min-height: 220px;
-  border-top: 1px solid #e5e7eb;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-}
-
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  color: #9ca3af;
   background-color: #f9fafb;
-}
-
-.tab {
-  padding: 0.5rem 1rem;
-  border: none;
-  background-color: transparent;
-  color: #6b7280;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.tab:hover:not(:disabled) {
-  color: #111827;
-  background-color: #f3f4f6;
-}
-
-.tab:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.tabActive {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
-}
-
-.tabContent {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.bottomPanelPlaceholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.subjectsOverlay {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  background-color: #ffffff;
-  /* overflow-y: auto; */
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }

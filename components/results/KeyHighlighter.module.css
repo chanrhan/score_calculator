@@ -1,0 +1,32 @@
+.keyWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease-in-out;
+}
+.keyWrapper:hover {
+  background-color: #eff6ff; /* blue-50 */
+}
+
+.keyDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.keyText {
+  font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.8rem;
+  font-weight: 600; /* Bold */
+  color: #1d4ed8; /* blue-800 */
+}
+
+.highlighted {
+  background-color: #fef9c3; /* yellow-200 */
+  border-radius: 4px;
+}
