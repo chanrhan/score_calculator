@@ -1,10 +1,11 @@
-import { Context, Subject } from "@/types/domain";
+import { CalculationLog, Context, Subject } from "@/types/domain";
 import { BlockExecutor } from "./BlockExecutor";
 import { calcLog } from "@/lib/utils/calcLogger";
 import { evalExpr } from "@/lib/dsl/eval";
 import { replaceHashPatternsWithValues } from "@/lib/utils/stringPattern";
 import { extractHashPatternContents } from "@/lib/utils/stringPattern";
 import { BLOCK_TYPE } from "@/types/block-types";
+import { CalculationLogManager } from "./CalculationLogManager";
 
 export class FormulaBlockExecutor extends BlockExecutor {
     public override readonly type: number = BLOCK_TYPE.FORMULA;
@@ -23,6 +24,8 @@ export class FormulaBlockExecutor extends BlockExecutor {
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {
         const vars: string[] = extractHashPatternContents(this.expr as string);
+        const logManager = new CalculationLogManager();
+        let log: CalculationLog;
 
         calcLog(`        🔧 org expr: (${this.expr})`);
         if(this.variableScope == 0) {
@@ -39,8 +42,16 @@ export class FormulaBlockExecutor extends BlockExecutor {
                 const replacedExpr = replaceHashPatternsWithValues(this.expr as string, ...values);
                 const v = evalExpr(replacedExpr, { ctx, subjects, current: subject });
                 subject[this.scoreType as keyof Subject] = v as unknown as never;
+                log = {
+                    input_key: this.expr,
+                    input: replacedExpr,
+                    output_key: this.scoreType,
+                    output: v
+                };
+                logManager.addLog(subject.seqNumber, log);
                 calcLog(`        🔧 new expr: [${replacedExpr}] = ${v}`);
             });
+            logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, BLOCK_TYPE.FORMULA);
         } 
 
 

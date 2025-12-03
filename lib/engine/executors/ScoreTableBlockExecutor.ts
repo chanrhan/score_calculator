@@ -116,6 +116,7 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
                         if (inputValue == input) {
                             matched = true;
                         }
+                        
                     }
                     if (matched) {
                         this.matchedCount++;
