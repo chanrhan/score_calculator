@@ -13,9 +13,10 @@ type Props = {
   dbPipelineId?: number | null;
   onClose: () => void;
   onSelectSubject?: (subject: DomainSubject) => void;
+  onContextSnapshotsLoaded?: (snapshots: any) => void;
 };
 
-export default function StudentSubjectsPanel({ studentId, dbPipelineId, onClose, onSelectSubject }: Props) {
+export default function StudentSubjectsPanel({ studentId, dbPipelineId, onClose, onSelectSubject, onContextSnapshotsLoaded }: Props) {
   const [subjects, setSubjects] = React.useState<DomainSubject[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -63,6 +64,9 @@ export default function StudentSubjectsPanel({ studentId, dbPipelineId, onClose,
       setSubjects(subjectsData);
       setFinalScore(json?.data?.finalScore || null);
       setStudentInfo(json?.data?.studentInfo || null);
+      if (onContextSnapshotsLoaded) {
+        onContextSnapshotsLoaded(json?.data?.contextSnapshots || null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {

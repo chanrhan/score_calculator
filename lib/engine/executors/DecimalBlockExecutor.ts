@@ -33,6 +33,14 @@ export class DecimalBlockExecutor extends BlockExecutor {
       const result = this.performDecimalOperation(inputValue);
       calcLog(`        🔧 ${this.scoreType} : ${inputValue} -> ${result}`);
       this.setContextProperty(ctx, subjects, this.scoreType as string, result);
+      log = {
+        input_key: this.scoreType,
+        input: inputValue,
+        output_key: this.scoreType,
+        output: result
+      };
+      logManager.addContextLog(log);
+      logManager.saveContextToSnapshot(ctx, this.blockId, this.caseIndex, BLOCK_TYPE.DECIMAL);
     } else if (this.variableScope == 1) {
       subjects.forEach(subject => {
         const inputValue = Number(this.getSubjectProperty(subject, this.scoreType as string))

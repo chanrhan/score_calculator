@@ -35,6 +35,14 @@ export class FormulaBlockExecutor extends BlockExecutor {
             const v = evalExpr(replacedExpr, { ctx, subjects });
             this.setContextProperty(ctx, subjects, this.scoreType as string, v as unknown as never);
             calcLog(`        🔧 new expr: [${replacedExpr}] = ${v}`);
+            log = {
+                input_key: this.expr,
+                input: replacedExpr,
+                output_key: this.scoreType,
+                output: v
+            };
+            logManager.addContextLog(log);
+            logManager.saveContextToSnapshot(ctx, this.blockId, this.caseIndex, BLOCK_TYPE.FORMULA);
         } else if(this.variableScope == 1) {
             // for Each Subject
             subjects.forEach(subject => {

@@ -1,4 +1,4 @@
-import { CalculationLog, Subject } from "@/types/domain";
+import { CalculationLog, Context, Subject } from "@/types/domain";
 
 /**
  * 블록 실행기의 계산 로그를 관리하는 공통 모듈
@@ -6,6 +6,7 @@ import { CalculationLog, Subject } from "@/types/domain";
  */
 export class CalculationLogManager {
     private logs: Map<number, CalculationLog[]> = new Map();
+    private contextLogs: CalculationLog[] = [];
 
     /**
      * 특정 과목(seqNumber)에 대한 로그를 추가합니다.
@@ -17,6 +18,14 @@ export class CalculationLogManager {
             this.logs.set(seqNumber, []);
         }
         this.logs.get(seqNumber)!.push(log);
+    }
+
+    /**
+     * Context에 대한 로그를 추가합니다.
+     * @param log 추가할 계산 로그
+     */
+    public addContextLog(log: CalculationLog): void {
+        this.contextLogs.push(log);
     }
 
     /**
@@ -46,10 +55,37 @@ export class CalculationLogManager {
     }
 
     /**
+     * 수집된 Context 로그를 Context의 snapshot에 저장합니다.
+     * @param ctx Context 객체
+     * @param blockId 블록 ID
+     * @param caseIndex 케이스 인덱스
+     * @param blockType 블록 타입
+     */
+    public saveContextToSnapshot(
+        ctx: Context,
+        blockId: number,
+        caseIndex: number,
+        blockType: number
+    ): void {
+        if (this.contextLogs.length > 0) {
+            if (!ctx.snapshot) {
+                ctx.snapshot = [];
+            }
+            ctx.snapshot.push({
+                block_id: blockId,
+                case_index: caseIndex,
+                block_type: blockType,
+                logs: [...this.contextLogs]
+            });
+        }
+    }
+
+    /**
      * 로그를 초기화합니다.
      */
     public clear(): void {
         this.logs.clear();
+        this.contextLogs = [];
     }
 
     /**
@@ -58,6 +94,14 @@ export class CalculationLogManager {
      */
     public getLogs(): Map<number, CalculationLog[]> {
         return this.logs;
+    }
+
+    /**
+     * 현재 수집된 Context 로그 배열을 반환합니다.
+     * @returns Context 로그 배열
+     */
+    public getContextLogs(): CalculationLog[] {
+        return this.contextLogs;
     }
 }
 

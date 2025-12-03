@@ -20,8 +20,9 @@ import { ResultsHighlightProvider, useResultsHighlight } from '@/components/resu
 import { usePipelines } from '@/store/usePipelines';
 import { convertComponentGridsToPipelineComponents } from '@/lib/adapters/pipelineLoader';
 import styles from './page.module.css';
-import type { Subject as DomainSubject } from '@/types/domain';
+import type { Subject as DomainSubject, Snapshot } from '@/types/domain';
 import SubjectSnapshotsViewer from '../../components/results/SubjectSnapshotsViewer';
+import ContextSnapshotsViewer from '../../components/results/ContextSnapshotsViewer';
 
 interface GradeResult {
   studentId: string;
@@ -72,6 +73,7 @@ export default function GradeResultsPage() {
   const [isResultsPanelExpanded, setIsResultsPanelExpanded] = useState(true);
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<DomainSubject | null>(null);
+  const [contextSnapshots, setContextSnapshots] = useState<Snapshot[] | null>(null);
 
   // 파이프라인 스토어 연동 (캔버스 표시 목적)
   const { getById: getPipelineById, add: addPipeline, update: updatePipeline } = usePipelines();
@@ -338,14 +340,15 @@ export default function GradeResultsPage() {
                 <StudentSubjectsPanel 
                   studentId={activeStudentId}
                   dbPipelineId={selectedPipelineId ? Number(selectedPipelineId) : undefined}
-                  onClose={() => { setActiveStudentId(null); setSelectedSubject(null); }}
-                  onSelectSubject={(subject) => { setSelectedSubject(subject); console.log('[GradeResultsPage] onSelectSubject', { subjectName: subject.subjectName, snapshots: subject.snapshot?.length }); }}
+                  onClose={() => { setActiveStudentId(null); setSelectedSubject(null); setContextSnapshots(null); }}
+                  onSelectSubject={(subject) => { setSelectedSubject(subject); setActiveTab('subject'); console.log('[GradeResultsPage] onSelectSubject', { subjectName: subject.subjectName, snapshots: subject.snapshot?.length }); }}
+                  onContextSnapshotsLoaded={(snapshots) => { setContextSnapshots(snapshots); }}
                 />
               </div>
             )}
           </div>
 
-          {/* 우측 영역: 상단 캔버스 + 하단 상세 패널 */}
+          {/* 우측 영역: 상단 캔버스 + 중간 Context 로그 + 하단 과목 상세 패널 */}
           <div className={styles.rightArea}>
             <div className={styles.canvasArea}>
               {localCanvasPipelineId ? (
@@ -359,7 +362,14 @@ export default function GradeResultsPage() {
               )}
             </div>
 
-            {/* 하단: 상세 패널 */}
+            {/* 중간: Context 로그 패널 (학생 선택 시 표시) */}
+            {activeStudentId && contextSnapshots && contextSnapshots.length > 0 && (
+              <div className={styles.contextLogPanel}>
+                <ContextSnapshotsViewer snapshots={contextSnapshots} />
+              </div>
+            )}
+
+            {/* 하단: 과목 상세 패널 */}
             <div className={styles.bottomPanel}>
               {selectedSubject ? (
                 <SubjectSnapshotsViewer subject={selectedSubject} />

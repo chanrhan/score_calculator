@@ -86,6 +86,7 @@ export type Context = {
   // 기존 호환성을 위한 필드들 (선택적)
   // student?: StudentContext;
   metrics?: Record<string, number | string | boolean>;
+  snapshot?: Snapshot[];
 };
 
 export type Scalar = number | string | boolean;

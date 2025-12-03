@@ -43,6 +43,8 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
                 log.output = matchedValue;
                 this.setContextProperty(ctx, subjects, this.outputType, matchedValue);
             }
+            logManager.addContextLog(log);
+            logManager.saveContextToSnapshot(ctx, this.blockId, this.caseIndex, 8);
         }else if(this.variableScope == 1) {
             subjects.forEach(subject => {
                 inputValue = this.getSubjectProperty(subject, this.inputType);
@@ -64,9 +66,9 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
                 }
                 logManager.addLog(subject.seqNumber, log);
             });
+            logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, 8);
         }
 
-        logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, 8);
         calcLog(` 매핑된 과목들 : (${this.matchedCount}/${subjects.length})개`);
         calcLog(`필터링된 과목들 : ${subjects.filter(subject => subject.filtered_block_id > 0).length}개`);
         // calcLog(subjects.map(s => s.filtered_block_id));
