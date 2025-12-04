@@ -1,0 +1,703 @@
+---
+alwaysApply: false
+---
+# 블록 빌더 구조 및 DB 저장 구조 리팩토링 명세서
+
+## 목적
+- `block_data` 테이블을 제거하고 블록 구조 정의를 코드로 이전
+- 블록 구조와 블록 데이터의 명확한 분리
+- 타입 안정성 및 개발 편의성 향상
+- **하위 호환성 고려 없이 새로운 구조로 완전히 전환**
+
+## 현재 구조 분석
+
+### 1. 블록 구조 정의 (block_data 테이블)
+**위치**: `prisma/schema.prisma`의 `block_data` 모델
+**역할**: 블록 타입별 구조 템플릿 저장
+
+#### 일반 블록 (예: ApplySubject, Formula 등)
+```typescript
+// block_data 테이블의 header_cell_type 컬럼
+{
+  "element_types": [
+    {
+      "type": "Text",
+      "content": "집계 범위 : "
+    },
+    {
+      "type": "Token",
+      "menu_key": "calculation_scope"
+    }
+  ]
+}
+
+// block_data 테이블의 body_cell_type 컬럼
+{
+  "element_types": [
+    {
+      "type": "Text",
+      "content": "변수명: "
+    },
+    {
+      "type": "InputField"
+    },
+    {
+      "type": "Text",
+      "content": " = "
+    },
+    {
+      "type": "Formula"
+    }
+  ]
+}
+```
+
+#### 구분 블록 (Division)
+```typescript
+// block_data 테이블의 header_cell_type 컬럼 (Map 형태)
+{
+  "gender": "division_criteria",
+  "grade": "division_criteria"
+}
+
+// block_data 테이블의 body_cell_type 컬럼 (Map 형태)
+{
+  "gender": [
+    { "type": "Token", "menu_key": "division_values" }
+  ],
+  "grade": [
+    { "type": "Token", "menu_key": "division_values" }
+  ]
+}
+```
+
+### 2. 블록 인스턴스 데이터 (block 테이블)
+**위치**: `prisma/schema.prisma`의 `block` 모델
+**역할**: 사용자가 실제로 저장한 블록 데이터
+
+#### 일반 블록의 header_cells, body_cells
+```typescript
+// block 테이블의 header_cells 컬럼 (2차원 배열)
+[
+  ["admissionCode"],
+  ["subjectSeparationCode"]
+]
+
+// block 테이블의 body_cells 컬럼 (2차원 배열)
+[
+  [
+    ["*"], null, ["80"]  // 각 셀의 값들
+  ],
+  [
+    ["01", "00"]
+  ]
+]
+```
+
+#### 구분 블록의 header_cells, body_cells
+```typescript
+// block 테이블의 header_cells 컬럼 (구분 유형 코드 배열)
+[1, 3, 7, 2, 3]
+
+// block 테이블의 body_cells 컬럼 (계층 구조 또는 그리드 구조)
+// 계층 구조 (HierarchicalCell[])
+[
+  {
+    "elements": [{"type": "Token", "value": "male"}],
+    "children": [
+      {
+        "elements": [{"type": "Token", "value": "1학년"}],
+        "children": []
+      }
+    ]
+  }
+]
+
+// 또는 그리드 구조 (2차원 배열)
+[
+  [
+    {
+      "values": [["*"]],
+      "rowspan": 1
+    },
+    {
+      "values": [["01", "00"]],
+      "rowspan": 1
+    }
+  ]
+]
+```
+
+### 3. 현재 사용 흐름
+1. **화면 렌더링** (`components/builder/Primitives/ComponentGrid.tsx`)
+   - `block_data`에서 블록 구조 로드 (`useBlockData` 훅)
+   - `block`에서 실제 데이터 로드
+   - `block_data`의 구조 + `block`의 값을 조합하여 화면 표시
+
+2. **블록 생성** (`lib/blockManager.ts`)
+   - `createFlowBlockFromKind()`: `block_data`를 기반으로 초기 `FlowBlock` 생성
+   - `createFlowBlockTypeFromBlockData()`: `block_data`를 `FlowBlockType`으로 변환
+
+3. **성적 계산** (`lib/engine/runCaseExecution.ts`)
+   - `block` 테이블의 `header_cells`, `body_cells`를 직접 읽어서 실행
+   - 블록 구조 정보는 필요 없음 (값만 필요)
+
+## 리팩토링 목표
+
+### 1. 블록 구조 정의 (A 타입) - 코드로 관리
+**위치**: `types/block-structure.ts`
+**역할**: 블록의 템플릿/스키마 정의 (구조 정보 + 기본값)
+
+블록 구조 정의는 헤더/바디 셀의 구조 정보와 기본값을 포함합니다. 이는 `block_data` 테이블을 대체하는 코드 기반 정의입니다.
+
+#### 일반 블록 구조 정의 예시 (ApplySubject)
+```typescript
+// types/block-structure.ts
+export interface BlockStructureDefinition {
+  name: string;
+  color: string;
+  col_editable: boolean;
+  // 일반 블록의 경우
+  cols?: Array<{
+    header: {
+      elements: CellElementDefinition[]; // 헤더 셀의 element type 정의들
+    };
+    rows: Array<{
+      elements: CellElementDefinition[]; // 바디 셀의 element type 정의들
+    }>;
+  }>;
+  // 구분 블록의 경우
+  header?: CellElementDefinition[];
+  children?: HierarchicalCellDefinition[];
+}
+
+// ApplySubject 블록 구조 정의
+export const BLOCK_STRUCTURES = {
+  ApplySubject: {
+    name: 'ApplySubject',
+    color: 'blue',
+    col_editable: false,
+    cols: [
+      {
+        header: {
+          elements: [
+            { 
+              type: 'Text', 
+              optional: false, 
+              visible: true, 
+              content: '반영교과' // 기본 텍스트
+            },
+            { 
+              type: 'Token', 
+              optional: false, 
+              visible: true, 
+              menu_key: 'include_exclude',
+              default_value: 'include' // 기본값
+            }
+          ]
+        },
+        rows: [
+          {
+            elements: [
+              { 
+                type: 'Token', 
+                optional: false, 
+                visible: true, 
+                menu_key: 'subject_groups',
+                default_value: null // 기본값
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  // ... 다른 블록들
+} as const
+```
+
+#### 구분 블록 구조 정의 예시 (Division)
+```typescript
+export const BLOCK_STRUCTURES = {
+  Division: {
+    name: 'Division',
+    color: 'purple',
+    col_editable: true,
+    header: [
+      { 
+        type: 'Token', 
+        optional: false, 
+        visible: true, 
+        menu_key: 'division_criteria',
+        default_value: 'gender' // 기본값
+      }
+    ],
+    children: [
+      {
+        elements: [
+          { 
+            type: 'Token', 
+            optional: false, 
+            visible: true, 
+            menu_key: 'division_values',
+            default_value: 'male' // 기본값
+          }
+        ],
+        children: []
+      }
+    ]
+  }
+} as const
+```
+
+### 2. 블록 인스턴스 데이터 (B 타입) - DB에 저장
+**위치**: `block` 테이블의 `header_cells`, `body_cells` 컬럼
+**역할**: 파이프라인 빌더에서 실제로 사용되는 블록 데이터
+
+블록 인스턴스는 구조 정의를 기반으로 생성되며, 각 셀마다 구체적인 값들을 담고 있습니다. ComponentNode 내에 포함되는 실제 블록 객체입니다.
+
+#### 일반 블록 인스턴스 예시 (ApplySubject)
+```typescript
+// block 테이블에 저장되는 실제 데이터
+// ApplySubject 블록의 경우, 각 셀마다 구체적인 속성들을 포함
+
+interface ApplySubjectBlockInstance {
+  block_type: 2; // ApplySubject
+  block_id: number;
+  header_cells: [
+    {
+      // 헤더 셀의 실제 값들
+      text_content: '반영교과'; // Text element의 실제 값
+      include_option: 'include' | 'exclude'; // Token element의 실제 선택값
+    }
+  ];
+  body_cells: [
+    {
+      // 바디 셀의 실제 값들
+      subject_groups: string[]; // Token element의 실제 선택값들 (예: ['국어', '수학'])
+    }
+    // 추가 행들...
+  ];
+}
+
+// DB 저장 예시
+{
+  "block_type": 2,
+  "block_id": 1,
+  "header_cells": [
+    {
+      "text_content": "반영교과",
+      "include_option": "include"
+    }
+  ],
+  "body_cells": [
+    {
+      "subject_groups": ["국어", "수학", "영어"]
+    },
+    {
+      "subject_groups": ["사회", "과학"]
+    }
+  ]
+}
+```
+
+#### 구분 블록 인스턴스 예시 (Division)
+```typescript
+interface DivisionBlockInstance {
+  block_type: 1; // Division
+  block_id: number;
+  header_cells: [
+    {
+      division_criteria: string; // Token element의 실제 선택값 (예: 'gender')
+    }
+  ];
+  body_cells: [
+    {
+      elements: [
+        {
+          division_value: string; // Token element의 실제 선택값 (예: 'male')
+        }
+      ];
+      children: [
+        {
+          elements: [
+            {
+              division_value: string; // 예: '1학년'
+            }
+          ];
+          children: [];
+        }
+      ];
+    }
+  ];
+}
+
+// DB 저장 예시
+{
+  "block_type": 1,
+  "block_id": 1,
+  "header_cells": [
+    {
+      "division_criteria": "gender"
+    }
+  ],
+  "body_cells": [
+    {
+      "elements": [
+        {
+          "division_value": "male"
+        }
+      ],
+      "children": [
+        {
+          "elements": [
+            {
+              "division_value": "1학년"
+            }
+          ],
+          "children": []
+        },
+        {
+          "elements": [
+            {
+              "division_value": "2학년"
+            }
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "elements": [
+        {
+          "division_value": "female"
+        }
+      ],
+      "children": []
+    }
+  ]
+}
+```
+
+### 3. 구조 정의와 인스턴스의 관계
+- **구조 정의 (A)**: "이 블록은 어떤 element type들을 가지고 있는가" + 기본값
+- **인스턴스 (B)**: "이 블록의 각 셀에 어떤 실제 값들이 저장되어 있는가"
+
+예를 들어 ApplySubject의 경우:
+- **구조 정의**: 헤더에 Text와 Token(include_exclude)이 있고, 바디에 Token(subject_groups)이 있다는 정보
+- **인스턴스**: 헤더의 Text는 '반영교과', Token은 'include'를 선택했고, 바디의 Token은 ['국어', '수학']을 선택했다는 실제 데이터
+
+### 4. 저장 구조 개선 방향
+**현재 문제점**: 
+- `header_cells`, `body_cells`가 값만 저장되어 구조 정보가 없음
+- 배열 인덱스 기반 접근으로 타입 안정성 부족
+- 각 셀의 의미가 불명확함
+
+**개선 방향**:
+- 각 블록 타입별로 명시적인 속성 구조 정의
+- ApplySubject의 경우: `subject_groups[]`, `include_option` 등의 명확한 속성명 사용
+- 구조 정의를 기반으로 타입 안전한 인스턴스 생성
+- **하위 호환성 고려 없이 새로운 구조로 완전히 전환**
+
+### 3. ComponentGrid 내 블록 인스턴스 객체지향 관리
+
+**현재 문제점**:
+- `FlowBlock`이 단순 데이터 구조(`any[][]`)로만 존재
+- ComponentGrid에서 직접 배열 조작 (`newBodyCells[bodyRowIndex][colIndex] = value`)
+- 블록 타입별 로직이 ComponentGrid에 분산되어 있음
+- 타입 안정성 부족 및 유지보수 어려움
+
+**객체지향 설계 방안**:
+
+#### 3.1 블록 인스턴스 클래스 계층 구조
+```typescript
+// lib/blocks/BlockInstance.ts
+// 기본 블록 인스턴스 추상 클래스
+export abstract class BlockInstance {
+  protected constructor(
+    public readonly block_id: number,
+    public readonly block_type: number,
+    protected data: BlockInstanceData
+  ) {}
+
+  // 공통 메서드
+  abstract updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void;
+  abstract addRow(rowIndex?: number): void;
+  abstract addColumn(colIndex?: number): void;
+  abstract removeRow(rowIndex: number): void;
+  abstract removeColumn(colIndex: number): void;
+  
+  // 데이터 직렬화 (DB 저장용)
+  abstract toDbFormat(): { header_cells: any; body_cells: any };
+  
+  // 데이터 역직렬화 (DB 로드용)
+  static fromDbFormat(blockType: number, blockId: number, dbData: any): BlockInstance;
+  
+  // 구조 정의 참조
+  abstract getStructure(): FlowBlockType;
+}
+
+// ApplySubject 블록 인스턴스
+export class ApplySubjectBlockInstance extends BlockInstance {
+  private headerCell: {
+    text_content: string;
+    include_option: 'include' | 'exclude';
+  };
+  
+  private bodyCells: Array<{
+    subject_groups: string[];
+  }>;
+
+  constructor(blockId: number, data: ApplySubjectBlockData) {
+    super(blockId, BLOCK_TYPE.APPLY_SUBJECT, data);
+    this.headerCell = data.header_cells[0] || {
+      text_content: '반영교과',
+      include_option: 'include'
+    };
+    this.bodyCells = data.body_cells || [];
+  }
+
+  // 셀 값 업데이트
+  updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
+    if (rowIndex === -1) {
+      // 헤더 셀 업데이트
+      if (elementIndex === 0) {
+        this.headerCell.text_content = value;
+      } else if (elementIndex === 1) {
+        this.headerCell.include_option = value;
+      }
+    } else {
+      // 바디 셀 업데이트
+      if (!this.bodyCells[rowIndex]) {
+        this.bodyCells[rowIndex] = { subject_groups: [] };
+      }
+      this.bodyCells[rowIndex].subject_groups = Array.isArray(value) ? value : [value];
+    }
+  }
+
+  // 행 추가
+  addRow(rowIndex?: number): void {
+    const newRow = { subject_groups: [] };
+    if (rowIndex !== undefined) {
+      this.bodyCells.splice(rowIndex, 0, newRow);
+    } else {
+      this.bodyCells.push(newRow);
+    }
+  }
+
+  // 열 추가 (ApplySubject는 col_editable이 false이므로 구현하지 않음)
+  addColumn(colIndex?: number): void {
+    throw new Error('ApplySubject does not support column addition');
+  }
+
+  // 구조 정의 가져오기
+  getStructure(): FlowBlockType {
+    return BLOCK_STRUCTURES.ApplySubject;
+  }
+
+  // DB 형식으로 변환
+  toDbFormat(): { header_cells: any; body_cells: any } {
+    return {
+      header_cells: [this.headerCell],
+      body_cells: this.bodyCells
+    };
+  }
+
+  // DB 데이터로부터 생성
+  static fromDbFormat(blockId: number, dbData: any): ApplySubjectBlockInstance {
+    return new ApplySubjectBlockInstance(blockId, {
+      header_cells: dbData.header_cells || [],
+      body_cells: dbData.body_cells || []
+    });
+  }
+
+  // 타입 안전한 접근자
+  getIncludeOption(): 'include' | 'exclude' {
+    return this.headerCell.include_option;
+  }
+
+  getSubjectGroups(rowIndex: number): string[] {
+    return this.bodyCells[rowIndex]?.subject_groups || [];
+  }
+}
+
+// Division 블록 인스턴스
+export class DivisionBlockInstance extends BlockInstance {
+  private headerCells: Array<{
+    division_criteria: string;
+  }>;
+  
+  private bodyCells: HierarchicalCell[];
+
+  constructor(blockId: number, data: DivisionBlockData) {
+    super(blockId, BLOCK_TYPE.DIVISION, data);
+    this.headerCells = data.header_cells || [];
+    this.bodyCells = data.body_cells || [];
+  }
+
+  // Division 전용 메서드들...
+  addColumn(colIndex?: number): void {
+    // Division은 col_editable이 true
+    const newHeaderCell = { division_criteria: '' };
+    if (colIndex !== undefined) {
+      this.headerCells.splice(colIndex, 0, newHeaderCell);
+      // bodyCells의 각 행에도 새 열 추가
+      this.bodyCells.forEach(cell => {
+        // 계층 구조에 새 열 추가 로직
+      });
+    } else {
+      this.headerCells.push(newHeaderCell);
+    }
+  }
+  
+  // ... 기타 메서드
+}
+
+// 블록 인스턴스 팩토리
+export class BlockInstanceFactory {
+  static create(blockType: number, blockId: number, data: any): BlockInstance {
+    switch (blockType) {
+      case BLOCK_TYPE.APPLY_SUBJECT:
+        return ApplySubjectBlockInstance.fromDbFormat(blockId, data);
+      case BLOCK_TYPE.DIVISION:
+        return DivisionBlockInstance.fromDbFormat(blockId, data);
+      case BLOCK_TYPE.FORMULA:
+        return FormulaBlockInstance.fromDbFormat(blockId, data);
+      // ... 다른 블록 타입들
+      default:
+        throw new Error(`Unknown block type: ${blockType}`);
+    }
+  }
+}
+```
+
+#### 3.2 ComponentGrid에서의 사용
+```typescript
+// components/builder/Primitives/ComponentGrid.tsx
+export const ComponentGrid: React.FC<ComponentGridProps> = ({
+  blocks, // FlowBlock[] → BlockInstance[]로 변경
+  onBlockChange,
+  // ...
+}) => {
+  // 블록 인스턴스 배열로 변환
+  const blockInstances = useMemo(() => {
+    return blocks.map(block => 
+      BlockInstanceFactory.create(block.block_type, block.block_id, block)
+    );
+  }, [blocks]);
+
+  // 셀 값 변경 핸들러
+  const handleCellChange = (
+    blockInstance: BlockInstance,
+    rowIndex: number,
+    colIndex: number,
+    elementIndex: number,
+    value: any
+  ) => {
+    // 블록 인스턴스의 메서드 호출
+    blockInstance.updateCellValue(rowIndex, colIndex, elementIndex, value);
+    
+    // 변경된 블록을 부모에게 전달
+    onBlockChange?.(blockInstance.block_id, blockInstance.toDbFormat());
+  };
+
+  // 렌더링 시 블록 인스턴스의 구조 정의 사용
+  const renderCell = (blockInstance: BlockInstance, rowIndex: number, colIndex: number) => {
+    const structure = blockInstance.getStructure();
+    // 구조 정의를 기반으로 셀 렌더링
+    // ...
+  };
+
+  // ...
+};
+```
+
+#### 3.3 장점
+1. **캡슐화**: 각 블록 타입이 자신의 데이터와 로직을 관리
+2. **타입 안정성**: 블록 타입별로 명확한 인터페이스 제공
+3. **확장성**: 새로운 블록 타입 추가 시 클래스만 추가하면 됨
+4. **테스트 용이성**: 각 블록 인스턴스를 독립적으로 테스트 가능
+5. **유지보수성**: 블록별 로직이 해당 클래스에 집중되어 있음
+
+#### 3.4 구현 전략
+1. **Phase 1**: `BlockInstance` 클래스 계층 구조 구현
+2. **Phase 2**: ComponentGrid에서 `BlockInstance` 사용하도록 변경
+3. **Phase 3**: 모든 코드가 `BlockInstance` 사용하도록 전환
+4. **Phase 4**: 기존 `FlowBlock` 타입 완전히 제거 (호환성 레이어 없음)
+
+### 4. 화면 렌더링 로직 변경
+**현재**: `block_data` + `block` 조합
+**변경**: `BLOCK_STRUCTURES` 코드 + `BlockInstance` 객체
+
+**변경 위치**:
+- `components/builder/Primitives/ComponentGrid.tsx`: `BlockInstance` 사용
+- `lib/blocks/BlockInstance.ts`: 블록 인스턴스 클래스 계층 구조 (신규)
+- `lib/blockManager.ts`: `BLOCK_STRUCTURES` 직접 사용하도록 변경
+- `lib/hooks/useBlockData.ts`: `block_data` API 호출 제거
+
+### 5. 성적 계산 로직 변경
+**현재**: `block` 테이블의 `header_cells`, `body_cells` 직접 읽기
+**변경**: 새로운 저장 구조에 맞게 값 추출 로직 수정
+
+**변경 위치**:
+- `lib/engine/runCaseExecution.ts`: `extractBlockRowValues()`, `extractBlockHeaderValues()` 수정
+- `lib/engine/executors/*`: 각 Executor의 생성자에서 값 추출 로직 수정
+
+### 6. 데이터베이스 스키마 변경
+**제거 대상**:
+- `block_data` 테이블 전체
+- 관련 API 엔드포인트 (`app/api/block-data/**`)
+
+**수정 대상**:
+- `block` 테이블의 `header_cells`, `body_cells` 컬럼 구조를 새로운 명시적 구조로 완전히 변경
+  - 기존 배열 기반 구조 제거
+  - 블록 타입별 명시적 속성 구조로 전환
+
+## 구현 단계
+
+### Phase 1: 블록 구조 코드화 완성
+- [ ] `types/block-structure.ts`의 `BLOCK_TYPES`에 모든 블록 타입 정의 완료
+- [ ] `block_data` 테이블의 모든 데이터를 코드로 이전
+- [ ] 블록 구조 타입 정의 검증
+
+### Phase 2: 블록 인스턴스 객체지향 설계 구현
+- [ ] `BlockInstance` 추상 클래스 및 기본 구현
+- [ ] 각 블록 타입별 클래스 구현 (ApplySubject, Division, Formula 등)
+- [ ] `BlockInstanceFactory` 구현
+- [ ] 단위 테스트 작성
+
+### Phase 3: 화면 렌더링 로직 변경
+- [ ] `ComponentGrid`에서 `BlockInstance` 사용하도록 변경
+- [ ] `block_data` 의존성 제거
+- [ ] `blockManager.ts`에서 `BLOCK_STRUCTURES` 직접 사용하도록 변경
+- [ ] `useBlockData` 훅 제거 또는 단순화
+
+### Phase 4: 블록 저장 구조 개선
+- [ ] 새로운 저장 구조 설계 확정 (명시적 속성 구조)
+- [ ] 저장/로드 로직 변경 (`lib/adapters/componentGridDb.ts`)
+- [ ] `BlockInstance.toDbFormat()` 및 `fromDbFormat()` 구현
+
+### Phase 5: 성적 계산 로직 변경
+- [ ] 새로운 저장 구조에 맞게 값 추출 로직 수정
+- [ ] 각 BlockExecutor 수정
+- [ ] 테스트 및 검증
+
+### Phase 6: 정리 작업
+- [ ] `block_data` 테이블 삭제
+- [ ] 관련 API 엔드포인트 제거
+- [ ] 사용하지 않는 코드 정리
+- [ ] 문서 업데이트
+
+## 리팩토링 원칙
+
+### 핵심 원칙
+1. **하위 호환성 고려 없음**: 기존 데이터 구조나 API와의 호환성을 유지할 필요 없음
+2. **새로운 버전에만 집중**: 완전히 새로운 구조로 설계하고 구현
+3. **깔끔한 설계**: 기존 구조의 제약 없이 최적의 설계 구현
+4. **타입 안정성**: TypeScript의 타입 시스템을 최대한 활용하여 타입 안전성 확보
+
+### 구현 시 주의사항
+1. **테스트**: 각 단계마다 충분한 테스트 수행 (새로운 구조 기준)
+2. **문서화**: 새로운 구조와 사용법을 명확히 문서화
+3. **일관성**: 모든 블록 타입에 동일한 패턴 적용
+4. **확장성**: 새로운 블록 타입 추가가 용이하도록 설계 
