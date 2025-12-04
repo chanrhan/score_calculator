@@ -391,7 +391,7 @@ export class runCaseExecution {
 
     // 각 블록의 N번째 행을 순차적으로 실행
     for (const block of rightChainBlocks) {
-      calcLog(`      📦 블록 ${block.block_id} (${BLOCK_TYPE_MAP[block.block_type as keyof typeof BLOCK_TYPE_MAP]}) 실행 중...`);
+      calcLog(`      📦 블록 ${block.block_id} (${BLOCK_TYPE_MAP[block.block_type as keyof typeof BLOCK_TYPE_MAP]}) 실행 중... ${currentSubjects.length}개`);
       if (currentSubjects.length === 0) {
         break;
       }

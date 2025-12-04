@@ -93,31 +93,64 @@ export class ConditionBlockExecutor extends BlockExecutor {
         let leftValueValue = this.getContextProperty(ctx, this.leftValue as string);
 
         if (this.variableScope == 0) {
-            const processedLeftValue = this.formatValueForExpr(leftValueValue);
-            const processedRightValue = this.processRightValue(this.rightValue, ctx);
-            const expr = `${processedLeftValue} ${this.operator} ${processedRightValue}`;
-            const result = evalExpr(expr, { ctx, subjects });
-            calcLog(`        🔧 expr: [${expr}] = ${result}`);
+            let finalExpr = '';
+            for(let i = 0; i < this.conditions.length; i++){
+                const expr = this.getConditionExpr(ctx, subjects[0], i);
+                finalExpr += expr;
+            }
+            const result = evalExpr(finalExpr, { ctx, subjects });
+            calcLog(`        🔧 expr: [${finalExpr}] = ${result}`);
             return { ctx, subjects: result ? subjects : [] };
         }
 
         if (this.variableScope == 1) {
             const isConditionEqualToFilteredId = this.leftValue == 'filtered_block_id';
             subjects = subjects.filter(subject => {
-                const leftValueValue = subject[this.leftValue as keyof Subject];
-                
-                const processedLeftValue = this.formatValueForExpr(leftValueValue);
-                const processedRightValue = this.processRightValue(this.rightValue, ctx, subject);
-                const expr = `${processedLeftValue} ${this.operator} ${processedRightValue}`;
-                const result = evalExpr(expr, { ctx, subjects, current: subject });
-                if(isConditionEqualToFilteredId && result === true) {
-                    subject.filtered_block_id = 0;
+                if(!isConditionEqualToFilteredId && subject.filtered_block_id > 0) {
+                    return false;
                 }
-                calcLog(`        🔧 expr: [${expr}] = ${result}`);
-
-                return result === true;
+                let finalExpr = '';
+                for(let i = 0; i < this.conditions.length; i++){
+                    const expr = this.getConditionExpr(ctx, subject, i);
+                    finalExpr += expr;
+                }
+                const result = evalExpr(finalExpr, { ctx, subjects, current: subject });
+                calcLog(`        🔧 expr: [${finalExpr}] = ${result}`);
+                if(result === true) {
+                    if(isConditionEqualToFilteredId) {
+                        subject.filtered_block_id = 0;
+                    }
+                    return true;
+                }else{
+                    return false;
+                }
             });
         }
         return { ctx, subjects };
+    }
+
+    private getConditionExpr(ctx: Context, subject: Subject, index: number): string {
+        const condition = this.conditions[index];
+        let exprStartIndex = 0;
+        if(index > 0){
+            exprStartIndex = 1;
+        }
+        let leftValue = null;
+        if(this.variableScope == 0){
+            leftValue = this.getContextProperty(ctx, condition[exprStartIndex]);
+        }else{
+            leftValue = this.getSubjectProperty(subject, condition[exprStartIndex]);
+        }
+        const operator = condition[exprStartIndex + 1];
+        const rightValue = condition[exprStartIndex + 2];
+        const processedLeftValue = this.formatValueForExpr(leftValue);
+        const processedRightValue = this.processRightValue(rightValue, ctx);
+
+        if(index == 0){
+            return `${processedLeftValue} ${operator} ${processedRightValue}`;
+        }else{
+            const logicalOperator = condition[0];
+            return ` ${logicalOperator} (${processedLeftValue} ${operator} ${processedRightValue})`;
+        }
     }
 }       

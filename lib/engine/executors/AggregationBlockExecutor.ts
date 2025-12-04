@@ -51,6 +51,8 @@ export class AggregationBlockExecutor extends BlockExecutor {
                 logManager.addLog(subject.seqNumber, log);
             });
 
+            calcLog(`      🔧 이수단위 가중평균:  ${scoreSum} / ${unitSum} = ${result}`);
+
             result = unitSum > 0 ? scoreSum / unitSum : 0;
         } else if (this.func == 1) { // 평균 
             let len = 0;
@@ -76,13 +78,37 @@ export class AggregationBlockExecutor extends BlockExecutor {
                     }
                     logManager.addLog(subject.seqNumber, log);
                 });
+            calcLog(`      🔧 평균:  ${scoreSum} / ${len} = ${result}`);
+
             result = len > 0 ? scoreSum / len : 0;
         }
         else if (this.func == 2) { // 과목 개수
             result = subjects.filter(subject => subject.filtered_block_id == 0).length;
             calcLog('      🔧 과목 개수: ' + result);
+        }else if(this.func == 3){ // 합
+            subjects.filter(subject => subject.filtered_block_id == 0)
+                .forEach(subject => {
+                    const inputValue = Number(subject[this.inputType as keyof Subject]);
+                    let log: CalculationLog = {
+                        input_key: this.inputType,
+                        input: inputValue,
+                        output_key: this.outputType,
+                        output: 0,
+                    };
+                    if (Number.isNaN(inputValue) || inputValue == 0 || inputValue == null) {
+                        log.output_key = null;
+                        log.output = "제외";
+                        subject.filtered_block_id = this.blockId;
+                    } else {
+                        const score = Number(inputValue) || 0;
+                        scoreSum += score;
+                        log.output = score;
+                    }
+                    logManager.addLog(subject.seqNumber, log);
+                });
+            calcLog(`      🔧 합:  ${scoreSum}`);
+            result = scoreSum;
         }
-        calcLog('      🔧 Aggregation 블록 실행 완료 - 결과: ' + result);
 
         this.setContextProperty(ctx, subjects, this.outputType as string, result);
 
