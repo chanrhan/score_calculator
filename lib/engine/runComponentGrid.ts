@@ -63,7 +63,7 @@ export class ComponentGridExecutor {
       .filter((block: any) => block.block_type !== BLOCK_TYPE.DIVISION) // Division 블록 제외
       .sort((a: any, b: any) => a.order - b.order);
 
-    calcLog(`  🔗 RightChain 블록 ${rightChainBlocks.length}개 발견`);
+    calcLog(`  🔗 컴포넌트 내 블록 개수 : ${rightChainBlocks.length + 1}개`);
 
     // Case 실행 엔진으로 DFS 탐색 및 케이스 실행
     const caseExecutor = new runCaseExecution(this.tokenMenuStore);

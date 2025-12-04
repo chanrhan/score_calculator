@@ -14,10 +14,10 @@ export abstract class BlockExecutor {
     public abstract execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] }
 
     protected getContextProperty(ctx: Context, property: string): any {
-        if (ctx[property as keyof Context] != null) {
+        if(ctx[property as keyof Context] !== undefined) {
             return ctx[property as keyof Context];
         }
-        return ctx.vars.get(property) || null;
+        return ctx.vars?.get(property) || null;
     }
 
     protected setContextProperty(ctx: Context, subjects: Subject[], property: string, value: any): void {
@@ -34,4 +34,12 @@ export abstract class BlockExecutor {
         }
         ctx.vars.set(property, value);
     }
+
+    protected getSubjectProperty(subject: Subject, property: string): any {
+        if(subject[property as keyof Subject] !== undefined) {
+            return subject[property as keyof Subject];
+        }
+        return subject.vars?.get(property) || null;
+    }
+    
 }

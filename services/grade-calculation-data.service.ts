@@ -235,8 +235,6 @@ export class GradeCalculationDataService {
         throw new Error(`Pipeline ID ${pipelineId}를 찾을 수 없습니다.`);
       }
 
-      // Option B: 로딩 시 1회만 Division 블록의 body_cells를 grid -> hierarchical로 변환
-      // 입력 데이터 불변성 보장을 위해 엔진 단계에서는 변환하지 않음
       for (const component of pipeline.components ?? []) {
         for (const block of component.blocks ?? []) {
           if (block.block_type === BLOCK_TYPE.DIVISION && Array.isArray(block.body_cells)) {
@@ -248,10 +246,6 @@ export class GradeCalculationDataService {
               const hierarchical = convertGridToHierarchical(block.body_cells as any);
               const p2 = JSON.stringify(hierarchical)
               const p1 = JSON.stringify(block.body_cells)
-              calcLog("before");
-              console.log(p1);
-              calcLog("after");
-              console.log(p2);
               // Prisma JsonValue 호환을 위해 plain JSON으로 정규화
               block.body_cells = JSON.parse(JSON.stringify(hierarchical)) as any;
             }
@@ -323,10 +317,10 @@ export class GradeCalculationDataService {
       const ids = studentIds.map(id => `'${id.replace(/'/g, "''")}'`).join(',');
       whereClauses.push(`"identifyNumber" IN (${ids})`);
     }
-    if (!admissionCodes.includes('*') && admissionCodes.length > 0) {
+    if (!admissionCodes.includes("'*'") && admissionCodes.length > 0) {
       whereClauses.push(`split_part(mogib2_code, '-', 1) IN (${admissionCodes.join(',')})`);
     }
-    if (!majorCodes.includes('*') && majorCodes.length > 0) {
+    if (!majorCodes.includes("'*'") && majorCodes.length > 0) {
       whereClauses.push(`split_part(mogib2_code, '-', 2) IN (${majorCodes.join(',')})`);
     }
 
@@ -363,7 +357,7 @@ export class GradeCalculationDataService {
         "avgScore",
         "standardDeviation",
         "rankingGrade",
-        IFNULL(ss2."subject_separation_code", ss."subjectSeparationCode") as "subjectSeparationCode"
+        COALESCE(ss2."subject_separation_code", ss."subjectSeparationCode") as "subjectSeparationCode"
       FROM subject_score ss
       LEFT JOIN subject_organization so ON ss."subjectCode" = so."subject_code"
         and ss."organizationCode" = so."organization_code" 

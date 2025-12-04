@@ -1,6 +1,7 @@
 import { BlockExecutor } from "./BlockExecutor";
 import { CalculationLog, Context, Subject } from "@/types/domain";
 import { BLOCK_TYPE } from "@/types/block-types";
+import { CalculationLogManager } from "./CalculationLogManager";
 
 export class ApplySubjectBlockExecutor extends BlockExecutor {
     public override readonly type : number = BLOCK_TYPE.APPLY_SUBJECT;
@@ -21,7 +22,7 @@ export class ApplySubjectBlockExecutor extends BlockExecutor {
             return { ctx, subjects };
           }
       
-          const map : Map<number, CalculationLog[]> = new Map();
+          const logManager = new CalculationLogManager();
       
           subjects.forEach((subject, index) => {
             if(subject.filtered_block_id > 0){
@@ -33,10 +34,7 @@ export class ApplySubjectBlockExecutor extends BlockExecutor {
             if(this.includeMode) {  // 포함
               if(this.isAllSubject || !hasSubjectGroup){
                 subject.filtered_block_id = this.blockId;
-                if(!map.has(subject.seqNumber)){
-                  map.set(subject.seqNumber, []);
-                }
-                map.get(subject.seqNumber)!.push({
+                logManager.addLog(subject.seqNumber, {
                   input_key: null,
                   input: subject.subjectGroup,
                   output_key: null,
@@ -46,10 +44,7 @@ export class ApplySubjectBlockExecutor extends BlockExecutor {
             } else {  // 제외
               if(this.isAllSubject || hasSubjectGroup){
                 subject.filtered_block_id = this.blockId;
-                if(!map.has(subject.seqNumber)){
-                  map.set(subject.seqNumber, []);
-                }
-                map.get(subject.seqNumber)!.push({
+                logManager.addLog(subject.seqNumber, {
                   input_key: null,
                   input: subject.subjectGroup,
                   output_key: null,
@@ -58,14 +53,7 @@ export class ApplySubjectBlockExecutor extends BlockExecutor {
               }
             }
           });
-          map.forEach((logs, seqNumber) => {
-            subjects.find(subject => subject.seqNumber === seqNumber)?.snapshot.push({
-                block_id: this.blockId,
-                case_index: this.caseIndex,
-                block_type: this.type,
-                logs: logs
-                });
-            });
+          logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, this.type);
         
         return { ctx, subjects };
     }

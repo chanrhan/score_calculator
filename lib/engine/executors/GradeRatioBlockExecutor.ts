@@ -1,6 +1,7 @@
 import { CalculationLog, Context, Subject } from "@/types/domain";
 import { BlockExecutor } from "./BlockExecutor";
 import { BLOCK_TYPE } from "@/types/block-types";
+import { CalculationLogManager } from "./CalculationLogManager";
 
 export class GradeRatioBlockExecutor extends BlockExecutor {
     public override readonly type: number = BLOCK_TYPE.GRADE_RATIO;
@@ -18,7 +19,7 @@ export class GradeRatioBlockExecutor extends BlockExecutor {
     }
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {
-        const map: Map<number, CalculationLog[]> = new Map();
+        const logManager = new CalculationLogManager();
 
         subjects.forEach(subject => {
             if (subject.filtered_block_id > 0) {
@@ -31,10 +32,7 @@ export class GradeRatioBlockExecutor extends BlockExecutor {
                 if (subject.grade == this.grades[i]) {
                     let prevScore = subject.score;
                     subject.score = subject.score * ((this.ratios[i] || 0) / 100);
-                    if (!map.has(subject.seqNumber)) {
-                        map.set(subject.seqNumber, []);
-                    }
-                    map.get(subject.seqNumber)!.push({
+                    logManager.addLog(subject.seqNumber, {
                         input_key: 'score',
                         input: prevScore,
                         output_key: 'score',
@@ -44,14 +42,7 @@ export class GradeRatioBlockExecutor extends BlockExecutor {
             }
         });
 
-        map.forEach((logs, seqNumber) => {
-            subjects.find(subject => subject.seqNumber === seqNumber)?.snapshot.push({
-                block_id: this.blockId,
-                case_index: this.caseIndex,
-                block_type: 3,
-                logs: logs
-            });
-        });
+        logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, 3);
 
         return { ctx, subjects };
     }

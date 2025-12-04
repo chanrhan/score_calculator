@@ -159,17 +159,18 @@ model block {
 }
 
 model grade_results {
-  student_id     String
-  final_score    Float     @db.DoublePrecision
-  rank           Int?
-  tie_breaker    Json?
-  created_at     DateTime  @default(now())
-  id             BigInt    @id @default(autoincrement())
-  pipeline_id    BigInt
-  meta_variables Json
-  subjects       Json
-  updated_at     DateTime
-  pipeline       pipelines @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
+  student_id       String
+  final_score      Float     @db.DoublePrecision
+  rank             Int?
+  tie_breaker      Json?
+  created_at       DateTime  @default(now())
+  id               BigInt    @id @default(autoincrement())
+  pipeline_id      BigInt
+  meta_variables   Json
+  subjects         Json
+  context_snapshots Json?
+  updated_at       DateTime
+  pipeline         pipelines @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
 
   @@unique([pipeline_id, student_id])
   @@index([pipeline_id, rank])

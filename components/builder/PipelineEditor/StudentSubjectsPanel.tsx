@@ -13,9 +13,10 @@ type Props = {
   dbPipelineId?: number | null;
   onClose: () => void;
   onSelectSubject?: (subject: DomainSubject) => void;
+  onContextSnapshotsLoaded?: (snapshots: any) => void;
 };
 
-export default function StudentSubjectsPanel({ studentId, dbPipelineId, onClose, onSelectSubject }: Props) {
+export default function StudentSubjectsPanel({ studentId, dbPipelineId, onClose, onSelectSubject, onContextSnapshotsLoaded }: Props) {
   const [subjects, setSubjects] = React.useState<DomainSubject[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -63,6 +64,9 @@ export default function StudentSubjectsPanel({ studentId, dbPipelineId, onClose,
       setSubjects(subjectsData);
       setFinalScore(json?.data?.finalScore || null);
       setStudentInfo(json?.data?.studentInfo || null);
+      if (onContextSnapshotsLoaded) {
+        onContextSnapshotsLoaded(json?.data?.contextSnapshots || null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
     } finally {
@@ -261,22 +265,27 @@ export default function StudentSubjectsPanel({ studentId, dbPipelineId, onClose,
                     } 
                   }}
                 >
-                  {isReflected ? (
-                    <CheckCircle size={16} className={`${styles.statusIcon} ${styles.statusIconReflected}`} />
-                  ) : (
-                    <XCircle size={16} className={`${styles.statusIcon} ${styles.statusIconFiltered}`} />
-                  )}
-                  <div className={styles.gradeInfo}>{s.grade ?? '-' }학년</div>
-                  <div className={styles.termInfo}>{s.term ?? '-' }학기</div>
-                  <div className={styles.subjectDetails}>
-                    <div className={styles.subjectName}>{s.subjectName}</div>
-                  <div className={styles.subjectGroup}>{s.subjectGroup ?? ''}</div>
+                  <div className={styles.subjectName}>{s.subjectName}</div>
+                  
+                  <div className={styles.subjectMeta}>
+                    <span>{s.grade ?? '-'}학년</span>
+                    <span>·</span>
+                    <span>{s.term ?? '-'}학기</span>
+                    <span>·</span>
+                    <span>{s.unit ?? '-'}학점</span>
                   </div>
-                  <div>
-                    {s.score  ?? '-'}
-                  </div>
-                  <div className={`${styles.statusText} ${isReflected ? styles.statusTextReflected : styles.statusTextFiltered}`}>
-                    {isReflected ? '반영' : '필터'}
+
+                  <div className={styles.score}>{s.score ?? '-'}</div>
+
+                  <div className={styles.status}>
+                    {isReflected ? (
+                      <CheckCircle size={14} className={styles.statusIconReflected} />
+                    ) : (
+                      <XCircle size={14} className={styles.statusIconFiltered} />
+                    )}
+                    <span className={`${styles.statusText} ${isReflected ? styles.statusTextReflected : styles.statusTextFiltered}`}>
+                      {isReflected ? '반영' : '필터'}
+                    </span>
                   </div>
                 </div>
               );
