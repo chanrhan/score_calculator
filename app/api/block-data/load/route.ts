@@ -13,32 +13,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'univ_id is required' }, { status: 400 });
     }
 
-    // block_data와 token_menu 데이터를 병렬로 로드
-    const [blockData, tokenMenus] = await Promise.all([
-      prisma.block_data.findMany({
-        orderBy: { block_type: 'asc' }
-      }),
-      prisma.token_menu.findMany({
-        where: {
-          OR: [
-            { univ_id: univId }, // 선택된 대학의 모든 토큰 메뉴
-            { scope: 1 } // 공통 토큰 메뉴
-          ]
-        },
-        include: {
-          items: {
-            orderBy: { order: 'asc' }
-          }
-        },
-        orderBy: [
-          { scope: 'desc' }, // 공통(1) 먼저, 그 다음 대학교별(0)
-          { key: 'asc' }
+    // token_menu 데이터만 로드 (block_data는 더 이상 사용하지 않음)
+    const tokenMenus = await prisma.token_menu.findMany({
+      where: {
+        OR: [
+          { univ_id: univId }, // 선택된 대학의 모든 토큰 메뉴
+          { scope: 1 } // 공통 토큰 메뉴
         ]
-      })
-    ]);
+      },
+      include: {
+        items: {
+          orderBy: { order: 'asc' }
+        }
+      },
+      orderBy: [
+        { scope: 'desc' }, // 공통(1) 먼저, 그 다음 대학교별(0)
+        { key: 'asc' }
+      ]
+    });
 
     return NextResponse.json({
-      blockData,
+      blockData: [], // 빈 배열 반환 (하위 호환성 유지)
       tokenMenus,
       success: true
     });

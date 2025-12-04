@@ -1,12 +1,13 @@
 // lib/hooks/useBlockData.ts
-// 파이프라인 페이지에서 block_data와 token_menu 데이터를 미리 로드하는 훅
+// 파이프라인 페이지에서 token_menu 데이터를 미리 로드하는 훅
+// block_data는 더 이상 사용하지 않음 (BLOCK_TYPES 직접 사용)
 
 import { useEffect } from 'react';
 import { useBlockDataStore } from '@/store/useBlockDataStore';
 
 export function useBlockData(univId: string) {
   const { 
-    blockData, 
+    blockData, // 하위 호환성을 위해 유지하지만 빈 배열
     tokenMenus, 
     loading, 
     error, 
@@ -24,7 +25,7 @@ export function useBlockData(univId: string) {
     }
 
     // 이미 같은 대학의 데이터가 로드되어 있으면 다시 로드하지 않음
-    if (selectedUnivId === univId && blockData.length > 0) {
+    if (selectedUnivId === univId && tokenMenus.length > 0) {
       setLoading(false);
       return;
     }
@@ -35,7 +36,7 @@ export function useBlockData(univId: string) {
         setError(null);
         setSelectedUnivId(univId);
 
-        // API를 통해 block_data와 token_menu 데이터를 로드
+        // API를 통해 token_menu 데이터만 로드 (block_data는 더 이상 사용하지 않음)
         const response = await fetch(`/api/block-data/load?univ_id=${univId}`);
         
         if (!response.ok) {
@@ -45,20 +46,20 @@ export function useBlockData(univId: string) {
         const data = await response.json();
         
         if (!data.success) {
-          throw new Error(data.error || 'Failed to load block data');
+          throw new Error(data.error || 'Failed to load token menus');
         }
-        // console.log(data.blockData);
 
-        setBlockData(data.blockData, data.tokenMenus);
+        // blockData는 빈 배열로 설정 (하위 호환성 유지)
+        setBlockData([], data.tokenMenus);
 
       } catch (error) {
-        console.error('❌ Error loading block data:', error);
+        console.error('❌ Error loading token menus:', error);
         setError(error instanceof Error ? error.message : 'Unknown error');
       }
     };
 
     loadData();
-  }, [univId, selectedUnivId, blockData.length, setBlockData, setLoading, setError, setSelectedUnivId]);
+  }, [univId, selectedUnivId, tokenMenus.length, setBlockData, setLoading, setError, setSelectedUnivId]);
 
-  return { blockData, tokenMenus, loading, error };
+  return { blockData: [], tokenMenus, loading, error }; // blockData는 항상 빈 배열 반환
 }

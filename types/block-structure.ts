@@ -388,11 +388,30 @@ export const BLOCK_TYPES = {
     cols: [
       {
         header: {
-          elements: [{ type: 'Text', optional: false, visible: true, content: '수식' }]
+          elements: [
+            { type: 'Text', optional: false, visible: true, content: '수식' },
+            {
+              type: 'Token',
+              optional: false,
+              visible: true,
+              menu_key: 'variable_scope',
+              value: '0', // 0: context, 1: subject
+            },
+          ],
         },
         rows: [
           {
-            elements: [{ type: 'Formula', optional: false, visible: true, value: '' }]
+            elements: [
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'score_types',
+                value: 'finalScore', // scoreType
+              },
+              { type: 'Text', optional: false, visible: true, content: ' = ' },
+              { type: 'Formula', optional: false, visible: true, value: '' }, // expr
+            ],
           },
         ],
       },
@@ -427,11 +446,32 @@ export const BLOCK_TYPES = {
     cols: [
       {
         header: {
-          elements: [{ type: 'Text', optional: false, visible: true, content: '조건' }]
+          elements: [
+            { type: 'Text', optional: false, visible: true, content: '조건' },
+            {
+              type: 'Token',
+              optional: false,
+              visible: true,
+              menu_key: 'variable_scope',
+              value: '0', // 0: context, 1: subject
+            },
+          ],
         },
         rows: [
           {
-            elements: [{ type: 'Formula', optional: false, visible: true, value: '' }]
+            elements: [
+              {
+                type: 'ConditionChain',
+                optional: false,
+                visible: true,
+                item_type: [
+                  { type: 'Token', menu_key: 'score_types' },
+                  { type: 'Token', menu_key: 'operators' },
+                  { type: 'InputField' },
+                ],
+                value: [], // conditions: Array<Array<string>>
+              },
+            ],
           },
         ],
       },
@@ -464,6 +504,140 @@ export const BLOCK_TYPES = {
         ],
         children: [
           
+        ],
+      },
+    ],
+  },
+
+  Aggregation: {
+    name: 'Aggregation',
+    color: 'purple',
+    col_editable: false,
+    cols: [
+      {
+        header: {
+          elements: [
+            { type: 'Text', optional: false, visible: true, content: '집계' },
+            {
+              type: 'Token',
+              optional: false,
+              visible: true,
+              menu_key: 'variable_scope',
+              value: '0', // 0: context, 1: subject
+            },
+          ],
+        },
+        rows: [
+          {
+            elements: [
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'score_types',
+                value: 'finalScore', // inputType
+              },
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'aggregation_functions',
+                value: '0', // func: 0=이수단위 가중평균, 1=평균, 2=과목 개수, 3=합
+              },
+              { type: 'Text', optional: false, visible: true, content: '→' },
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'score_types',
+                value: 'finalScore', // outputType
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  Ratio: {
+    name: 'Ratio',
+    color: 'blue',
+    col_editable: false,
+    cols: [
+      {
+        header: {
+          elements: [{ type: 'Text', optional: false, visible: true, content: '반영비율' }]
+        },
+        rows: [
+          {
+            elements: [
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'percentage_ratio',
+                value: '100', // ratio
+              },
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'score_types',
+                value: 'finalScore', // scoreType
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+
+  Decimal: {
+    name: 'Decimal',
+    color: 'blue',
+    col_editable: false,
+    cols: [
+      {
+        header: {
+          elements: [
+            { type: 'Text', optional: false, visible: true, content: '소수점 처리' },
+            {
+              type: 'Token',
+              optional: false,
+              visible: true,
+              menu_key: 'variable_scope',
+              value: '0', // 0: context, 1: subject
+            },
+          ],
+        },
+        rows: [
+          {
+            elements: [
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'score_types',
+                value: 'finalScore', // scoreType
+              },
+              { type: 'Text', optional: false, visible: true, content: '소수점' },
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'decimal_places',
+                value: '2', // decimalPlaces
+              },
+              { type: 'Text', optional: false, visible: true, content: '자리' },
+              {
+                type: 'Token',
+                optional: false,
+                visible: true,
+                menu_key: 'decimal_options',
+                value: '0', // option: 0=round, 1=ceil, 2=floor, 3=truncate
+              },
+            ],
+          },
         ],
       },
     ],

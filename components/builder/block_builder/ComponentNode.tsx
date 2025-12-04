@@ -52,28 +52,9 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
     if (!kind) return;
 
     try {
-      // block_data에서 설정을 찾기
+      // BLOCK_TYPES에서 직접 블록 생성 (block_data 사용 안 함)
       const capitalizedKind = kind.charAt(0).toUpperCase() + kind.slice(1).toLowerCase();
-      const blockDataItem = blockData.find(bd => {
-        const blockTypeName = typeof bd.block_type === 'number' ? getBlockTypeNameById(bd.block_type) : bd.block_type;
-        return blockTypeName === capitalizedKind;
-      });
-
-      let block: FlowBlock;
-
-      if (blockDataItem) {
-        block = createFlowBlockFromKind(capitalizedKind, blockDataItem, tokenMenus);
-        // console.log('createFlowBlockFromKind - block:', block);
-      } else {
-        // 기본 템플릿 사용 - 새로운 구조로 생성
-        const blockTypeId = getBlockTypeId(capitalizedKind);
-        block = {
-          block_id: 0,
-          block_type: blockTypeId,
-          header_cells: [['']],
-          body_cells: [[['']]]
-        };
-      }
+      const block = createFlowBlockFromKind(capitalizedKind, tokenMenus);
 
       addFlowBlockToComponent(actualPipelineId, componentId, block, atIndex);
     } catch (error) {

@@ -422,28 +422,212 @@ export class runCaseExecution {
 
   /**
    * 블록의 N번째 행의 body_cell 값들 추출
+   * 새로운 명시적 구조와 기존 배열 구조 모두 지원
    */
   private extractBlockRowValues(block: any, caseIndex: number): any[] {
-    // body_cells에서 N번째 행의 값들을 추출
-    if (block.body_cells && block.body_cells[caseIndex]) {
-      return block.body_cells[caseIndex];
+    if (!block.body_cells) {
+      return [];
     }
 
-    // 행이 없는 경우 빈 배열 반환
+    const bodyCells = block.body_cells;
+    
+    // 새로운 명시적 구조 확인 (객체 배열)
+    if (Array.isArray(bodyCells) && bodyCells.length > caseIndex) {
+      const row = bodyCells[caseIndex];
+      
+      // 새로운 형식: [{ subject_groups: [...] }, ...]
+      if (typeof row === 'object' && !Array.isArray(row)) {
+        // 블록 타입별로 값 추출
+        return this.extractValuesFromNewStructure(block.block_type, row, 'body');
+      }
+      
+      // 기존 형식: [['값1', '값2'], ...]
+      if (Array.isArray(row)) {
+        // 2차원 배열인 경우 첫 번째 열의 값들 반환
+        if (row.length > 0 && Array.isArray(row[0])) {
+          return row[0];
+        }
+        // 1차원 배열인 경우 그대로 반환
+        return row;
+      }
+    }
+
     return [];
   }
 
   /**
    * 블록의 header_cell 값들 추출
+   * 새로운 명시적 구조와 기존 배열 구조 모두 지원
    */
   private extractBlockHeaderValues(block: any): any[] {
-    // header_cells의 값들을 추출
-    if (block.header_cells) {
-      return block.header_cells;
+    if (!block.header_cells) {
+      return [];
     }
 
-    // header_cells가 없는 경우 빈 배열 반환
+    const headerCells = block.header_cells;
+    
+    // 새로운 명시적 구조 확인
+    if (Array.isArray(headerCells) && headerCells.length > 0) {
+      const header = headerCells[0];
+      
+      // 새로운 형식: [{ text_content: '...', include_option: '...' }, ...]
+      if (typeof header === 'object' && !Array.isArray(header)) {
+        return this.extractValuesFromNewStructure(block.block_type, header, 'header');
+      }
+      
+      // 기존 형식: [['값1', '값2'], ...]
+      if (Array.isArray(header)) {
+        return header;
+      }
+    }
+
     return [];
+  }
+
+  /**
+   * 새로운 명시적 구조에서 Executor가 사용할 배열 형식으로 값 추출
+   */
+  private extractValuesFromNewStructure(blockType: number, data: any, type: 'header' | 'body'): any[] {
+    // 블록 타입별로 명시적 속성에서 값 추출
+    // Executor 호환성을 위해 기존 배열 형식으로 변환
+    
+    switch (blockType) {
+      case 1: // Division
+        if (type === 'header') {
+          // header: string[] (구분 유형 코드 배열)
+          return Array.isArray(data) ? data : [data];
+        }
+        // body는 계층 구조이므로 특별 처리 필요
+        break;
+        
+      case 2: // ApplySubject
+        if (type === 'header') {
+          // header: { text_content, include_option }
+          // Executor는 headerRowCells[0]?.[0]에서 includeMode를 읽음 (0=include, 1=exclude)
+          const includeOption = data.include_option || 'include';
+          return [includeOption === 'include' ? 0 : 1];
+        } else {
+          // body: { subject_groups: [...] }
+          return [data.subject_groups || []];
+        }
+        
+      case 3: // GradeRatio
+        if (type === 'header') {
+          // header: 각 열의 학년 정보
+          // Executor는 headerRowCells[0]에서 각 항목의 [0]을 읽음
+          return Array.isArray(data) ? data.map((item: any) => [item.grade || item]) : [[data]];
+        } else {
+          // body: 각 열의 비율 정보
+          // Executor는 bodyRowCells[0]에서 각 항목의 [0]을 읽음
+          return Array.isArray(data) ? data.map((item: any) => [item.ratio || item]) : [[data]];
+        }
+        
+      case 4: // ApplyTerm
+        if (type === 'body') {
+          // body: { terms: [...], top_terms: number }
+          // Executor는 bodyRowCells[0]?.[0]에서 termsString, bodyRowCells[0]?.[2]에서 topTerms를 읽음
+          const terms = data.terms || [];
+          const termsString = terms.join('|');
+          return [termsString, null, data.top_terms || 0];
+        }
+        break;
+        
+      case 5: // TopSubject
+        if (type === 'body') {
+          // body: { mode, score_type, top_count, sort_orders }
+          // Executor는 bodyRowCells[0]?.[0]=mode, [1]=scoreType, [3]=topSliceNumber, [5]=sortOrders를 읽음
+          return [
+            data.mode || 1,
+            data.score_type || null,
+            null,
+            data.top_count || 0,
+            null,
+            data.sort_orders || []
+          ];
+        }
+        break;
+        
+      case 6: // SubjectGroupRatio
+        if (type === 'header') {
+          // header: 각 열의 교과군 정보
+          return Array.isArray(data) ? data.map((item: any) => [item.subject_group || item]) : [[data]];
+        } else {
+          // body: 각 열의 비율 정보
+          return Array.isArray(data) ? data.map((item: any) => [item.ratio || item]) : [[data]];
+        }
+        
+      case 7: // SeparationRatio
+        if (type === 'header') {
+          // header: 각 열의 과목구분 정보
+          return Array.isArray(data) ? data.map((item: any) => [item.separation || item]) : [[data]];
+        } else {
+          // body: 각 열의 비율 정보
+          return Array.isArray(data) ? data.map((item: any) => [item.ratio || item]) : [[data]];
+        }
+        
+      case 8: // ScoreMap
+        if (type === 'header') {
+          // header: { variable_scope, filter_option }
+          // Executor는 headerRowCells[0]?.[1]=variableScope, [2]=filterOption을 읽음
+          return [null, data.variable_scope || 0, data.filter_option || 0];
+        } else {
+          // body: { input_type, input_range, output_type, table }
+          // Executor는 bodyRowCells[0]?.[0]=inputType, [1]=inputRange, [2]=outputType, [4]=table을 읽음
+          return [
+            data.input_type || null,
+            data.input_range || -1,
+            data.output_type || null,
+            null,
+            data.table || null
+          ];
+        }
+        
+      case 9: // Formula
+        if (type === 'header') {
+          // header: { variable_scope }
+          return [null, data.variable_scope || 0];
+        } else {
+          // body: { score_type, expr }
+          return [data.score_type || null, null, data.expr || null];
+        }
+        
+      case 11: // Condition
+        if (type === 'header') {
+          // header: { variable_scope }
+          return [null, data.variable_scope || 0];
+        } else {
+          // body: { conditions: [...] }
+          return [data.conditions || []];
+        }
+        
+      case 12: // Aggregation
+        if (type === 'header') {
+          // header: { variable_scope }
+          return [null, data.variable_scope || 0];
+        } else {
+          // body: { input_type, func, output_type }
+          return [data.input_type || null, data.func || 0, null, data.output_type || null];
+        }
+        
+      case 13: // Ratio
+        if (type === 'body') {
+          // body: { ratio, score_type }
+          return [data.ratio || 0, data.score_type || null];
+        }
+        break;
+        
+      case 14: // Decimal
+        if (type === 'header') {
+          // header: { variable_scope }
+          return [null, data.variable_scope || 0];
+        } else {
+          // body: { score_type, decimal_places, option }
+          return [data.score_type || null, null, data.decimal_places || 0, null, data.option || 0];
+        }
+    }
+    
+    // 기본값: 객체의 모든 값들을 배열로 변환
+    return Object.values(data || {});
   }
 
   /**

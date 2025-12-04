@@ -26,7 +26,7 @@ const nodeTypes = {
   flowComponent: ComponentNode as any,
 };
 
-// FlowBlock 생성 헬퍼 (blockManager 사용)
+// FlowBlock 생성 헬퍼 (BLOCK_TYPES 직접 사용)
 function createFlowBlockFromDetail(detail: any, blockDataList: any[], tokenMenus: any[]): FlowBlock | null {
   const kind: string = detail?.kind;
   if (!kind) {
@@ -35,25 +35,9 @@ function createFlowBlockFromDetail(detail: any, blockDataList: any[], tokenMenus
   }
 
   try {
-    // 1. 미리 로드된 block_data에서 설정을 찾기
+    // BLOCK_TYPES에서 직접 블록 생성 (block_data 사용 안 함)
     const capitalizedKind = kind.charAt(0).toUpperCase() + kind.slice(1).toLowerCase();
-    const blockData = blockDataList?.find(bd => {
-      const blockTypeName = typeof bd.block_type === 'number' ? getBlockTypeNameById(bd.block_type) : bd.block_type;
-      return blockTypeName === capitalizedKind;
-    });
-
-    if (blockData) {
-      return createFlowBlockFromKind(capitalizedKind, blockData, tokenMenus);
-    }
-
-    // 2. block_data가 없으면 기본 템플릿 사용
-    const blockTypeId = getBlockTypeId(capitalizedKind);
-    return {
-      block_id: 0,
-      block_type: blockTypeId,
-      header_cells: [],
-      body_cells: []
-    };
+    return createFlowBlockFromKind(capitalizedKind, tokenMenus);
   } catch (error) {
     console.error('❌ Error creating FlowBlock from detail:', error);
     return null;
@@ -294,24 +278,15 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
 
   
 
-        // blockData에서 해당 blockType 찾기
-        const blockDataItem = blockData?.find(bd => bd.block_type === blockType);
-        if (blockDataItem) {
-          // blockManager를 사용하여 FlowBlock 생성
-          const flowBlock = createFlowBlockFromKind(
-            getBlockTypeNameById(blockType), 
-            blockDataItem, 
-            tokenMenus
-          );
-          if (flowBlock) {
-            createComponentWithFlowBlock(pipelineId, flowBlock, { x, y });
-            return;
-          }
+        // BLOCK_TYPES에서 직접 FlowBlock 생성 (block_data 사용 안 함)
+        const flowBlock = createFlowBlockFromKind(
+          getBlockTypeNameById(blockType), 
+          tokenMenus
+        );
+        if (flowBlock) {
+          createComponentWithFlowBlock(pipelineId, flowBlock, { x, y });
+          return;
         }
-
-        // blockData가 없으면 기본 템플릿 사용
-        const base: FlowBlock = { block_id: 0, block_type: blockType, header_cells: [], body_cells: [] };
-        createComponentWithFlowBlock(pipelineId, base, { x, y });
         return;
       } catch (err) {
         console.error('Failed to parse application/x-block-type:', err);

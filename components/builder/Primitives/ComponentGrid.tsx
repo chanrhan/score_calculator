@@ -9,6 +9,8 @@ import { Trash2, Link2, ArrowLeft, ArrowRight, X, Eye } from 'lucide-react'
 import { useResultsHighlight } from '@/components/results/ResultsHighlightContext'
 import type { BlockData, TokenMenu } from '@/types/block-data'
 import { BLOCK_TYPE, BLOCK_TYPE_MAP } from '@/types/block-types'
+import { getBlockTypeNameById } from '@/lib/blockManager'
+import { getBlockType } from '@/types/block-structure'
 import { 
   renderDivisionCell, 
   getLeafCellsCount, 
@@ -50,8 +52,8 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   onBlockDelete,
   combineState
 }) => {
-  // 전역 스토어에서 block_data 가져오기
-  const { blockData } = useBlockDataStore();
+  // block_data는 더 이상 사용하지 않음 (BLOCK_TYPES 직접 사용)
+  // const { blockData } = useBlockDataStore();
   const { highlightedBlockIds, blockIdToSubjectNames, highlightedRowsByBlockId, readOnly, snapshots } = useResultsHighlight();
   
   // snapshots를 빠르게 조회하기 위한 키 집합
@@ -144,9 +146,10 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
     if (rowIndex === 0) {
       // 1행: 블록명 (첫 번째 열에만 표시, 나머지 열은 빈 셀)
       if (colIndex === 0) {
-        // 해당 블록의 col_editable 상태 확인
-        const blockDataItem = blockData.find(bd => bd.block_type === block.block_type);
-        const isColEditable = blockDataItem?.col_editable || false;
+        // 해당 블록의 col_editable 상태 확인 (BLOCK_TYPES에서 직접 가져오기)
+        const blockTypeName = getBlockTypeNameById(block.block_type);
+        const blockType = getBlockType(blockTypeName as keyof typeof import('@/types/block-structure').BLOCK_TYPES);
+        const isColEditable = blockType?.col_editable || false;
         
         const tooltip = (blockIdToSubjectNames[block.block_id] || []).filter(Boolean).join(', ')
         return (

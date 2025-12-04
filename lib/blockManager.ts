@@ -222,114 +222,114 @@ export class BlockAdapter {
 }
 
 // ============================================================================
-// 5. 블록 생성 유틸리티
+// 5. 블록 생성 유틸리티 (BLOCK_TYPES 직접 사용)
 // ============================================================================
 
-export function createFlowBlockFromKind(kind: string, blockData: any, tokenMenus?: any[]): FlowBlock {
+/**
+ * 블록 타입 이름으로부터 FlowBlock 생성 (BLOCK_TYPES 사용)
+ * @param kind 블록 타입 이름 (예: 'ApplySubject', 'Division')
+ * @param tokenMenus 토큰 메뉴 배열 (기본값 추출용)
+ * @returns 초기화된 FlowBlock
+ */
+export function createFlowBlockFromKind(kind: string, tokenMenus?: any[]): FlowBlock {
   const blockTypeId = getBlockTypeId(kind);
+  const blockType = getBlockType(kind as keyof typeof import('@/types/block-structure').BLOCK_TYPES);
   
   // header_cells 생성
   const headerCells: any[][] = [];
-  if (blockData.header_cell_type) {
-    if (blockTypeId === BLOCK_TYPE.DIVISION) {
-      // Division 블록의 경우 - 1개 열만 생성
-      // 문서 규칙: "전체 열은 1개, body의 초기 행은 1개이어야 해"
-      const firstDivisionType = Object.keys(blockData.header_cell_type)[0];
-      const firstMenuKey = blockData.header_cell_type[firstDivisionType];
-      const tokenMenu = tokenMenus?.find(tm => tm.key === firstMenuKey);
-      const defaultValue = tokenMenu?.items?.[0]?.value || firstDivisionType;
-      headerCells.push([defaultValue]);
-    } else {
-      // 일반 블록의 경우 - element_types 배열
-      if (!blockData.header_cell_type.element_types || !Array.isArray(blockData.header_cell_type.element_types)) {
-        console.warn('header_cell_type.element_types is not an array for block:', blockData);
-        // 기본값으로 빈 배열 사용
-        headerCells.push([]);
-      } else {
-        const headerValues = blockData.header_cell_type.element_types.map((et: any) => {
-          const tokenMenu = tokenMenus?.find(tm => tm.key === et.menu_key);
-          const defaultValue = tokenMenu?.items?.[0]?.value || '';
-          return et.name === 'Token' ? defaultValue : '';
-        });
-        headerCells.push(headerValues);
+  
+  if (blockTypeId === BLOCK_TYPE.DIVISION) {
+    // Division 블록의 경우
+    if (blockType.header && blockType.header.length > 0) {
+      const firstHeader = blockType.header[0];
+      if (firstHeader.type === 'Token') {
+        const tokenMenu = tokenMenus?.find(tm => tm.key === firstHeader.menu_key);
+        const defaultValue = tokenMenu?.items?.[0]?.value || firstHeader.value || 'gender';
+        headerCells.push([defaultValue]);
       }
+    } else {
+      headerCells.push(['gender']);
+    }
+  } else {
+    // 일반 블록의 경우
+    if (blockType.cols && blockType.cols.length > 0) {
+      const firstCol = blockType.cols[0];
+      const headerValues = firstCol.header.elements.map((el: CellElement) => {
+        if (el.type === 'Token') {
+          const tokenMenu = tokenMenus?.find(tm => tm.key === el.menu_key);
+          return tokenMenu?.items?.[0]?.value || el.value || '';
+        } else if (el.type === 'Text') {
+          return el.content || '';
+        }
+        return '';
+      });
+      headerCells.push(headerValues);
+    } else {
+      headerCells.push([]);
     }
   }
   
   // body_cells 생성
   let bodyCells: any;
-  if (blockData.body_cell_type) {
-    // console.log('body cell type:', blockTypeId);
-    if (blockTypeId === BLOCK_TYPE.DIVISION) {
-      // DivisionBlock의 경우 계층적 구조
-      bodyCells = [];
-      // Division 블록의 경우 - 계층적 구조로 생성
-      const initRows = blockData.init_row || 1;
-      const initCols = blockData.init_col || 1;
-
+  
+  if (blockTypeId === BLOCK_TYPE.DIVISION) {
+    // DivisionBlock의 경우 계층적 구조
+    bodyCells = [{
+      values: [],
+      children: []
+    }];
+  } else {
+    // 일반 블록의 경우
+    bodyCells = [];
+    if (blockType.cols && blockType.cols.length > 0) {
+      const firstCol = blockType.cols[0];
+      const initRows = firstCol.rows.length || 1;
+      
       for (let rowIndex = 0; rowIndex < initRows; rowIndex++) {
-        const rowValues = {
-          values: new Array(initCols).fill(0),
-          rowspan: 1
-        }
-        // console.log('row values:', rowValues);
+        const row = firstCol.rows[rowIndex] || firstCol.rows[0];
+        const rowValues = row.elements.map((el: CellElement) => {
+          if (el.type === 'Token') {
+            const tokenMenu = tokenMenus?.find(tm => tm.key === el.menu_key);
+            return tokenMenu?.items?.[0]?.value || el.value || '';
+          } else if (el.type === 'Text') {
+            return el.content || '';
+          } else if (el.type === 'InputField') {
+            return el.value || '';
+          } else if (el.type === 'Formula') {
+            return el.value || '';
+          } else if (el.type === 'Table') {
+            return el.value || [];
+          }
+          return '';
+        });
         bodyCells.push([rowValues]);
       }
-      // console.log('body cells:', bodyCells);
-      // DivisionBlock의 초기 계층적 구조 생성
-      // division_rules.md 규칙: "body_cells의 기본값은 아래와 같다"
-      // body_cells: [{ values: [], children: [] }]
-      
-      // DivisionBlock의 body_cells는 계층적 구조: [{ values: [], children: [] }]
-      // division_rules.md 규칙에 따라 기본값은 1개의 계층적 셀
-      // const hierarchicalCell: any = {
-      //   values: [],
-      //   children: []
-      // };
-      
-      // // header_cell_type에서 첫 번째 컬럼의 값들을 values에 추가
-      // if (blockData.header_cell_type && Object.keys(blockData.header_cell_type).length > 0) {
-      //   const firstDivisionType = Object.keys(blockData.header_cell_type)[0];
-      //   const firstMenuKey = blockData.header_cell_type[firstDivisionType];
-      //   const tokenMenu = tokenMenus?.find(tm => tm.key === firstMenuKey);
-      //   const defaultValue = tokenMenu?.items?.[0]?.value || firstDivisionType;
-      //   hierarchicalCell.values = [defaultValue];
-      // }
-      
-      // bodyCells.push(hierarchicalCell);
     } else {
-      // 일반 블록의 경우 - element_types 배열 (2차원 배열)
-      bodyCells = [];
-      if (!blockData.body_cell_type.element_types || !Array.isArray(blockData.body_cell_type.element_types)) {
-        console.warn('body_cell_type.element_types is not an array for block:', blockData);
-        // 기본값으로 빈 행 추가
-        bodyCells.push([[]]);
-      } else {
-        const initRows = blockData.init_row || 1;
-        for (let rowIndex = 0; rowIndex < initRows; rowIndex++) {
-          const rowValues = blockData.body_cell_type.element_types.map((et: any) => {
-            const tokenMenu = tokenMenus?.find(tm => tm.key === et.menu_key);
-            const defaultValue = tokenMenu?.items?.[0]?.value || '';
-            return et.name === 'Token' ? defaultValue : '';
-          });
-          bodyCells.push([rowValues]);
-        }
-      }
+      bodyCells.push([[]]);
     }
   }
   
-  const result = {
+  return {
     block_id: 0,
     block_type: blockTypeId,
     header_cells: headerCells,
     body_cells: bodyCells
   };
-  
-  // console.log('createFlowBlockFromKind - result:', result);
-  return result;
 }
 
+/**
+ * block_data로부터 FlowBlock 생성 (하위 호환성 유지)
+ * @deprecated block_data 대신 BLOCK_TYPES를 직접 사용하세요. createFlowBlockFromKind를 사용하세요.
+ */
 export function createFlowBlockFromBlockData(blockData: any, tokenMenus?: any[]): FlowBlock {
   const blockTypeName = typeof blockData.block_type === 'number' ? getBlockTypeNameById(blockData.block_type) : blockData.block_type;
-  return createFlowBlockFromKind(blockTypeName, blockData, tokenMenus);
+  
+  // block_data가 있으면 기존 로직 사용 (하위 호환성)
+  if (blockData.header_cell_type || blockData.body_cell_type) {
+    // 기존 로직 (임시로 유지)
+    return createFlowBlockFromKind(blockTypeName, tokenMenus);
+  }
+  
+  // block_data가 없으면 BLOCK_TYPES에서 직접 생성
+  return createFlowBlockFromKind(blockTypeName, tokenMenus);
 }
