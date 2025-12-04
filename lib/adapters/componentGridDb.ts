@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import type { FlowBlock } from '../../types/block-structure';
 import type { HierarchicalCell } from '../../types/hierarchicalCell';
 import { BLOCK_TYPE } from '../../types/block-types';
-import { BlockInstanceFactory } from '../../lib/blocks/BlockInstance';
+import { BlockInstanceFactory } from '../../lib/blocks/modules/registry';
 
 const prisma = new PrismaClient() as any;
 
@@ -66,46 +66,32 @@ export async function saveComponentGridToDb(data: ComponentGridSaveData): Promis
       }
     });
 
-    // 새로운 블록들 저장 (BlockInstance 사용)
-    for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
+    // FlowBlock[]을 BlockInstance[]로 변환
+    const blockInstances = blocks.map(block => {
+      return BlockInstanceFactory.create(
+        block.block_type,
+        block.block_id,
+        {
+          header_cells: block.header_cells,
+          body_cells: block.body_cells
+        }
+      );
+    });
+    
+    // 새로운 블록들 저장 (BlockInstance의 DB 형식 직접 사용)
+    for (let i = 0; i < blockInstances.length; i++) {
+      const blockInstance = blockInstances[i];
       
-      // BlockInstance로 변환하여 새로운 구조로 저장
-      let blockInstance;
-      try {
-        blockInstance = BlockInstanceFactory.create(
-          block.block_type,
-          block.block_id,
-          {
-            header_cells: block.header_cells,
-            body_cells: block.body_cells
-          }
-        );
-      } catch (error) {
-        console.warn(`Failed to create BlockInstance for block ${block.block_id}, using original format:`, error);
-        // BlockInstance 생성 실패 시 기존 형식 사용
-        blockInstance = null;
-      }
-      
-      // hierarchicalDataMap이 있으면 해당 블록의 데이터를 사용 (Division 블록용)
-      let bodyCells = block.body_cells;
-      if (hierarchicalDataMap && hierarchicalDataMap[block.block_id]) {
-        bodyCells = hierarchicalDataMap[block.block_id];
-      }
-      
-      // BlockInstance가 있으면 새로운 구조로 저장, 없으면 기존 구조로 저장
-      const dbFormat = blockInstance ? blockInstance.toDbFormat() : {
-        header_cells: block.header_cells,
-        body_cells: bodyCells
-      };
+      // DB 형식으로 변환 (명시적 구조)
+      const dbFormat = blockInstance.toDbFormat();
 
       await tx.block.create({
         data: {
           pipeline_id: BigInt(pipelineId),
           component_id: componentId,
-          block_id: block.block_id,
+          block_id: blockInstance.block_id,
           order: i,
-          block_type: block.block_type,
+          block_type: blockInstance.block_type,
           header_cells: dbFormat.header_cells,
           body_cells: dbFormat.body_cells
         }
@@ -139,31 +125,20 @@ export async function loadComponentGridFromDb(
     return null;
   }
 
-  // FlowBlock 형태로 변환 (BlockInstance 사용하여 새로운 구조 지원)
-  const blocks: FlowBlock[] = componentGrid.blocks.map((block: any) => {
-    try {
-      // BlockInstance로 변환하여 기존/새로운 구조 모두 지원
-      const blockInstance = BlockInstanceFactory.create(
-        block.block_type,
-        block.block_id,
-        {
-          header_cells: block.header_cells,
-          body_cells: block.body_cells
-        }
-      );
-      // FlowBlock 형식으로 변환
-      return blockInstance.toFlowBlock();
-    } catch (error) {
-      console.warn(`Failed to create BlockInstance for block ${block.block_id}, using original format:`, error);
-      // BlockInstance 생성 실패 시 기존 형식 사용
-      return {
-        block_id: block.block_id,
-        block_type: block.block_type,
-        header_cells: block.header_cells as any,
-        body_cells: block.body_cells as any
-      };
-    }
+  // BlockInstance로 변환하여 DB 형식 그대로 사용
+  const blockInstances = componentGrid.blocks.map((block: any) => {
+    return BlockInstanceFactory.create(
+      block.block_type,
+      block.block_id,
+      {
+        header_cells: block.header_cells,
+        body_cells: block.body_cells
+      }
+    );
   });
+  
+  // FlowBlock 형태로 변환 (UI 호환성)
+  const blocks: FlowBlock[] = blockInstances.map(instance => instance.toFlowBlock());
 
   return {
     componentId: componentGrid.component_id,
@@ -203,7 +178,15 @@ export async function loadAllComponentGridsFromDb(pipelineId: number): Promise<C
             }
           );
           // FlowBlock 형식으로 변환
-          return blockInstance.toFlowBlock();
+          const flowBlock = blockInstance.toFlowBlock();
+          
+          // 디버깅: ApplySubject 블록의 경우 변환 결과 확인
+          if (block.block_type === 2) { // APPLY_SUBJECT
+            console.log('[ApplySubject] DB data:', JSON.stringify(block.body_cells));
+            console.log('[ApplySubject] FlowBlock body_cells:', JSON.stringify(flowBlock.body_cells));
+          }
+          
+          return flowBlock;
         } catch (error) {
           console.warn(`Failed to create BlockInstance for block ${block.block_id}, using original format:`, error);
           // BlockInstance 생성 실패 시 기존 형식 사용

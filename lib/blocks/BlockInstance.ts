@@ -32,304 +32,41 @@ export abstract class BlockInstance {
   // 구조 정의 참조
   abstract getStructure(): FlowBlockType;
   
+  // 렌더링용 헬퍼 메서드 (Cell 컴포넌트에서 사용)
+  abstract getHeaderCellValues(colIndex: number): any[];
+  abstract getBodyCellValues(rowIndex: number, colIndex: number): any[];
+  
   // FlowBlock 형식으로 변환 (기존 호환성)
   toFlowBlock(): FlowBlock {
     const dbFormat = this.toDbFormat();
+    
+    // Division 블록의 경우 header_cells는 string[]이므로 그대로 사용
+    // 일반 블록의 경우 header_cells는 any[][]이므로 그대로 사용
+    let headerCells: any;
+    if (this.block_type === BLOCK_TYPE.DIVISION) {
+      // Division: string[] 그대로 사용
+      headerCells = Array.isArray(dbFormat.header_cells) ? dbFormat.header_cells : [];
+    } else {
+      // 일반 블록: any[][] 그대로 사용
+      headerCells = Array.isArray(dbFormat.header_cells) ? dbFormat.header_cells : [];
+    }
+    
     return {
       block_id: this.block_id,
       block_type: this.block_type,
-      header_cells: Array.isArray(dbFormat.header_cells) ? dbFormat.header_cells : [dbFormat.header_cells],
+      header_cells: headerCells,
       body_cells: dbFormat.body_cells,
     };
   }
 }
 
-// ApplySubject 블록 인스턴스
-export class ApplySubjectBlockInstance extends BlockInstance {
-  private headerCell: {
-    text_content: string;
-    include_option: 'include' | 'exclude';
-  };
-  
-  private bodyCells: Array<{
-    subject_groups: string[];
-  }>;
+// ApplySubjectBlockInstance와 DivisionBlockInstance는 이제 모듈로 분리되었습니다.
+// lib/blocks/modules/ApplySubject/instance.ts와 lib/blocks/modules/Division/instance.ts를 참조하세요.
 
-  constructor(blockId: number, data: BlockInstanceData) {
-    super(blockId, BLOCK_TYPE.APPLY_SUBJECT, data);
-    
-    // 기존 데이터 구조에서 변환 (하위 호환성)
-    if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
-      const headerValues = data.header_cells[0];
-      if (Array.isArray(headerValues)) {
-        // 기존 형식: [['반영교과', 'include']]
-        this.headerCell = {
-          text_content: headerValues[0] || '반영교과',
-          include_option: (headerValues[1] === 'exclude' ? 'exclude' : 'include') as 'include' | 'exclude',
-        };
-      } else if (typeof headerValues === 'object') {
-        // 새로운 형식: { text_content: '반영교과', include_option: 'include' }
-        this.headerCell = {
-          text_content: headerValues.text_content || '반영교과',
-          include_option: headerValues.include_option || 'include',
-        };
-      } else {
-        this.headerCell = { text_content: '반영교과', include_option: 'include' };
-      }
-    } else {
-      this.headerCell = { text_content: '반영교과', include_option: 'include' };
-    }
-    
-    // body_cells 변환
-    if (data.body_cells && Array.isArray(data.body_cells)) {
-      this.bodyCells = data.body_cells.map((row: any) => {
-        if (Array.isArray(row) && row.length > 0) {
-          const cellValues = row[0];
-          if (Array.isArray(cellValues)) {
-            // 기존 형식: [[['국어', '수학']]]
-            return { subject_groups: cellValues.filter((v: any) => v !== null && v !== undefined) };
-          } else if (typeof cellValues === 'object' && cellValues.subject_groups) {
-            // 새로운 형식: [{ subject_groups: ['국어', '수학'] }]
-            return { subject_groups: cellValues.subject_groups };
-          }
-        }
-        return { subject_groups: [] };
-      });
-    } else {
-      this.bodyCells = [];
-    }
-  }
-
-  updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
-    if (rowIndex === -1) {
-      // 헤더 셀 업데이트
-      if (elementIndex === 0) {
-        this.headerCell.text_content = value;
-      } else if (elementIndex === 1) {
-        this.headerCell.include_option = value;
-      }
-    } else {
-      // 바디 셀 업데이트
-      if (!this.bodyCells[rowIndex]) {
-        this.bodyCells[rowIndex] = { subject_groups: [] };
-      }
-      this.bodyCells[rowIndex].subject_groups = Array.isArray(value) ? value : [value];
-    }
-  }
-
-  addRow(rowIndex?: number): void {
-    const newRow = { subject_groups: [] };
-    if (rowIndex !== undefined) {
-      this.bodyCells.splice(rowIndex, 0, newRow);
-    } else {
-      this.bodyCells.push(newRow);
-    }
-  }
-
-  addColumn(colIndex?: number): void {
-    throw new Error('ApplySubject does not support column addition');
-  }
-
-  removeRow(rowIndex: number): void {
-    if (rowIndex >= 0 && rowIndex < this.bodyCells.length) {
-      this.bodyCells.splice(rowIndex, 1);
-    }
-  }
-
-  removeColumn(colIndex: number): void {
-    throw new Error('ApplySubject does not support column removal');
-  }
-
-  getStructure(): FlowBlockType {
-    return getBlockType('ApplySubject');
-  }
-
-  toDbFormat(): { header_cells: any; body_cells: any } {
-    return {
-      header_cells: [this.headerCell],
-      body_cells: this.bodyCells
-    };
-  }
-
-  // 타입 안전한 접근자
-  getIncludeOption(): 'include' | 'exclude' {
-    return this.headerCell.include_option;
-  }
-
-  getSubjectGroups(rowIndex: number): string[] {
-    return this.bodyCells[rowIndex]?.subject_groups || [];
-  }
-
-  // DB 데이터로부터 생성
-  static fromDbFormat(blockId: number, dbData: any): ApplySubjectBlockInstance {
-    return new ApplySubjectBlockInstance(blockId, {
-      header_cells: dbData.header_cells || [],
-      body_cells: dbData.body_cells || []
-    });
-  }
-}
-
-// Division 블록 인스턴스
-export class DivisionBlockInstance extends BlockInstance {
-  private headerCells: Array<{
-    division_criteria: string;
-  }>;
-  
-  private bodyCells: HierarchicalCell[];
-
-  constructor(blockId: number, data: BlockInstanceData) {
-    super(blockId, BLOCK_TYPE.DIVISION, data);
-    
-    // header_cells 변환
-    if (data.header_cells && Array.isArray(data.header_cells)) {
-      this.headerCells = data.header_cells.map((cell: any) => {
-        if (typeof cell === 'string') {
-          // 기존 형식: ['gender', 'grade']
-          return { division_criteria: cell };
-        } else if (typeof cell === 'object' && cell.division_criteria) {
-          // 새로운 형식: [{ division_criteria: 'gender' }]
-          return { division_criteria: cell.division_criteria };
-        }
-        return { division_criteria: '' };
-      });
-    } else {
-      this.headerCells = [{ division_criteria: 'gender' }];
-    }
-    
-    // body_cells 변환
-    if (data.body_cells && Array.isArray(data.body_cells)) {
-      // 계층 구조로 변환
-      this.bodyCells = data.body_cells.map((cell: any) => {
-        if (cell.values && Array.isArray(cell.values)) {
-          // 기존 형식: { values: [...], children: [...] }
-          return {
-            elements: cell.values.map((v: any) => ({
-              type: 'Token' as const,
-              optional: false,
-              visible: true,
-              menu_key: 'division_values',
-              value: v,
-            })),
-            children: (cell.children || []).map((child: any) => ({
-              elements: child.values?.map((v: any) => ({
-                type: 'Token' as const,
-                optional: false,
-                visible: true,
-                menu_key: 'division_values',
-                value: v,
-              })) || [],
-              children: child.children || [],
-            })),
-          } as HierarchicalCell;
-        }
-        return {
-          elements: [],
-          children: [],
-        } as HierarchicalCell;
-      });
-    } else {
-      this.bodyCells = [{
-        elements: [],
-        children: [],
-      }];
-    }
-  }
-
-  updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
-    // Division 블록의 셀 값 업데이트 로직
-    // 계층 구조를 직접 수정하는 것은 복잡하므로, 
-    // 필요시 더 구체적인 메서드를 추가할 수 있습니다.
-  }
-
-  addRow(rowIndex?: number): void {
-    const newCell: HierarchicalCell = {
-      elements: [],
-      children: [],
-    };
-    if (rowIndex !== undefined) {
-      this.bodyCells.splice(rowIndex, 0, newCell);
-    } else {
-      this.bodyCells.push(newCell);
-    }
-  }
-
-  addColumn(colIndex?: number): void {
-    const newHeaderCell = { division_criteria: '' };
-    if (colIndex !== undefined) {
-      this.headerCells.splice(colIndex, 0, newHeaderCell);
-    } else {
-      this.headerCells.push(newHeaderCell);
-    }
-    // bodyCells의 각 행에도 새 열 추가 로직은 복잡하므로
-    // 필요시 구현
-  }
-
-  removeRow(rowIndex: number): void {
-    if (rowIndex >= 0 && rowIndex < this.bodyCells.length) {
-      this.bodyCells.splice(rowIndex, 1);
-    }
-  }
-
-  removeColumn(colIndex: number): void {
-    if (colIndex >= 0 && colIndex < this.headerCells.length) {
-      this.headerCells.splice(colIndex, 1);
-      // bodyCells의 각 행에서도 해당 열 제거
-    }
-  }
-
-  getStructure(): FlowBlockType {
-    return getBlockType('Division');
-  }
-
-  toDbFormat(): { header_cells: any; body_cells: any } {
-    // 계층 구조를 DB 형식으로 변환
-    const bodyCells = this.bodyCells.map(cell => ({
-      values: cell.elements.map(el => el.value).filter(v => v !== null && v !== undefined),
-      children: cell.children.map(child => ({
-        values: child.elements.map(el => el.value).filter(v => v !== null && v !== undefined),
-        children: child.children.map(grandchild => ({
-          values: grandchild.elements.map(el => el.value).filter(v => v !== null && v !== undefined),
-          children: [],
-        })),
-      })),
-    }));
-    
-    return {
-      header_cells: this.headerCells.map(cell => cell.division_criteria),
-      body_cells: bodyCells
-    };
-  }
-
-  // DB 데이터로부터 생성
-  static fromDbFormat(blockId: number, dbData: any): DivisionBlockInstance {
-    return new DivisionBlockInstance(blockId, {
-      header_cells: dbData.header_cells || [],
-      body_cells: dbData.body_cells || []
-    });
-  }
-}
-
-// 블록 인스턴스 팩토리
-export class BlockInstanceFactory {
-  static create(blockType: number, blockId: number, data: any): BlockInstance {
-    switch (blockType) {
-      case BLOCK_TYPE.APPLY_SUBJECT:
-        return ApplySubjectBlockInstance.fromDbFormat(blockId, data);
-      case BLOCK_TYPE.DIVISION:
-        return DivisionBlockInstance.fromDbFormat(blockId, data);
-      // TODO: 다른 블록 타입들도 추가
-      default:
-        // 기본적으로 FlowBlock을 그대로 사용하는 래퍼 생성
-        return new GenericBlockInstance(blockId, blockType, {
-          header_cells: data.header_cells || [],
-          body_cells: data.body_cells || []
-        });
-    }
-  }
-}
+// BlockInstanceFactory는 registry.ts로 이동하여 순환 참조 문제 해결
 
 // 일반 블록 인스턴스 (아직 특화되지 않은 블록용)
-class GenericBlockInstance extends BlockInstance {
+export class GenericBlockInstance extends BlockInstance {
   constructor(blockId: number, blockType: number, data: BlockInstanceData) {
     super(blockId, blockType, data);
   }
@@ -430,10 +167,260 @@ class GenericBlockInstance extends BlockInstance {
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {
+    // BLOCK_TYPES 구조를 참조하여 새로운 명시적 구조로 변환
+    const structure = this.getStructure();
+    
+    if (!structure) {
+      // 구조를 찾을 수 없으면 기존 형식 유지
+      return {
+        header_cells: this.data.header_cells || [],
+        body_cells: this.data.body_cells || []
+      };
+    }
+
+    // header_cells 변환
+    let headerCells: any = [];
+    if (this.data.header_cells && Array.isArray(this.data.header_cells) && this.data.header_cells.length > 0) {
+      const headerValues = this.data.header_cells[0];
+      if (Array.isArray(headerValues)) {
+        // 블록 타입별 header 변환
+        const headerObj: any = {};
+        
+        if (this.block_type === BLOCK_TYPE.SCORE_MAP) {
+          // ScoreMap: [null, variableScope, filterOption]
+          headerObj.variable_scope = headerValues[1] || 0;
+          headerObj.filter_option = headerValues[2] || 0;
+        } else if (this.block_type === BLOCK_TYPE.FORMULA || this.block_type === BLOCK_TYPE.CONDITION || 
+                   this.block_type === BLOCK_TYPE.AGGREGATION || this.block_type === BLOCK_TYPE.DECIMAL) {
+          // Formula, Condition, Aggregation, Decimal: [null, variableScope]
+          headerObj.variable_scope = headerValues[1] || 0;
+        } else {
+          // 기타 블록: 구조에서 변환 시도
+          if (structure.cols && structure.cols.length > 0) {
+            const headerElements = structure.cols[0].header?.elements || [];
+            headerElements.forEach((element, index) => {
+              if (element.type === 'Token' && 'menu_key' in element && element.menu_key) {
+                if (element.menu_key === 'variable_scope') {
+                  headerObj.variable_scope = headerValues[index] || 0;
+                } else if (element.menu_key === 'filter_option') {
+                  headerObj.filter_option = headerValues[index] || 0;
+                }
+              }
+            });
+          }
+        }
+        
+        headerCells = Object.keys(headerObj).length > 0 ? [headerObj] : this.data.header_cells;
+      } else {
+        headerCells = this.data.header_cells;
+      }
+    } else {
+      headerCells = this.data.header_cells || [];
+    }
+
+    // body_cells 변환
+    let bodyCells: any = [];
+    if (structure.cols && structure.cols.length > 0) {
+      // 일반 블록: body 구조에서 변환
+      const bodyElements = structure.cols[0].rows?.[0]?.elements || [];
+      
+      if (this.data.body_cells && Array.isArray(this.data.body_cells)) {
+        bodyCells = this.data.body_cells.map((row: any) => {
+          if (!Array.isArray(row) || row.length === 0) return row;
+          
+          const cellValues = row[0]; // 첫 번째 열의 값들
+          if (!Array.isArray(cellValues)) return row;
+          
+          // bodyElements의 타입에 따라 명시적 객체 생성
+          const bodyObj: any = {};
+          let valueIndex = 0;
+          
+          // 블록 타입별 변환 로직
+          if (this.block_type === BLOCK_TYPE.SCORE_MAP) {
+            // ScoreMap: [inputType, inputRange, '→', outputType, matchType, table]
+            // Executor: [0]=inputType, [1]=inputRange, [2]=outputType, [4]=table
+            bodyObj.input_type = cellValues[0] || null;
+            bodyObj.input_range = cellValues[1] === 'range' ? 1 : (cellValues[1] === 'exact' ? 0 : -1);
+            bodyObj.output_type = cellValues[3] || null; // [2]는 Text '→'이므로 [3] 사용
+            bodyObj.table = cellValues[5] || null; // [4]는 matchType이므로 [5] 사용
+          } else if (this.block_type === BLOCK_TYPE.FORMULA) {
+            // Formula: [scoreType, ' = ', expr]
+            bodyObj.score_type = cellValues[0] || null;
+            bodyObj.expr = cellValues[2] || null; // [1]은 Text ' = '
+          } else if (this.block_type === BLOCK_TYPE.CONDITION) {
+            // Condition: [conditions]
+            bodyObj.conditions = cellValues[0] || [];
+          } else if (this.block_type === BLOCK_TYPE.AGGREGATION) {
+            // Aggregation: [inputType, func, null, outputType]
+            bodyObj.input_type = cellValues[0] || null;
+            bodyObj.func = cellValues[1] || 0;
+            bodyObj.output_type = cellValues[3] || null;
+          } else if (this.block_type === BLOCK_TYPE.RATIO) {
+            // Ratio: [ratio, scoreType]
+            bodyObj.ratio = cellValues[0] || 0;
+            bodyObj.score_type = cellValues[1] || null;
+          } else if (this.block_type === BLOCK_TYPE.DECIMAL) {
+            // Decimal: [scoreType, null, decimalPlaces, null, option]
+            bodyObj.score_type = cellValues[0] || null;
+            bodyObj.decimal_places = parseInt(cellValues[2]) || 0;
+            bodyObj.option = parseInt(cellValues[4]) || 0;
+          } else {
+            // 기타 블록 타입은 요소 순서대로 변환 시도
+            bodyElements.forEach((element) => {
+              if (element.type === 'Token' && 'menu_key' in element && element.menu_key) {
+                if (element.menu_key === 'score_types' && valueIndex < cellValues.length) {
+                  if (!bodyObj.input_type) {
+                    bodyObj.input_type = cellValues[valueIndex++];
+                  } else if (!bodyObj.output_type) {
+                    bodyObj.output_type = cellValues[valueIndex++];
+                  } else if (!bodyObj.score_type) {
+                    bodyObj.score_type = cellValues[valueIndex++];
+                  }
+                } else if (element.menu_key === 'match_types' && valueIndex < cellValues.length) {
+                  if (!bodyObj.input_range) {
+                    const val = cellValues[valueIndex++];
+                    bodyObj.input_range = val === 'range' ? 1 : (val === 'exact' ? 0 : -1);
+                  }
+                } else if (valueIndex < cellValues.length) {
+                  valueIndex++;
+                }
+              } else if (element.type === 'Table' && valueIndex < cellValues.length) {
+                bodyObj.table = cellValues[valueIndex++];
+              } else if (element.type === 'Formula' && valueIndex < cellValues.length) {
+                bodyObj.expr = cellValues[valueIndex++];
+              } else if (element.type === 'InputField' && valueIndex < cellValues.length) {
+                if (!bodyObj.decimal_places) {
+                  bodyObj.decimal_places = parseInt(cellValues[valueIndex++]) || 0;
+                } else if (!bodyObj.option) {
+                  bodyObj.option = parseInt(cellValues[valueIndex++]) || 0;
+                } else {
+                  valueIndex++;
+                }
+              } else if (element.type === 'Text') {
+                // Text는 건너뛰기
+              } else if (valueIndex < cellValues.length) {
+                valueIndex++;
+              }
+            });
+          }
+          
+          // 객체가 비어있지 않으면 객체 사용, 아니면 기존 형식 유지
+          return Object.keys(bodyObj).length > 0 ? bodyObj : row;
+        });
+      } else {
+        bodyCells = this.data.body_cells || [];
+      }
+    } else {
+      bodyCells = this.data.body_cells || [];
+    }
+
     return {
-      header_cells: this.data.header_cells || [],
-      body_cells: this.data.body_cells || []
+      header_cells: headerCells,
+      body_cells: bodyCells
     };
+  }
+
+  // 렌더링용 헬퍼 메서드 (DB 형식에서 화면 표시용 배열로 변환)
+  getHeaderCellValues(colIndex: number): any[] {
+    const dbFormat = this.toDbFormat();
+    const headerCells = dbFormat.header_cells;
+    
+    if (!headerCells || !Array.isArray(headerCells) || headerCells.length === 0) {
+      return [];
+    }
+
+    // 블록 타입별 변환
+    if (this.block_type === BLOCK_TYPE.SCORE_MAP) {
+      // ScoreMap: { variable_scope, filter_option } -> [null, variable_scope, filter_option]
+      const headerObj = headerCells[0];
+      if (typeof headerObj === 'object' && headerObj !== null) {
+        return [null, headerObj.variable_scope || 0, headerObj.filter_option || 0];
+      }
+    } else if (this.block_type === BLOCK_TYPE.FORMULA || this.block_type === BLOCK_TYPE.CONDITION || 
+               this.block_type === BLOCK_TYPE.AGGREGATION || this.block_type === BLOCK_TYPE.DECIMAL) {
+      // Formula, Condition, Aggregation, Decimal: { variable_scope } -> [null, variable_scope]
+      const headerObj = headerCells[0];
+      if (typeof headerObj === 'object' && headerObj !== null) {
+        return [null, headerObj.variable_scope || 0];
+      }
+    } else if (this.block_type === BLOCK_TYPE.APPLY_SUBJECT) {
+      // ApplySubject: { text_content, include_option } -> [text_content, include_option]
+      const headerObj = headerCells[0];
+      if (typeof headerObj === 'object' && headerObj !== null) {
+        return [headerObj.text_content || '', headerObj.include_option || 'include'];
+      }
+    }
+    
+    // 기본: 배열 형식 그대로 반환
+    if (Array.isArray(headerCells[colIndex])) {
+      return headerCells[colIndex];
+    }
+    
+    return [];
+  }
+
+  getBodyCellValues(rowIndex: number, colIndex: number): any[] {
+    const dbFormat = this.toDbFormat();
+    const bodyCells = dbFormat.body_cells;
+    
+    if (!bodyCells || !Array.isArray(bodyCells) || !bodyCells[rowIndex]) {
+      return [];
+    }
+
+    const row = bodyCells[rowIndex];
+    
+    // 블록 타입별 변환
+    if (this.block_type === BLOCK_TYPE.SCORE_MAP) {
+      // ScoreMap: { input_type, input_range, output_type, table } -> [inputType, inputRange, '→', outputType, matchType, table]
+      if (typeof row === 'object' && row !== null && colIndex === 0) {
+        const inputRange = row.input_range === 1 ? 'range' : 'exact';
+        return [
+          row.input_type || null,
+          inputRange,
+          '→',
+          row.output_type || null,
+          'exact', // matchType (기본값)
+          row.table || []
+        ];
+      }
+    } else if (this.block_type === BLOCK_TYPE.FORMULA) {
+      // Formula: { score_type, expr } -> [scoreType, ' = ', expr]
+      if (typeof row === 'object' && row !== null && colIndex === 0) {
+        return [row.score_type || null, ' = ', row.expr || null];
+      }
+    } else if (this.block_type === BLOCK_TYPE.CONDITION) {
+      // Condition: { conditions } -> [conditions]
+      if (typeof row === 'object' && row !== null && colIndex === 0) {
+        return [row.conditions || []];
+      }
+    } else if (this.block_type === BLOCK_TYPE.AGGREGATION) {
+      // Aggregation: { input_type, func, output_type } -> [inputType, func, null, outputType]
+      if (typeof row === 'object' && row !== null && colIndex === 0) {
+        return [row.input_type || null, row.func || 0, null, row.output_type || null];
+      }
+    } else if (this.block_type === BLOCK_TYPE.RATIO) {
+      // Ratio: { ratio, score_type } -> [ratio, scoreType]
+      if (typeof row === 'object' && row !== null && colIndex === 0) {
+        return [row.ratio || 0, row.score_type || null];
+      }
+    } else if (this.block_type === BLOCK_TYPE.DECIMAL) {
+      // Decimal: { score_type, decimal_places, option } -> [scoreType, null, decimalPlaces, null, option]
+      if (typeof row === 'object' && row !== null && colIndex === 0) {
+        return [row.score_type || null, null, row.decimal_places || 0, null, row.option || 0];
+      }
+    } else if (this.block_type === BLOCK_TYPE.APPLY_SUBJECT) {
+      // ApplySubject: { subject_groups } -> [subject_groups]
+      if (typeof row === 'object' && row !== null && 'subject_groups' in row && colIndex === 0) {
+        return [row.subject_groups || []];
+      }
+    }
+    
+    // 기본: 배열 형식 그대로 반환
+    if (Array.isArray(row) && Array.isArray(row[colIndex])) {
+      return row[colIndex];
+    }
+    
+    return [];
   }
 }
 

@@ -22,6 +22,7 @@ import { BlockGridSyncProvider } from '@/hooks/blocks/useBlockGridSync';
 import { createFlowBlockFromKind, getBlockTypeNameById, getBlockTypeId } from '@/lib/blockManager';
 import { useResultsHighlight } from '@/components/results/ResultsHighlightContext';
 
+// nodeTypes를 컴포넌트 외부에서 정의하여 매번 새로 생성되지 않도록 함
 const nodeTypes = { 
   flowComponent: ComponentNode as any,
 };

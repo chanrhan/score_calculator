@@ -1,0 +1,21 @@
+/* lib/blocks/modules/ApplyTerm/ApplyTerm.module.css */
+/* ApplyTerm 블록 전용 스타일 */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+

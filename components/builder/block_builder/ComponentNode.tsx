@@ -8,6 +8,7 @@ import { usePipelines } from '@/store/usePipelines';
 import { useBlockDataStore } from '@/store/useBlockDataStore';
 import { createFlowBlockFromKind, getBlockTypeNameById, getBlockTypeId } from '@/lib/blockManager';
 import { ComponentGrid } from '../Primitives/ComponentGrid';
+import { BlockInstanceFactory } from '@/lib/blocks/modules/registry';
 import styles from './ComponentNode.module.css';
 import { useResultsHighlight } from '@/components/results/ResultsHighlightContext';
 
@@ -35,7 +36,21 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
   // 실시간으로 최신 컴포넌트 데이터 가져오기
   const pipeline = getById(actualPipelineId);
   const comp = pipeline?.components.find(c => c.id === componentId);
-  const blocks = comp?.blocks || [];
+  const flowBlocks = comp?.blocks || [];
+  
+  // FlowBlock[]을 BlockInstance[]로 변환
+  const blocks = React.useMemo(() => {
+    return flowBlocks.map(block => {
+      return BlockInstanceFactory.create(
+        block.block_type,
+        block.block_id,
+        {
+          header_cells: block.header_cells,
+          body_cells: block.body_cells
+        }
+      );
+    });
+  }, [flowBlocks]);
   
   // 전역 스토어에서 block_data와 token_menus 가져오기
   const { blockData, tokenMenus } = useBlockDataStore();
@@ -113,8 +128,9 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
           blocks={blocks}
           // 각 블록 셀 컨테이너에 하이라이트/툴팁을 적용하기 위해 ComponentGrid 내부의 셀 구조를 그대로 사용하고,
           // 블록명 행에서 강조 스타일을 적용
-          onBlockChange={(blockId: number, updatedBlock: FlowBlock) => {
-            // 블록 변경 로직 구현
+          onBlockChange={(blockId: number, updatedBlockInstance) => {
+            // BlockInstance를 FlowBlock으로 변환하여 저장
+            const updatedBlock = updatedBlockInstance.toFlowBlock();
             const result = updateBlock(actualPipelineId, componentId, blockId, updatedBlock);
             if (result.success) {
               // console.log('블록 업데이트 성공:', { blockId, updatedBlock });
@@ -140,9 +156,10 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
               }
             }
           }}
-          onInsertRow={(blocks: FlowBlock[]) => {
-            console.log(blocks);
-            const result = updateAllBlocks(actualPipelineId, componentId, blocks);
+          onInsertRow={(blockInstances) => {
+            // BlockInstance[]를 FlowBlock[]로 변환하여 저장
+            const flowBlocks = blockInstances.map(instance => instance.toFlowBlock());
+            const result = updateAllBlocks(actualPipelineId, componentId, flowBlocks);
             if (result.success) {
               // console.log('블록 업데이트 성공:', { blockId, updatedBlock });
             } else {

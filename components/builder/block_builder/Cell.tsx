@@ -6,6 +6,8 @@ import { Token, Text, InputField, Formula, Table, List, ConditionChain, Selectio
 import type { TokenMenu, BlockData } from '@/types/block-data'
 import { BLOCK_TYPE } from '@/types/block-types'
 import { useBlockDataStore } from '@/store/useBlockDataStore'
+import { getBlockTypeNameById } from '@/lib/blockManager'
+import { getBlockType } from '@/types/block-structure'
 import styles from './Cell.module.css'
 
 interface CellProps {
@@ -57,42 +59,67 @@ export const Cell: React.FC<CellProps> = ({
   isHeader = false,
   col_type
 }) => {
-  // 전역 스토어에서 block_data와 token_menus 가져오기
-  const { blockData, tokenMenus, getBlockDataByType } = useBlockDataStore();
+  // 전역 스토어에서 token_menus 가져오기
+  const { tokenMenus } = useBlockDataStore();
   
-  // 현재 블록의 block_data 가져오기
-  const currentBlockData = blockType ? getBlockDataByType(blockType) : null;
-  // if(blockType === BLOCK_TYPE.AGGREGATION){
-  //   console.log('Cell: values:', currentBlockData);
-  // }
+  // BLOCK_TYPES에서 직접 블록 구조 가져오기
+  const blockTypeName = blockType ? getBlockTypeNameById(blockType) : null;
+  const blockStructure = blockTypeName ? getBlockType(blockTypeName as keyof typeof import('@/types/block-structure').BLOCK_TYPES) : null;
 
   const processedElements = React.useMemo(() => {
-    // console.log('Cell processedElements - currentBlockData:', currentBlockData, 'blockType:', blockType, 'isHeader:', isHeader, 'col_type:', col_type, 'values:', values);
-    if (!currentBlockData || !blockType) {
-      console.log('Cell: currentBlockData 또는 blockType이 없음');
+    if (!blockStructure || !blockType) {
       return [];
     }
 
-    // isHeader에 따라 header_cell_type 또는 body_cell_type 사용
-    const cellType = isHeader ? currentBlockData.header_cell_type : currentBlockData.body_cell_type;
-
-    // cellType이 존재하지 않으면 빈 배열 반환
-    if (!cellType) {
-      console.warn('Cell type is undefined for block:', currentBlockData);
-      return [];
-    }
-        
-    if (blockType !== BLOCK_TYPE.DIVISION || (isHeader && blockType === BLOCK_TYPE.DIVISION)) {
-      // 일반 블록의 경우
-      if (!cellType.element_types || !Array.isArray(cellType.element_types)) {
-        console.warn('element_types is not an array for block:', currentBlockData);
+    // Division 블록인지 확인
+    const isDivision = blockType === BLOCK_TYPE.DIVISION;
+    
+    if (isDivision) {
+      // Division 블록의 경우
+      if (isHeader) {
+        // header: col_type에 해당하는 구조 가져오기
+        if (col_type && blockStructure.header) {
+          const headerCell = blockStructure.header.find((h: any) => h.type === 'Token' && h.menu_key === 'division_types');
+          if (headerCell) {
+            return [{
+              type: 'Token',
+              optional: false,
+              visible: true,
+              menu_key: 'division_types',
+              value: col_type,
+              content: ''
+            }];
+          }
+        }
+        return [];
+      } else {
+        // body: col_type에 해당하는 구조 가져오기
+        if (col_type && blockStructure.children) {
+          // children에서 col_type과 일치하는 구조 찾기
+          // Division 블록의 경우 복잡한 구조이므로 기본 처리
+          return [];
+        }
         return [];
       }
-      return cellType.element_types.map((et: any, index: number) => {
-        const raw = values && values[index] !== undefined ? values[index] : undefined
+    } else {
+      // 일반 블록의 경우
+      if (!blockStructure.cols || blockStructure.cols.length === 0) {
+        return [];
+      }
+      
+      // 첫 번째 열의 구조 사용 (일반적으로 한 열만 있음)
+      const column = blockStructure.cols[0];
+      const cellElements = isHeader ? column.header?.elements : column.rows?.[0]?.elements;
+      
+      if (!cellElements || !Array.isArray(cellElements)) {
+        return [];
+      }
+      
+      return cellElements.map((et: any, index: number) => {
+        const raw = values && values[index] !== undefined ? values[index] : undefined;
         const value = (et.type === 'List' || et.type === 'ConditionChain' || et.type === 'OrderToken')
           ? (Array.isArray(raw) ? raw : [])
-          : (raw !== undefined ? raw : '')
+          : (raw !== undefined ? raw : '');
         return {
           ...et,
           type: et.type,
@@ -105,75 +132,9 @@ export const Cell: React.FC<CellProps> = ({
           content: et.content || ''
         };
       });
-    } else {
-      // Division 블록의 경우 (Map 형태)
-      if (typeof cellType !== 'object' || cellType === null) {
-        console.warn('Division block cellType is not an object:', currentBlockData);
-        return [];
-      }
-      const columnTypes = Object.keys(cellType);
-
-      
-      // col_type이 'element_types'인 경우 첫 번째 컬럼 타입 사용
-      if (col_type === 'element_types' || col_type === null) {
-        // 첫 번째 컬럼 타입을 사용하여 기본값 표시
-        // const firstColumnType = columnTypes[0];
-        // if (firstColumnType && cellType[firstColumnType]) {
-        //   const firstColumnElements = cellType[firstColumnType];
-        //   return firstColumnElements.map((et: any, index: number) => {
-        //     const value = values && values[index] !== undefined ? values[index] : '';
-        //     return {
-        //       type: et.name,
-        //       optional: et.optional || false,
-        //       visible: et.visible !== false,
-        //       menu_key: et.menu_key || '',
-        //       value: value,
-        //       content: et.content || ''
-        //     };
-        //   });
-        // }
-        
-        // 컬럼 타입이 없는 경우 기본 텍스트 표시
-        return [{
-          type: 'Text',
-          optional: false,
-          visible: true,
-          menu_key: '',
-          value: '구분유형을 선택해주세요',
-          content: '구분유형을 선택해주세요'
-        }];
-      }
-      
-      // col_type이 제공된 경우 해당 columnType만 사용, 그렇지 않으면 모든 columnType 사용
-      const targetColumnTypes = col_type ? [col_type] : columnTypes;
-      
-      return targetColumnTypes.flatMap(columnType => {
-        const columnElements = cellType[columnType];
-        if (!columnElements || !Array.isArray(columnElements)) {
-          console.warn(`Column type '${columnType}' not found in cellType:`, cellType);
-          return [];
-        }
-        
-        return columnElements.map((et: any, index: number) => {
-          const raw = values && values[index] !== undefined ? values[index] : undefined
-          const value = (et.type === 'List' || et.type === 'ConditionChain' || et.type === 'OrderToken')
-            ? (Array.isArray(raw) ? raw : [])
-            : (raw !== undefined ? raw : '')
-          return {
-            ...et,
-            type: et.type,
-            optional: et.optional || false,
-            visible: et.visible !== false,
-            menu_key: et.menu_key || '',
-            menu_key2: (et as any).menu_key2 || '',
-            item_type: et.item_type,
-            value: value,
-            content: et.content || ''
-          };
-        });
-      });
     }
-  }, [values, currentBlockData, blockType, isHeader, col_type]);
+  }, [values, blockStructure, blockType, isHeader, col_type]);
+
 
   const visibleElements = processedElements.filter((element: any) => 
      element.visible

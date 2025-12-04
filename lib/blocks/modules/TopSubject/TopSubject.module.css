@@ -1,0 +1,14 @@
+/* lib/blocks/modules/TopSubject/TopSubject.module.css */
+/* TopSubject 블록 전용 스타일 */
+
+.label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.body {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
