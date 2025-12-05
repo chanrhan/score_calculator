@@ -33,6 +33,7 @@ export interface LayoutRenderContext {
   readOnly: boolean;
   onChange?: (propertyName: string, value: any) => void;
   className?: string;
+  colIndex?: number; // 열 인덱스 (헤더/바디 셀이 동일한 구조일 때 사용)
 }
 
 /**

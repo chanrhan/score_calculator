@@ -5,147 +5,108 @@ import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
 import { BlockInstance, BlockInstanceData } from '../BlockInstance';
 import { BlockLayoutRenderer } from '../layout/BlockLayoutRenderer';
-import type { BlockStructureDefinition } from './common/types';
-import { toFlowBlockType } from './common/types';
 
 // ApplySubject 모듈
 import { 
-  ApplySubjectStructure, 
   ApplySubjectBlockInstance, 
   ApplySubjectLayoutRenderer 
 } from './ApplySubject';
 
 // Division 모듈
 import { 
-  DivisionStructure, 
   DivisionBlockInstance, 
   DivisionLayoutRenderer 
 } from './Division';
 
 // GradeRatio 모듈
 import { 
-  GradeRatioStructure, 
   GradeRatioBlockInstance, 
   GradeRatioLayoutRenderer 
 } from './GradeRatio';
 
 // ApplyTerm 모듈
 import { 
-  ApplyTermStructure, 
   ApplyTermBlockInstance, 
   ApplyTermLayoutRenderer 
 } from './ApplyTerm';
 
 // TopSubject 모듈
 import { 
-  TopSubjectStructure, 
   TopSubjectBlockInstance, 
   TopSubjectLayoutRenderer 
 } from './TopSubject';
 
 // SubjectGroupRatio 모듈
 import { 
-  SubjectGroupRatioStructure, 
   SubjectGroupRatioBlockInstance, 
   SubjectGroupRatioLayoutRenderer 
 } from './SubjectGroupRatio';
 
 // SeparationRatio 모듈
 import { 
-  SeparationRatioStructure, 
   SeparationRatioBlockInstance, 
   SeparationRatioLayoutRenderer 
 } from './SeparationRatio';
 
 // ScoreMap 모듈
 import { 
-  ScoreMapStructure, 
   ScoreMapBlockInstance, 
   ScoreMapLayoutRenderer 
 } from './ScoreMap';
 
 // Formula 모듈
 import { 
-  FormulaStructure, 
   FormulaBlockInstance, 
   FormulaLayoutRenderer 
 } from './Formula';
 
 // Variable 모듈
 import { 
-  VariableStructure, 
   VariableBlockInstance, 
   VariableLayoutRenderer 
 } from './Variable';
 
 // Condition 모듈
 import { 
-  ConditionStructure, 
   ConditionBlockInstance, 
   ConditionLayoutRenderer 
 } from './Condition';
 
 // Aggregation 모듈
 import { 
-  AggregationStructure, 
   AggregationBlockInstance, 
   AggregationLayoutRenderer 
 } from './Aggregation';
 
 // Ratio 모듈
 import { 
-  RatioStructure, 
   RatioBlockInstance, 
   RatioLayoutRenderer 
 } from './Ratio';
 
 // Decimal 모듈
 import { 
-  DecimalStructure, 
   DecimalBlockInstance, 
   DecimalLayoutRenderer 
 } from './Decimal';
 
 /**
- * 블록 구조 정의 레지스트리 (A 타입)
- * 새로운 구조(BlockStructureDefinition)와 기존 구조(FlowBlockType) 모두 지원
+ * 블록 구조를 가져오는 헬퍼 함수
+ * BlockInstance의 getStructure()를 사용하여 구조를 가져옵니다.
  */
-export const BlockStructureRegistry: Record<number, FlowBlockType | BlockStructureDefinition> = {
-  [BLOCK_TYPE.DIVISION]: DivisionStructure,
-  [BLOCK_TYPE.APPLY_SUBJECT]: ApplySubjectStructure, // 새로운 구조
-  [BLOCK_TYPE.GRADE_RATIO]: GradeRatioStructure,
-  [BLOCK_TYPE.APPLY_TERM]: ApplyTermStructure,
-  [BLOCK_TYPE.TOP_SUBJECT]: TopSubjectStructure,
-  [BLOCK_TYPE.SUBJECT_GROUP_RATIO]: SubjectGroupRatioStructure,
-  [BLOCK_TYPE.SEPARATION_RATIO]: SeparationRatioStructure,
-  [BLOCK_TYPE.SCORE_MAP]: ScoreMapStructure, // 새로운 구조
-  [BLOCK_TYPE.FORMULA]: FormulaStructure, // 새로운 구조
-  [BLOCK_TYPE.VARIABLE]: VariableStructure,
-  [BLOCK_TYPE.CONDITION]: ConditionStructure, // 새로운 구조
-  [BLOCK_TYPE.AGGREGATION]: AggregationStructure,
-  [BLOCK_TYPE.RATIO]: RatioStructure,
-  [BLOCK_TYPE.DECIMAL]: DecimalStructure,
-};
-
-/**
- * 구조를 FlowBlockType으로 변환하는 헬퍼 함수
- */
-function getFlowBlockType(blockType: number): FlowBlockType {
-  const structure = BlockStructureRegistry[blockType];
-  if (!structure) {
-    return {
-      name: 'Unknown',
-      color: 'gray',
-      col_editable: false,
-      cols: [{ header: { elements: [] }, rows: [] }]
-    };
+export function getFlowBlockType(blockType: number): FlowBlockType {
+  const InstanceClass = BlockInstanceRegistry[blockType];
+  if (InstanceClass) {
+    // 임시 인스턴스를 생성하여 getStructure() 호출
+    const tempInstance = new InstanceClass(0, { header_cells: [], body_cells: [] });
+    return tempInstance.getStructure();
   }
-  // 새로운 구조인지 확인
-  if ('properties' in structure && 'defaults' in structure && 'layout' in structure) {
-    return toFlowBlockType(structure as BlockStructureDefinition);
-  }
-  // 기존 구조면 그대로 반환
-  return structure as FlowBlockType;
+  return {
+    name: 'Unknown',
+    color: 'gray',
+    col_editable: false,
+    cols: [{ header: { elements: [] }, rows: [] }]
+  };
 }
 
 /**
@@ -194,11 +155,9 @@ export const BlockLayoutRendererRegistry: Record<number, () => BlockLayoutRender
  */
 export function registerBlockType(
   blockType: number,
-  structure: FlowBlockType,
   instanceClass: new (blockId: number, data: BlockInstanceData) => BlockInstance,
   layoutRendererFactory: () => BlockLayoutRenderer
 ): void {
-  BlockStructureRegistry[blockType] = structure;
   BlockInstanceRegistry[blockType] = instanceClass;
   BlockLayoutRendererRegistry[blockType] = layoutRendererFactory;
 }
@@ -208,21 +167,16 @@ export function registerBlockType(
  * 모듈 레지스트리를 사용하여 자동으로 블록 타입을 로드
  */
 import { GenericBlockInstance } from '../BlockInstance';
-import { getBlockDefaults, mergeWithDefaults } from './common/defaults';
 
 export class BlockInstanceFactory {
   /**
    * 기본값으로 초기화된 BlockInstance 생성 (새 블록 생성용)
    */
   static createWithDefaults(blockType: number, blockId: number): BlockInstance {
-    const defaults = getBlockDefaults(blockType);
-    
-    // 기본값을 DB 형식으로 변환하여 전달
-    // 각 BlockInstance의 constructor에서 기본값을 사용하도록 수정 필요
     const InstanceClass = BlockInstanceRegistry[blockType];
     
     if (InstanceClass) {
-      // 빈 데이터로 생성하면 constructor에서 defaults 사용
+      // 빈 데이터로 생성하면 constructor에서 기본값 사용
       return new InstanceClass(blockId, {
         header_cells: [],
         body_cells: []

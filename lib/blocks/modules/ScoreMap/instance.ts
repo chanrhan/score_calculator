@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { ScoreMapStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class ScoreMapBlockInstance extends BlockInstance {
   private headerCell: {
@@ -130,7 +127,16 @@ export class ScoreMapBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(ScoreMapStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'ScoreMap',
+      color: 'blue',
+      col_editable: false, // 열 추가 불가
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {

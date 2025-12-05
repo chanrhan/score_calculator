@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { ConditionStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class ConditionBlockInstance extends BlockInstance {
   private headerCell: {
@@ -92,7 +89,16 @@ export class ConditionBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(ConditionStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'Condition',
+      color: 'blue',
+      col_editable: false, // 열 추가 불가
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {

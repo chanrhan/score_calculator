@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { DecimalStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class DecimalBlockInstance extends BlockInstance {
   private headerCell: {
@@ -114,7 +111,16 @@ export class DecimalBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(DecimalStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'Decimal',
+      color: 'blue',
+      col_editable: false, // 열 추가 불가
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {

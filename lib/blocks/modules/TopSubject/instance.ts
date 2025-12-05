@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { TopSubjectStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class TopSubjectBlockInstance extends BlockInstance {
   private bodyCells: Array<{
@@ -17,26 +14,29 @@ export class TopSubjectBlockInstance extends BlockInstance {
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.TOP_SUBJECT, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.TOP_SUBJECT);
+    // 기본값 정의 (structure.ts 제거)
+    const defaultTopSubjectScope: string | null = null;
+    const defaultTopSubjectCount = '3';
     
-    // body_cells 처리
+    // body_cells 처리: 기본 1*1
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            top_subject_scope: row.top_subject_scope !== undefined ? row.top_subject_scope : (defaults.top_subject_scope ?? null),
-            top_subject_count: row.top_subject_count || defaults.top_subject_count || '3',
+            top_subject_scope: row.top_subject_scope !== undefined ? row.top_subject_scope : defaultTopSubjectScope,
+            top_subject_count: row.top_subject_count || defaultTopSubjectCount,
           };
         }
         return {
-          top_subject_scope: defaults.top_subject_scope ?? null,
-          top_subject_count: defaults.top_subject_count || '3',
+          top_subject_scope: defaultTopSubjectScope,
+          top_subject_count: defaultTopSubjectCount,
         };
       });
     } else {
+      // 기본 1*1 구조
       this.bodyCells = [{
-        top_subject_scope: defaults.top_subject_scope ?? null,
-        top_subject_count: defaults.top_subject_count || '3',
+        top_subject_scope: defaultTopSubjectScope,
+        top_subject_count: defaultTopSubjectCount,
       }];
     }
   }
@@ -56,10 +56,11 @@ export class TopSubjectBlockInstance extends BlockInstance {
   }
 
   addRow(rowIndex?: number): void {
-    const defaults = getBlockDefaults(BLOCK_TYPE.TOP_SUBJECT);
+    const defaultTopSubjectScope: string | null = null;
+    const defaultTopSubjectCount = '3';
     const newRow = {
-      top_subject_scope: defaults.top_subject_scope ?? null,
-      top_subject_count: defaults.top_subject_count || '3',
+      top_subject_scope: defaultTopSubjectScope,
+      top_subject_count: defaultTopSubjectCount,
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -83,7 +84,16 @@ export class TopSubjectBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(TopSubjectStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'TopSubject',
+      color: 'blue',
+      col_editable: false, // 열 추가 불가
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {

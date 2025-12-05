@@ -16,52 +16,48 @@ import subjectGroupRatioStyles from './SubjectGroupRatio.module.css';
  * 각 열별로 직접 HTML/CSS를 작성하고, 공통 컴포넌트만 사용
  */
 export const SubjectGroupRatioLayout: {
-  header: { [columnIndex: number]: LayoutComponent };
-  body: { [columnIndex: number]: LayoutComponent };
+  header: LayoutComponent;
+  body: LayoutComponent;
 } = {
-  header: {
-    0: ({ properties, readOnly, onChange }) => {
-      const subjectGroup = properties.subject_group || null;
-      
-      return (
-        <Token
-          element={createTokenElement({
-            menu_key: 'subject_groups',
-            value: subjectGroup,
-            optional: false,
-              visible: true,
-            })}
-          onChange={(value) => {
-            if (!readOnly) {
-              onChange?.('subject_group', value);
-            }
-          }}
-          autoFit={true}
-        />
-      );
-    },
+  header: ({ properties, readOnly, onChange }) => {
+    const subjectGroup = properties.subject_group || null;
+    
+    return (
+      <Token
+        element={createTokenElement({
+          menu_key: 'subject_groups',
+          value: subjectGroup,
+          optional: false,
+          visible: true,
+        })}
+        onChange={(value) => {
+          if (!readOnly) {
+            onChange?.('subject_group', value);
+          }
+        }}
+        autoFit={true}
+      />
+    );
   },
-  body: {
-    0: ({ properties, readOnly, onChange }) => {
-      const ratio = properties.ratio || '100';
-      
-      return (
-        <Token
-          element={createTokenElement({
-            menu_key: 'percentage_ratio',
-            value: ratio,
-            optional: false,
-              visible: true,
-            })}
-          onChange={(value) => {
-            if (!readOnly) {
-              onChange?.('ratio', value);
-            }
-          }}
-          autoFit={true}
-        />
-      );
-    },
+  body: ({ properties, readOnly, onChange }) => {
+    const ratio = properties.ratio || '100';
+    
+    return (
+      <Token
+        element={createTokenElement({
+          menu_key: 'percentage_ratio',
+          value: ratio,
+          optional: false,
+          visible: true,
+        })}
+        onChange={(value) => {
+          if (!readOnly) {
+            onChange?.('ratio', value);
+          }
+        }}
+        autoFit={true}
+      />
+    );
   },
 };
 

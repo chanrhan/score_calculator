@@ -5,7 +5,6 @@ import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
 import { HierarchicalCell } from '@/utils/divisionRenderer';
-import { DivisionStructure } from './structure';
 import { getBlockType } from '@/types/block-structure';
 
 export class DivisionBlockInstance extends BlockInstance {
@@ -117,7 +116,16 @@ export class DivisionBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return DivisionStructure;
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'Division',
+      color: 'green',
+      col_editable: true, // 열 추가 가능
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   // 렌더링용 헬퍼 메서드

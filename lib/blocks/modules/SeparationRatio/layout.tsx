@@ -15,73 +15,42 @@ import separationRatioStyles from './SeparationRatio.module.css';
  * SeparationRatio 블록의 레이아웃 정의
  * 각 열별로 직접 HTML/CSS를 작성하고, 공통 컴포넌트만 사용
  */
+// colIndex에 따라 교과 라벨 생성 (일반교과, 진로선택과목, 예체능교과, ...)
+const SEPARATION_LABELS = ['일반교과', '진로선택과목', '예체능교과'];
+const getSeparationLabel = (colIndex: number): string => {
+  if (colIndex < SEPARATION_LABELS.length) {
+    return SEPARATION_LABELS[colIndex];
+  }
+  return `${colIndex + 1}번째 교과`;
+};
+
 export const SeparationRatioLayout: {
-  header: { [columnIndex: number]: LayoutComponent };
-  body: { [columnIndex: number]: LayoutComponent };
+  header: LayoutComponent;
+  body: LayoutComponent;
 } = {
-  header: {
-    0: () => <span className={separationRatioStyles.label}>일반교과</span>,
-    1: () => <span className={separationRatioStyles.label}>진로선택과목</span>,
-    2: () => <span className={separationRatioStyles.label}>예체능교과</span>,
+  header: ({ colIndex }) => {
+    const label = colIndex !== undefined ? getSeparationLabel(colIndex) : '교과';
+    return <span className={separationRatioStyles.label}>{label}</span>;
   },
-  body: {
-    0: ({ properties, readOnly, onChange }) => {
-      const ratio = properties.general_ratio || '100';
-      return (
-        <Token
-          element={createTokenElement({
-            menu_key: 'percentage_ratio',
-            value: ratio,
-            optional: false,
-              visible: true,
-            })}
-          onChange={(value) => {
-            if (!readOnly) {
-              onChange?.('general_ratio', value);
-            }
-          }}
-          autoFit={true}
-        />
-      );
-    },
-    1: ({ properties, readOnly, onChange }) => {
-      const ratio = properties.career_ratio || '100';
-      return (
-        <Token
-          element={createTokenElement({
-            menu_key: 'percentage_ratio',
-            value: ratio,
-            optional: false,
-              visible: true,
-            })}
-          onChange={(value) => {
-            if (!readOnly) {
-              onChange?.('career_ratio', value);
-            }
-          }}
-          autoFit={true}
-        />
-      );
-    },
-    2: ({ properties, readOnly, onChange }) => {
-      const ratio = properties.arts_ratio || '100';
-      return (
-        <Token
-          element={createTokenElement({
-            menu_key: 'percentage_ratio',
-            value: ratio,
-            optional: false,
-              visible: true,
-            })}
-          onChange={(value) => {
-            if (!readOnly) {
-              onChange?.('arts_ratio', value);
-            }
-          }}
-          autoFit={true}
-        />
-      );
-    },
+  body: ({ properties, readOnly, onChange }) => {
+    const ratio = properties.ratio || '100';
+    
+    return (
+      <Token
+        element={createTokenElement({
+          menu_key: 'percentage_ratio',
+          value: ratio,
+          optional: false,
+          visible: true,
+        })}
+        onChange={(value) => {
+          if (!readOnly) {
+            onChange?.('ratio', value);
+          }
+        }}
+        autoFit={true}
+      />
+    );
   },
 };
 
@@ -94,7 +63,7 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const LayoutComponent = getLayoutComponent(SeparationRatioLayout.header, colIndex);
+    const LayoutComponent = SeparationRatioLayout.header;
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
     }
@@ -102,7 +71,7 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     return (
       <td key={colIndex} className={styles.tableCell}>
         <div className={styles.headerCell}>
-          <LayoutComponent properties={{}} readOnly={false} />
+          <LayoutComponent properties={{}} readOnly={false} colIndex={colIndex} />
         </div>
       </td>
     );
@@ -119,7 +88,7 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
 
-    const LayoutComponent = getLayoutComponent(SeparationRatioLayout.body, colIndex);
+    const LayoutComponent = SeparationRatioLayout.body;
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.bodyCell} /></td>;
     }
@@ -138,6 +107,7 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
+            colIndex={colIndex}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

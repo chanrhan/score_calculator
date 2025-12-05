@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { SubjectGroupRatioStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class SubjectGroupRatioBlockInstance extends BlockInstance {
   // 동적 열 구조: 각 열마다 header와 body 셀
@@ -21,10 +18,8 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.SUBJECT_GROUP_RATIO, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.SUBJECT_GROUP_RATIO);
-    const defaultColumns = Array.isArray(defaults.columns) ? defaults.columns : [];
-    
-    // header_cells 처리 (동적 열)
+    // 기본값 정의 (structure.ts 제거)
+    // header_cells 처리: 기본 1*1
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       this.headerCells = data.header_cells.map((cell: any) => {
         if (typeof cell === 'object' && cell !== null && !Array.isArray(cell)) {
@@ -35,10 +30,8 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
         return { subject_group: null };
       });
     } else {
-      // 기본값으로 최소 1개 열 생성
-      this.headerCells = defaultColumns.length > 0 
-        ? defaultColumns.map((col: any) => ({ subject_group: col.subject_group || null }))
-        : [{ subject_group: null }];
+      // 기본 1*1 구조
+      this.headerCells = [{ subject_group: null }];
     }
     
     // body_cells 처리 (동적 열)
@@ -115,7 +108,16 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(SubjectGroupRatioStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'SubjectGroupRatio',
+      color: 'blue',
+      col_editable: true, // 열 추가 가능
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {

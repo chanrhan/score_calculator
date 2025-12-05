@@ -1,29 +1,17 @@
 // lib/blocks/modules/common/defaults.ts
-// BlockStructure에서 기본값을 가져오는 유틸리티
+// 기본값 유틸리티 (deprecated: 이제 각 BlockInstance에서 기본값을 직접 관리)
 
-import { BLOCK_TYPE } from '@/types/block-types';
-import { BlockStructureDefinition, BlockPropertyValues } from './types';
-import { BlockStructureRegistry } from '../registry';
+import { BlockPropertyValues } from './types';
 
 /**
  * 블록 타입에 해당하는 기본값을 가져옴
+ * @deprecated 이제 각 BlockInstance의 constructor에서 기본값을 직접 정의합니다.
  * @param blockType 블록 타입 ID
- * @returns 기본값 객체, 없으면 빈 객체
+ * @returns 빈 객체 (기본값은 각 BlockInstance에서 관리)
  */
 export function getBlockDefaults(blockType: number): BlockPropertyValues {
-  const structure = BlockStructureRegistry[blockType];
-  
-  if (!structure) {
-    return {};
-  }
-  
-  // 새로운 구조(BlockStructureDefinition)인지 확인
-  if ('properties' in structure && 'defaults' in structure && 'layout' in structure) {
-    const blockStructure = structure as BlockStructureDefinition;
-    return { ...blockStructure.defaults };
-  }
-  
-  // 기존 구조(FlowBlockType)는 기본값 없음
+  // 구조가 제거되었으므로 빈 객체 반환
+  // 각 BlockInstance의 constructor에서 기본값을 직접 정의하도록 변경됨
   return {};
 }
 

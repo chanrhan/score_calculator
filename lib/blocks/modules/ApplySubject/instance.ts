@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { ApplySubjectStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class ApplySubjectBlockInstance extends BlockInstance {
   private headerCell: {
@@ -20,10 +17,9 @@ export class ApplySubjectBlockInstance extends BlockInstance {
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.APPLY_SUBJECT, data);
     
-    // BlockStructure에서 기본값 가져오기
-    const defaults = getBlockDefaults(BLOCK_TYPE.APPLY_SUBJECT);
-    const defaultIncludeOption = defaults.include_option || 'include';
-    const defaultSubjectGroups = defaults.subject_groups || [];
+    // 기본값 정의 (structure.ts 제거)
+    const defaultIncludeOption = 'include';
+    const defaultSubjectGroups: string[] = [];
     
     // header_cells 처리: 새로운 형식만 지원
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
@@ -86,12 +82,8 @@ export class ApplySubjectBlockInstance extends BlockInstance {
   }
 
   addRow(rowIndex?: number): void {
-    // 기본값에서 subject_groups 가져오기
-    const defaults = getBlockDefaults(BLOCK_TYPE.APPLY_SUBJECT);
-    const defaultSubjectGroups = Array.isArray(defaults.subject_groups) 
-      ? [...defaults.subject_groups] 
-      : [];
-    
+    // 기본값 사용
+    const defaultSubjectGroups: string[] = [];
     const newRow = { subject_groups: defaultSubjectGroups };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -115,8 +107,16 @@ export class ApplySubjectBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    // 새로운 구조를 기존 FlowBlockType으로 변환
-    return toFlowBlockType(ApplySubjectStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'ApplySubject',
+      color: 'blue',
+      col_editable: false, // 열 추가 불가
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {

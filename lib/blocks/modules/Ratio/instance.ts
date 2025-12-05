@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { RatioStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class RatioBlockInstance extends BlockInstance {
   private bodyCells: Array<{
@@ -17,26 +14,29 @@ export class RatioBlockInstance extends BlockInstance {
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.RATIO, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.RATIO);
+    // 기본값 정의 (structure.ts 제거)
+    const defaultRatio = '100';
+    const defaultScoreType = 'finalScore';
     
-    // body_cells 처리
+    // body_cells 처리: 기본 1*1
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            ratio: row.ratio?.toString() || defaults.ratio || '100',
-            score_type: row.score_type || defaults.score_type || 'finalScore',
+            ratio: row.ratio?.toString() || defaultRatio,
+            score_type: row.score_type || defaultScoreType,
           };
         }
         return {
-          ratio: defaults.ratio || '100',
-          score_type: defaults.score_type || 'finalScore',
+          ratio: defaultRatio,
+          score_type: defaultScoreType,
         };
       });
     } else {
+      // 기본 1*1 구조
       this.bodyCells = [{
-        ratio: defaults.ratio || '100',
-        score_type: defaults.score_type || 'finalScore',
+        ratio: defaultRatio,
+        score_type: defaultScoreType,
       }];
     }
   }
@@ -83,7 +83,16 @@ export class RatioBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(RatioStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'Ratio',
+      color: 'blue',
+      col_editable: false, // 열 추가 불가
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {

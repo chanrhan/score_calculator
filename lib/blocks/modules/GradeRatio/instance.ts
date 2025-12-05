@@ -4,62 +4,59 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { GradeRatioStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class GradeRatioBlockInstance extends BlockInstance {
+  // 각 열마다 하나의 ratio 속성만 가짐
   private headerCells: Array<{
-    grade1_ratio: string;
+    ratio: string;
   }>;
   
   private bodyCells: Array<{
-    grade2_ratio: string;
-    grade3_ratio: string;
+    ratio: string;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.GRADE_RATIO, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.GRADE_RATIO);
+    const defaultRatio = '100';
     
-    // header_cells 처리 (3개 열)
-    if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length >= 3) {
-      this.headerCells = [
-        { grade1_ratio: data.header_cells[0]?.grade1_ratio || defaults.grade1_ratio || '100' },
-        { grade1_ratio: data.header_cells[1]?.grade1_ratio || defaults.grade1_ratio || '100' },
-        { grade1_ratio: data.header_cells[2]?.grade1_ratio || defaults.grade1_ratio || '100' },
-      ];
+    // header_cells 처리: 기본 1*1, 데이터가 있으면 그대로 사용
+    if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
+      this.headerCells = data.header_cells.map((cell: any) => {
+        // 기존 형식 호환성: grade1_ratio, grade2_ratio, grade3_ratio 또는 ratio
+        const ratio = cell?.ratio || cell?.grade1_ratio || cell?.grade2_ratio || cell?.grade3_ratio || defaultRatio;
+        return { ratio: ratio.toString() };
+      });
     } else {
-      this.headerCells = [
-        { grade1_ratio: defaults.grade1_ratio || '100' },
-        { grade1_ratio: defaults.grade1_ratio || '100' },
-        { grade1_ratio: defaults.grade1_ratio || '100' },
-      ];
+      // 기본 1*1 구조
+      this.headerCells = [{ ratio: defaultRatio }];
     }
     
-    // body_cells 처리 (3개 열)
+    // body_cells 처리: 기본 1*1, 데이터가 있으면 그대로 사용
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       const row = data.body_cells[0];
-      if (Array.isArray(row) && row.length >= 3) {
-        this.bodyCells = [
-          { grade2_ratio: row[0]?.grade2_ratio || defaults.grade2_ratio || '100', grade3_ratio: row[0]?.grade3_ratio || defaults.grade3_ratio || '100' },
-          { grade2_ratio: row[1]?.grade2_ratio || defaults.grade2_ratio || '100', grade3_ratio: row[1]?.grade3_ratio || defaults.grade3_ratio || '100' },
-          { grade2_ratio: row[2]?.grade2_ratio || defaults.grade2_ratio || '100', grade3_ratio: row[2]?.grade3_ratio || defaults.grade3_ratio || '100' },
-        ];
+      if (Array.isArray(row) && row.length > 0) {
+        this.bodyCells = row.map((cell: any) => {
+          // 기존 형식 호환성: grade2_ratio, grade3_ratio 또는 ratio
+          const ratio = cell?.ratio || cell?.grade2_ratio || cell?.grade3_ratio || defaultRatio;
+          return { ratio: ratio.toString() };
+        });
       } else {
-        this.bodyCells = [
-          { grade2_ratio: defaults.grade2_ratio || '100', grade3_ratio: defaults.grade3_ratio || '100' },
-          { grade2_ratio: defaults.grade2_ratio || '100', grade3_ratio: defaults.grade3_ratio || '100' },
-          { grade2_ratio: defaults.grade2_ratio || '100', grade3_ratio: defaults.grade3_ratio || '100' },
-        ];
+        // 기본 1*1 구조
+        this.bodyCells = [{ ratio: defaultRatio }];
       }
     } else {
-      this.bodyCells = [
-        { grade2_ratio: defaults.grade2_ratio || '100', grade3_ratio: defaults.grade3_ratio || '100' },
-        { grade2_ratio: defaults.grade2_ratio || '100', grade3_ratio: defaults.grade3_ratio || '100' },
-        { grade2_ratio: defaults.grade2_ratio || '100', grade3_ratio: defaults.grade3_ratio || '100' },
-      ];
+      // 기본 1*1 구조
+      this.bodyCells = [{ ratio: defaultRatio }];
+    }
+    
+    // header와 body의 열 개수가 일치하도록 보정
+    const maxCols = Math.max(this.headerCells.length, this.bodyCells.length);
+    while (this.headerCells.length < maxCols) {
+      this.headerCells.push({ ratio: defaultRatio });
+    }
+    while (this.bodyCells.length < maxCols) {
+      this.bodyCells.push({ ratio: defaultRatio });
     }
   }
 
@@ -69,38 +66,64 @@ export class GradeRatioBlockInstance extends BlockInstance {
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
+      // Header 셀 업데이트
       if (this.headerCells[colIndex]) {
-        this.headerCells[colIndex].grade1_ratio = value?.toString() || '100';
+        this.headerCells[colIndex].ratio = value?.toString() || '100';
       }
     } else {
+      // Body 셀 업데이트
       if (this.bodyCells[colIndex]) {
-        if (elementIndex === 0) {
-          this.bodyCells[colIndex].grade2_ratio = value?.toString() || '100';
-        } else if (elementIndex === 1) {
-          this.bodyCells[colIndex].grade3_ratio = value?.toString() || '100';
-        }
+        this.bodyCells[colIndex].ratio = value?.toString() || '100';
       }
     }
   }
 
   addRow(rowIndex?: number): void {
+    // GradeRatio는 행 추가 불가 (body는 항상 1개 행)
     throw new Error('GradeRatio does not support row addition');
   }
 
   addColumn(colIndex?: number): void {
-    throw new Error('GradeRatio does not support column addition');
+    const defaultRatio = '100';
+    const newColumn = { ratio: defaultRatio };
+    
+    if (colIndex === undefined || colIndex >= this.headerCells.length) {
+      // 끝에 추가
+      this.headerCells.push(newColumn);
+      this.bodyCells.push({ ...newColumn });
+    } else {
+      // 지정된 위치에 추가
+      this.headerCells.splice(colIndex, 0, newColumn);
+      this.bodyCells.splice(colIndex, 0, { ...newColumn });
+    }
   }
 
   removeRow(rowIndex: number): void {
+    // GradeRatio는 행 삭제 불가 (body는 항상 1개 행)
     throw new Error('GradeRatio does not support row removal');
   }
 
   removeColumn(colIndex: number): void {
-    throw new Error('GradeRatio does not support column removal');
+    if (this.headerCells.length <= 1) {
+      throw new Error('Cannot remove the last column');
+    }
+    if (colIndex >= 0 && colIndex < this.headerCells.length) {
+      this.headerCells.splice(colIndex, 1);
+      this.bodyCells.splice(colIndex, 1);
+    }
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(GradeRatioStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'GradeRatio',
+      color: 'blue',
+      col_editable: true, // 열 추가 가능
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {
@@ -112,17 +135,14 @@ export class GradeRatioBlockInstance extends BlockInstance {
 
   getHeaderCellValues(colIndex: number): any[] {
     if (this.headerCells[colIndex]) {
-      return [this.headerCells[colIndex].grade1_ratio];
+      return [this.headerCells[colIndex].ratio];
     }
     return [];
   }
 
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (rowIndex === 0 && this.bodyCells[colIndex]) {
-      return [
-        this.bodyCells[colIndex].grade2_ratio,
-        this.bodyCells[colIndex].grade3_ratio
-      ];
+      return [this.bodyCells[colIndex].ratio];
     }
     return [];
   }
@@ -130,7 +150,7 @@ export class GradeRatioBlockInstance extends BlockInstance {
   getHeaderProperties(colIndex: number): Record<string, any> {
     if (this.headerCells[colIndex]) {
       return {
-        grade1_ratio: this.headerCells[colIndex].grade1_ratio,
+        ratio: this.headerCells[colIndex].ratio,
       };
     }
     return {};
@@ -139,21 +159,24 @@ export class GradeRatioBlockInstance extends BlockInstance {
   getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
     if (rowIndex === 0 && this.bodyCells[colIndex]) {
       return {
-        grade2_ratio: this.bodyCells[colIndex].grade2_ratio,
-        grade3_ratio: this.bodyCells[colIndex].grade3_ratio,
+        ratio: this.bodyCells[colIndex].ratio,
       };
     }
     return {};
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (propertyName === 'grade1_ratio' && colIndex !== undefined && this.headerCells[colIndex]) {
-      this.headerCells[colIndex].grade1_ratio = value?.toString() || '100';
-    } else if (rowIndex === 0 && colIndex !== undefined && this.bodyCells[colIndex]) {
-      if (propertyName === 'grade2_ratio') {
-        this.bodyCells[colIndex].grade2_ratio = value?.toString() || '100';
-      } else if (propertyName === 'grade3_ratio') {
-        this.bodyCells[colIndex].grade3_ratio = value?.toString() || '100';
+    if (propertyName === 'ratio' && colIndex !== undefined) {
+      if (rowIndex === undefined || rowIndex === -1) {
+        // Header 셀 업데이트
+        if (this.headerCells[colIndex]) {
+          this.headerCells[colIndex].ratio = value?.toString() || '100';
+        }
+      } else if (rowIndex === 0) {
+        // Body 셀 업데이트
+        if (this.bodyCells[colIndex]) {
+          this.bodyCells[colIndex].ratio = value?.toString() || '100';
+        }
       }
     }
   }

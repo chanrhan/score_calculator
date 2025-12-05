@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { ApplyTermStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class ApplyTermBlockInstance extends BlockInstance {
   private headerCell: {
@@ -26,55 +23,58 @@ export class ApplyTermBlockInstance extends BlockInstance {
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.APPLY_TERM, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.APPLY_TERM);
+    // 기본값 정의 (structure.ts 제거)
+    const defaultIncludeOption = 'include';
+    const defaultTermValue = '1-1:on';
     
     // header_cells 처리
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       const headerObj = data.header_cells[0];
       if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
         this.headerCell = {
-          include_option: headerObj.include_option || defaults.include_option || 'include',
+          include_option: headerObj.include_option || defaultIncludeOption,
         };
       } else {
-        this.headerCell = { include_option: defaults.include_option || 'include' };
+        this.headerCell = { include_option: defaultIncludeOption };
       }
     } else {
-      this.headerCell = { include_option: defaults.include_option || 'include' };
+      this.headerCell = { include_option: defaultIncludeOption };
     }
     
-    // body_cells 처리
+    // body_cells 처리: 기본 1*1
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            term_1_1: row.term_1_1 || defaults.term_1_1 || '1-1:on',
-            term_1_2: row.term_1_2 || defaults.term_1_2 || '1-2:on',
-            term_2_1: row.term_2_1 || defaults.term_2_1 || '2-1:on',
-            term_2_2: row.term_2_2 || defaults.term_2_2 || '2-2:on',
-            term_3_1: row.term_3_1 || defaults.term_3_1 || '3-1:on',
-            term_3_2: row.term_3_2 || defaults.term_3_2 || '3-2:on',
-            top_terms: row.top_terms !== undefined ? row.top_terms : (defaults.top_terms ?? null),
+            term_1_1: row.term_1_1 || defaultTermValue,
+            term_1_2: row.term_1_2 || defaultTermValue,
+            term_2_1: row.term_2_1 || defaultTermValue,
+            term_2_2: row.term_2_2 || defaultTermValue,
+            term_3_1: row.term_3_1 || defaultTermValue,
+            term_3_2: row.term_3_2 || defaultTermValue,
+            top_terms: row.top_terms !== undefined ? row.top_terms : null,
           };
         }
         return {
-          term_1_1: defaults.term_1_1 || '1-1:on',
-          term_1_2: defaults.term_1_2 || '1-2:on',
-          term_2_1: defaults.term_2_1 || '2-1:on',
-          term_2_2: defaults.term_2_2 || '2-2:on',
-          term_3_1: defaults.term_3_1 || '3-1:on',
-          term_3_2: defaults.term_3_2 || '3-2:on',
-          top_terms: defaults.top_terms ?? null,
+          term_1_1: defaultTermValue,
+          term_1_2: defaultTermValue,
+          term_2_1: defaultTermValue,
+          term_2_2: defaultTermValue,
+          term_3_1: defaultTermValue,
+          term_3_2: defaultTermValue,
+          top_terms: null,
         };
       });
     } else {
+      // 기본 1*1 구조
       this.bodyCells = [{
-        term_1_1: defaults.term_1_1 || '1-1:on',
-        term_1_2: defaults.term_1_2 || '1-2:on',
-        term_2_1: defaults.term_2_1 || '2-1:on',
-        term_2_2: defaults.term_2_2 || '2-2:on',
-        term_3_1: defaults.term_3_1 || '3-1:on',
-        term_3_2: defaults.term_3_2 || '3-2:on',
-        top_terms: defaults.top_terms ?? null,
+        term_1_1: defaultTermValue,
+        term_1_2: defaultTermValue,
+        term_2_1: defaultTermValue,
+        term_2_2: defaultTermValue,
+        term_3_1: defaultTermValue,
+        term_3_2: defaultTermValue,
+        top_terms: null,
       }];
     }
   }
@@ -108,15 +108,15 @@ export class ApplyTermBlockInstance extends BlockInstance {
   }
 
   addRow(rowIndex?: number): void {
-    const defaults = getBlockDefaults(BLOCK_TYPE.APPLY_TERM);
+    const defaultTermValue = '1-1:on';
     const newRow = {
-      term_1_1: defaults.term_1_1 || '1-1:on',
-      term_1_2: defaults.term_1_2 || '1-2:on',
-      term_2_1: defaults.term_2_1 || '2-1:on',
-      term_2_2: defaults.term_2_2 || '2-2:on',
-      term_3_1: defaults.term_3_1 || '3-1:on',
-      term_3_2: defaults.term_3_2 || '3-2:on',
-      top_terms: defaults.top_terms ?? null,
+      term_1_1: defaultTermValue,
+      term_1_2: defaultTermValue,
+      term_2_1: defaultTermValue,
+      term_2_2: defaultTermValue,
+      term_3_1: defaultTermValue,
+      term_3_2: defaultTermValue,
+      top_terms: null,
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -140,7 +140,16 @@ export class ApplyTermBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(ApplyTermStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'ApplyTerm',
+      color: 'blue',
+      col_editable: false, // 열 추가 불가
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {

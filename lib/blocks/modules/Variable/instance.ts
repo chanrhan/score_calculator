@@ -4,9 +4,6 @@
 import { BlockInstance, BlockInstanceData } from '../../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
-import { VariableStructure } from './structure';
-import { toFlowBlockType } from '../common/types';
-import { getBlockDefaults } from '../common/defaults';
 
 export class VariableBlockInstance extends BlockInstance {
   private bodyCells: Array<{
@@ -17,26 +14,29 @@ export class VariableBlockInstance extends BlockInstance {
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.VARIABLE, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.VARIABLE);
+    // 기본값 정의 (structure.ts 제거)
+    const defaultVarName = '';
+    const defaultExpr = '';
     
-    // body_cells 처리
+    // body_cells 처리: 기본 1*1
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            var_name: row.var_name || defaults.var_name || '',
-            expr: row.expr || defaults.expr || '',
+            var_name: row.var_name || defaultVarName,
+            expr: row.expr || defaultExpr,
           };
         }
         return {
-          var_name: defaults.var_name || '',
-          expr: defaults.expr || '',
+          var_name: defaultVarName,
+          expr: defaultExpr,
         };
       });
     } else {
+      // 기본 1*1 구조
       this.bodyCells = [{
-        var_name: defaults.var_name || '',
-        expr: defaults.expr || '',
+        var_name: defaultVarName,
+        expr: defaultExpr,
       }];
     }
   }
@@ -83,7 +83,16 @@ export class VariableBlockInstance extends BlockInstance {
   }
 
   getStructure(): FlowBlockType {
-    return toFlowBlockType(VariableStructure);
+    // BlockInstance 내에서 직접 구조 생성 (structure.ts 제거)
+    return {
+      name: 'Variable',
+      color: 'blue',
+      col_editable: false, // 열 추가 불가
+      cols: [{
+        header: { elements: [] },
+        rows: [{ elements: [] }]
+      }]
+    };
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {
