@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       },
       select: { 
         subjects: true,
+        context_snapshots: true,
         final_score: true,
         student_id: true
       }
@@ -79,6 +80,7 @@ export async function GET(request: NextRequest) {
 
     const finalScore : number = Number(rec.final_score)
     const subjects: DomainSubject[] = Array.isArray(rec.subjects) ? rec.subjects as DomainSubject[] : []
+    const contextSnapshots = rec.context_snapshots || null
     // const subjects = rawSubjects.map((s: DomainSubject) => ({
     //   // 반영 여부 판단용
     //   filtered_block_id: s.filtered_block_id ?? 0,
@@ -95,6 +97,7 @@ export async function GET(request: NextRequest) {
       data: {
         finalScore: finalScore, 
         subjects: subjects,
+        contextSnapshots: contextSnapshots,
         studentInfo: {
           identifyNumber: studentInfo.identifyNumber,
           mogib2Code: mogib2Code,

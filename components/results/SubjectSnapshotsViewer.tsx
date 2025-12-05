@@ -3,7 +3,9 @@
 import * as React from 'react';
 import type { Subject, Snapshot, CalculationLog } from '@/types/domain';
 import { useResultsHighlight } from '@/components/results/ResultsHighlightContext';
+import { useLogKeyHighlight } from './LogKeyHighlightContext';
 import styles from './SubjectSnapshotsViewer.module.css';
+import keyStyles from './KeyHighlighter.module.css';
 import { BLOCK_TYPE_MAP } from '@/types/block-types';
 import { Subject_Separation } from '@/types/text-mapping';
 
@@ -11,15 +13,28 @@ type Props = {
   subject: Subject | null;
 };
 
-function formatKey(key: any): string {
-  try {
-    if (key == null) return '-';
-    if (typeof key === 'string' || typeof key === 'number' || typeof key === 'boolean') return String(key);
-    return JSON.stringify(key);
-  } catch {
-    return String(key);
-  }
-}
+// KeyDisplay Component for consistent key visualization
+const KeyDisplay = ({ value }: { value: string | null | undefined }) => {
+  const { keyColorMap, hoveredKey, setHoveredKey } = useLogKeyHighlight();
+
+  if (!value) return <span className={keyStyles.keyText}>-</span>;
+
+  const color = keyColorMap.get(value);
+  const isHighlighted = hoveredKey === value;
+
+  return (
+    <div
+      className={`${keyStyles.keyWrapper} ${isHighlighted ? keyStyles.highlighted : ''}`}
+      onMouseEnter={() => setHoveredKey(value)}
+      onMouseLeave={() => setHoveredKey(null)}
+      role="button"
+      tabIndex={0}
+    >
+      {color && <div className={keyStyles.keyDot} style={{ backgroundColor: color }} />}
+      <span className={keyStyles.keyText}>{value}</span>
+    </div>
+  );
+};
 
 function formatValue(value: any): string {
   try {
@@ -34,23 +49,27 @@ function formatValue(value: any): string {
 export default function SubjectSnapshotsViewer({ subject }: Props) {
   const { setHighlights, setSelectedSubject, focusBlockById } = useResultsHighlight();
   const [activeKey, setActiveKey] = React.useState<string | null>(null);
+  
   React.useEffect(() => {
     try { console.log('[SnapshotViewer] mounted snapshots', { count: subject?.snapshot?.length || 0, subject: subject?.subjectName }); } catch {}
   }, [subject]);
-  // console.table(subject);
+
+  const snapshots: Snapshot[] = subject?.snapshot || [];
+
+  // 과목이 변경될 때마다 block_id와 case_index 기반으로 하이라이트 정보 갱신
+  // 모든 hooks는 조건부 return 전에 호출해야 합니다
+  React.useEffect(() => {
+    if (subject) {
+      setHighlights({ snapshots });
+      setSelectedSubject(subject);
+    }
+  }, [subject, snapshots, setHighlights, setSelectedSubject]);
+
   if (!subject) {
     return (
       <div className={styles.empty}>과목이 선택되지 않았습니다.</div>
     );
   }
-
-  const snapshots: Snapshot[] = subject.snapshot || [];
-
-  // 과목이 변경될 때마다 block_id와 case_index 기반으로 하이라이트 정보 갱신
-  React.useEffect(() => {
-    setHighlights({ snapshots });
-    setSelectedSubject(subject);
-  }, [subject, snapshots, setHighlights, setSelectedSubject]);
 
   return (  
     <div className={styles.viewer}>
@@ -106,12 +125,12 @@ export default function SubjectSnapshotsViewer({ subject }: Props) {
                         <div className={styles.logGrid}>
                           <div className={`${styles.ioCard} ${styles.inputCard}`}>
                             <div className={styles.ioHeader}>입력</div>
-                            <div className={styles.ioKey}>{formatKey(log.input_key)}</div>
+                            <div className={styles.ioKey}><KeyDisplay value={log.input_key} /></div>
                             <div className={styles.ioValue}>{formatValue(log.input)}</div>
                           </div>
                           <div className={`${styles.ioCard} ${styles.outputCard}`}>
                             <div className={styles.ioHeader}>출력</div>
-                            <div className={styles.ioKey}>{formatKey(log.output_key)}</div>
+                            <div className={styles.ioKey}><KeyDisplay value={log.output_key} /></div>
                             <div className={styles.ioValue}>{formatValue(log.output)}</div>
                           </div>
                         </div>
@@ -129,5 +148,3 @@ export default function SubjectSnapshotsViewer({ subject }: Props) {
     </div>
   );
 }
-
-

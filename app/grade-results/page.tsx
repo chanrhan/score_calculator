@@ -20,8 +20,10 @@ import { ResultsHighlightProvider, useResultsHighlight } from '@/components/resu
 import { usePipelines } from '@/store/usePipelines';
 import { convertComponentGridsToPipelineComponents } from '@/lib/adapters/pipelineLoader';
 import styles from './page.module.css';
-import type { Subject as DomainSubject } from '@/types/domain';
+import type { Subject as DomainSubject, Snapshot } from '@/types/domain';
 import SubjectSnapshotsViewer from '../../components/results/SubjectSnapshotsViewer';
+import ContextSnapshotsViewer from '../../components/results/ContextSnapshotsViewer';
+import { LogKeyHighlightProvider } from '@/components/results/LogKeyHighlightContext';
 
 interface GradeResult {
   studentId: string;
@@ -68,10 +70,12 @@ export default function GradeResultsPage() {
   const [orderBy, setOrderBy] = useState<'final_score' | 'rank'>('final_score');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
 
-  // 좌측 패널/과목 패널 상태
-  const [isResultsPanelExpanded, setIsResultsPanelExpanded] = useState(true);
+  // UI 상태
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [activeStudentId, setActiveStudentId] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<DomainSubject | null>(null);
+  const [contextSnapshots, setContextSnapshots] = useState<Snapshot[] | null>(null);
+  const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline', 'context', 'subject'
 
   // 파이프라인 스토어 연동 (캔버스 표시 목적)
   const { getById: getPipelineById, add: addPipeline, update: updatePipeline } = usePipelines();
@@ -324,51 +328,69 @@ export default function GradeResultsPage() {
 
         {/* 본문: 좌측 패널 + 우측(캔버스/상세 패널) 2단 레이아웃 */}
         <div className={styles.contentArea}>
-          {/* 좌측 학생 결과 패널 (오버레이 기준 컨테이너) */}
+          {/* 좌측 마스터 패널 */}
           <div className={styles.leftPanel}>
-            <GradeResultsSidebar 
-              dbPipelineId={selectedPipelineId ? Number(selectedPipelineId) : undefined}
-              onSelectStudent={(sid) => { setActiveStudentId(sid); setIsResultsPanelExpanded(true); }}
-              isExpanded={isResultsPanelExpanded}
-              onToggle={setIsResultsPanelExpanded}
-            />
-
-            {activeStudentId && (
-              <div className={styles.subjectsOverlay}>
-                <StudentSubjectsPanel 
-                  studentId={activeStudentId}
-                  dbPipelineId={selectedPipelineId ? Number(selectedPipelineId) : undefined}
-                  onClose={() => { setActiveStudentId(null); setSelectedSubject(null); }}
-                  onSelectSubject={(subject) => { setSelectedSubject(subject); console.log('[GradeResultsPage] onSelectSubject', { subjectName: subject.subjectName, snapshots: subject.snapshot?.length }); }}
-                />
-              </div>
+            {activeStudentId ? (
+              <StudentSubjectsPanel
+                studentId={activeStudentId}
+                dbPipelineId={selectedPipelineId ? Number(selectedPipelineId) : undefined}
+                onClose={() => { setActiveStudentId(null); setSelectedSubject(null); setContextSnapshots(null); }}
+                onSelectSubject={(subject) => { setSelectedSubject(subject); }}
+                onContextSnapshotsLoaded={(snapshots) => { setContextSnapshots(snapshots); }}
+                selectedSubjectId={selectedSubject?.subjectId}
+              />
+            ) : (
+              <GradeResultsSidebar
+                dbPipelineId={selectedPipelineId ? Number(selectedPipelineId) : undefined}
+                onSelectStudent={(sid) => {
+                  setActiveStudentId(sid);
+                  setSelectedSubject(null);
+                  setContextSnapshots(null);
+                }}
+                isExpanded={isSidebarExpanded}
+                onToggle={setIsSidebarExpanded}
+                activeStudentId={activeStudentId}
+              />
             )}
           </div>
 
-          {/* 우측 영역: 상단 캔버스 + 하단 상세 패널 */}
+          {/* 우측 디테일 패널 */}
           <div className={styles.rightArea}>
-            <div className={styles.canvasArea}>
-              {localCanvasPipelineId ? (
-                <div className={styles.canvasContainer}>
-                  <Canvas pipelineId={localCanvasPipelineId} dbPipelineId={selectedPipelineId ? Number(selectedPipelineId) : undefined} readOnly />
+            {activeStudentId ? (
+              <>
+                {/* 상단: 캔버스 */}
+                <div className={styles.rightTopPane}>
+                  <div className={styles.canvasContainer}>
+                    {localCanvasPipelineId ? (
+                      <Canvas pipelineId={localCanvasPipelineId} dbPipelineId={selectedPipelineId ? Number(selectedPipelineId) : undefined} readOnly />
+                    ) : (
+                      <div className={styles.canvasPlaceholder}>파이프라인을 선택하면 캔버스가 표시됩니다.</div>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className={styles.canvasPlaceholder}>
-                  파이프라인을 선택하면 캔버스가 표시됩니다.
-                </div>
-              )}
-            </div>
 
-            {/* 하단: 상세 패널 */}
-            <div className={styles.bottomPanel}>
-              {selectedSubject ? (
-                <SubjectSnapshotsViewer subject={selectedSubject} />
-              ) : (
-                <div className={styles.bottomPanelPlaceholder}>
-                  과목을 선택하면 스냅샷 상세가 표시됩니다.
+                {/* 하단: 로그 뷰어 */}
+                <div className={styles.rightBottomPane}>
+                  <LogKeyHighlightProvider
+                    contextSnapshots={contextSnapshots}
+                    subjectSnapshots={selectedSubject?.snapshot || null}
+                  >
+                    <div className={styles.logViewerContainer}>
+                      <div className={styles.logViewer}>
+                        <ContextSnapshotsViewer snapshots={contextSnapshots} />
+                      </div>
+                      <div className={styles.logViewer}>
+                        <SubjectSnapshotsViewer subject={selectedSubject} />
+                      </div>
+                    </div>
+                  </LogKeyHighlightProvider>
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className={styles.canvasPlaceholder}>
+                학생을 선택하면 상세 정보가 표시됩니다.
+              </div>
+            )}
           </div>
         </div>
       </div>

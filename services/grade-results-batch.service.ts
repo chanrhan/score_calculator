@@ -144,7 +144,8 @@ export class GradeResultsBatchService {
         finalRank: result.finalRank || 0,
         finalScore: result.finalScore,
         subjects: result.subjects,
-        vars: result.vars
+        vars: result.vars,
+        snapshot: result.snapshot || []
       };
 
       return gradeResult;
@@ -198,18 +199,26 @@ export class GradeResultsBatchService {
         .filter(student => student.subjects && student.subjects.length > 0);
 
       const gradeResultsData = studentsWithSubjects
-        .map(student => ({
-          student_id: student.identifyNumber.toString(),
-          final_score: student.finalScore || 0,
-          rank: student.finalRank || 0,
-          tie_breaker: (student as any).metrics || {},
-          created_at: new Date(),
-          pipeline_id: batch.pipelineId as any,
-          meta_variables: (student as any).metrics || {},
-          // 스냅샷은 비워서 저장 (용량 절감)
-          subjects: (student.subjects || []).map((s: any) => ({ ...s, snapshot: [] })),
-          updated_at: new Date()
-        }));
+        .map(student => {
+          // vars Map을 객체로 변환
+          const varsObject = student.vars instanceof Map 
+            ? Object.fromEntries(student.vars) 
+            : (student.vars || {});
+          
+          return {
+            student_id: student.identifyNumber.toString(),
+            final_score: student.finalScore || 0,
+            rank: student.finalRank || 0,
+            tie_breaker: (student as any).metrics || {},
+            created_at: new Date(),
+            pipeline_id: batch.pipelineId as any,
+            meta_variables: varsObject,
+            // 스냅샷은 비워서 저장 (용량 절감)
+            subjects: (student.subjects || []).map((s: any) => ({ ...s, snapshot: [] })),
+            context_snapshots: null, // 초기값은 null, 나중에 업데이트
+            updated_at: new Date()
+          };
+        });
 
       const chunks = chunkArray(gradeResultsData, dbChunkSize);
       let inserted = 0;
@@ -225,7 +234,7 @@ export class GradeResultsBatchService {
       }
       console.log(`\n✅ 성적 결과 저장 완료`);
 
-      // 2단계: 학생별 스냅샷을 포함하여 subjects만 update
+      // 2단계: 학생별 스냅샷을 포함하여 subjects와 context_snapshots update
       // 개별 업데이트를 청크로 나눠 순차 실행
       const updateChunks = chunkArray(studentsWithSubjects, Math.max(1, Math.min(dbChunkSize, 500)));
       let updated = 0;
@@ -240,6 +249,7 @@ export class GradeResultsBatchService {
             },
             data: {
               subjects: student.subjects || [],
+              context_snapshots: student.snapshot || null,
               updated_at: new Date()
             }
           } as any);
