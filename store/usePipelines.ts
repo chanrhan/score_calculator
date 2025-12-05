@@ -457,13 +457,14 @@ export const usePipelines = create<PipelinesState>()(
           const bid = nextBlockId(p);
           const blocks = c.blocks.slice();
           const idx = atIndex == null ? blocks.length : Math.max(0, Math.min(atIndex, blocks.length));
-          // AnyBlock을 FlowBlock으로 변환 저장 (간단한 변환)
-          blocks.splice(idx, 0, { 
-            block_id: bid, 
-            block_type: 0, // 기본값
-            header_cells: [['샘플 헤더']], 
-            body_cells: [[['샘플 데이터']]] 
-          } as FlowBlock);
+          
+          // BlockInstanceFactory를 사용하여 기본값으로 초기화된 블록 생성
+          const { BlockInstanceFactory } = require('../lib/blocks/modules/registry');
+          const blockType = (block as any).block_type || 0;
+          const blockInstance = BlockInstanceFactory.createWithDefaults(blockType, bid);
+          const flowBlock = blockInstance.toFlowBlock();
+          
+          blocks.splice(idx, 0, flowBlock);
           // 재배치
           const comps = p.components.map(cc => cc.id === compId ? { ...c, blocks } : cc);
           return { pipelines: state.pipelines.map(pp => pp.id === pipelineId ? { ...p, components: comps } : pp) };

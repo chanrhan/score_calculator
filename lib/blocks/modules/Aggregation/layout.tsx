@@ -5,11 +5,9 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues } from '../common/types';
-import { extractHeaderProperties, extractBodyProperties, PropertyExtractors } from '../common/propertyExtractor';
-import { createTokenElement, createTextElement } from '../common/elementHelpers';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
+import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
-import { Text } from '@/components/builder/block_builder/CellElement/Text';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import aggregationStyles from './Aggregation.module.css';
 
@@ -18,11 +16,10 @@ import aggregationStyles from './Aggregation.module.css';
  * 각 열별로 직접 HTML/CSS를 작성하고, 공통 컴포넌트만 사용
  */
 export const AggregationLayout: {
-  header: { [columnIndex: number]: LayoutComponent };
-  body: { [columnIndex: number]: LayoutComponent };
+  header: LayoutComponent;
+  body: LayoutComponent;
 } = {
-  header: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: ({ properties, readOnly, tokenMenus = [], onChange }) => {
       const variableScope = properties.variable_scope || '0';
       
       return (
@@ -46,9 +43,7 @@ export const AggregationLayout: {
         </div>
       );
     },
-  },
-  body: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
       const inputScoreType = properties.input_score_type || 'finalScore';
       const aggregationFunction = properties.aggregation_function || '0';
       const outputScoreType = properties.output_score_type || 'finalScore';
@@ -85,13 +80,7 @@ export const AggregationLayout: {
             tokenMenus={tokenMenus}
             autoFit={true}
           />
-          <Text
-            element={createTextElement({
-              content: '→',
-              optional: false,
-              visible: true,
-            })}
-          />
+          <span>→</span>
           <Token
             element={createTokenElement({
               menu_key: 'score_types',
@@ -110,7 +99,6 @@ export const AggregationLayout: {
         </div>
       );
     },
-  },
 };
 
 /**
@@ -123,19 +111,11 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractHeaderProperties(
-      dbFormat,
-      0,
-      {
-        variable_scope: PropertyExtractors.direct('variable_scope', '0'),
-      },
-      { variable_scope: '0' }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getHeaderProperties(colIndex);
 
-    const LayoutComponent = AggregationLayout.header[colIndex];
+    const LayoutComponent = getLayoutComponent(AggregationLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
     }
@@ -149,10 +129,8 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              if (propertyName === 'variable_scope') {
-                block.updateCellValue(-1, colIndex, 1, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, undefined, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>
@@ -167,46 +145,11 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractBodyProperties(
-      dbFormat,
-      bodyRowIndex,
-      colIndex,
-      {
-        input_score_type: (cellData: any) => {
-          if (Array.isArray(cellData)) {
-            return cellData[0] || 'finalScore';
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return cellData.input_score_type || 'finalScore';
-          }
-          return 'finalScore';
-        },
-        aggregation_function: (cellData: any) => {
-          if (Array.isArray(cellData)) {
-            return cellData[1] || '0';
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return cellData.aggregation_function || '0';
-          }
-          return '0';
-        },
-        output_score_type: (cellData: any) => {
-          if (Array.isArray(cellData)) {
-            return cellData[3] || 'finalScore';
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return cellData.output_score_type || 'finalScore';
-          }
-          return 'finalScore';
-        },
-      },
-      { input_score_type: 'finalScore', aggregation_function: '0', output_score_type: 'finalScore' }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getBodyProperties(bodyRowIndex, colIndex);
 
-    const LayoutComponent = AggregationLayout.body[colIndex];
+    const LayoutComponent = getLayoutComponent(AggregationLayout.body, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.bodyCell} /></td>;
     }
@@ -228,16 +171,8 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              const indexMap: Record<string, number> = {
-                'input_score_type': 0,
-                'aggregation_function': 1,
-                'output_score_type': 3,
-              };
-              const elementIndex = indexMap[propertyName];
-              if (elementIndex !== undefined) {
-                block.updateCellValue(bodyRowIndex, colIndex, elementIndex, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>

@@ -5,8 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues } from '../common/types';
-import { extractHeaderProperties, extractBodyProperties, PropertyExtractors } from '../common/propertyExtractor';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createTokenElement, createListElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { List } from '@/components/builder/block_builder/CellElement/List';
@@ -18,11 +17,10 @@ import applySubjectStyles from './ApplySubject.module.css';
  * 각 열별로 직접 HTML/CSS를 작성하고, 공통 컴포넌트만 사용
  */
 export const ApplySubjectLayout: {
-  header: { [columnIndex: number]: LayoutComponent };
-  body: { [columnIndex: number]: LayoutComponent };
+  header: LayoutComponent;
+  body: LayoutComponent;
 } = {
-  header: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: ({ properties, readOnly, tokenMenus = [], onChange }) => {
       const includeOption = properties.include_option || 'include';
       
       return (
@@ -46,9 +44,7 @@ export const ApplySubjectLayout: {
         </div>
       );
     },
-  },
-  body: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
       const subjectGroups = properties.subject_groups || [];
       
       return (
@@ -71,7 +67,6 @@ export const ApplySubjectLayout: {
         </div>
       );
     },
-  },
 };
 
 /**
@@ -84,27 +79,11 @@ export class ApplySubjectLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractHeaderProperties(
-      dbFormat,
-      0,
-      {
-        include_option: (obj: any) => {
-          if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
-            return obj.include_option || 'include';
-          }
-          if (Array.isArray(obj)) {
-            return obj[1] || 'include';
-          }
-          return 'include';
-        },
-      },
-      { include_option: 'include' }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getHeaderProperties(colIndex);
 
-    const LayoutComponent = ApplySubjectLayout.header[colIndex];
+    const LayoutComponent = getLayoutComponent(ApplySubjectLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
     }
@@ -118,11 +97,8 @@ export class ApplySubjectLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              // 속성 업데이트를 BlockInstance에 반영
-              if (propertyName === 'include_option') {
-                block.updateCellValue(-1, colIndex, 1, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, undefined, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>
@@ -137,31 +113,11 @@ export class ApplySubjectLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractBodyProperties(
-      dbFormat,
-      bodyRowIndex,
-      colIndex,
-      {
-        subject_groups: (cellData: any, rowData: any) => {
-          if (typeof cellData === 'object' && cellData !== null && 'subject_groups' in cellData) {
-            return Array.isArray(cellData.subject_groups) ? cellData.subject_groups : [];
-          }
-          if (Array.isArray(cellData)) {
-            return Array.isArray(cellData) ? cellData : [];
-          }
-          if (typeof rowData === 'object' && rowData !== null && 'subject_groups' in rowData) {
-            return Array.isArray(rowData.subject_groups) ? rowData.subject_groups : [];
-          }
-          return [];
-        },
-      },
-      { subject_groups: [] }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getBodyProperties(bodyRowIndex, colIndex);
 
-    const LayoutComponent = ApplySubjectLayout.body[colIndex];
+    const LayoutComponent = getLayoutComponent(ApplySubjectLayout.body, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.bodyCell} /></td>;
     }
@@ -183,11 +139,8 @@ export class ApplySubjectLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              // 속성 업데이트를 BlockInstance에 반영
-              if (propertyName === 'subject_groups') {
-                block.updateCellValue(bodyRowIndex, colIndex, 0, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>

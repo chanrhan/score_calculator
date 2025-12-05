@@ -36,6 +36,29 @@ export abstract class BlockInstance {
   abstract getHeaderCellValues(colIndex: number): any[];
   abstract getBodyCellValues(rowIndex: number, colIndex: number): any[];
   
+  // 속성 기반 접근 메서드 (레이아웃에서 직접 사용)
+  /**
+   * 헤더 셀의 속성 값들을 반환
+   * @param colIndex 열 인덱스
+   */
+  abstract getHeaderProperties(colIndex: number): Record<string, any>;
+  
+  /**
+   * 바디 셀의 속성 값들을 반환
+   * @param rowIndex 행 인덱스
+   * @param colIndex 열 인덱스
+   */
+  abstract getBodyProperties(rowIndex: number, colIndex: number): Record<string, any>;
+  
+  /**
+   * 속성 값을 업데이트 (속성 이름으로 직접 접근)
+   * @param propertyName 속성 이름
+   * @param value 새로운 값
+   * @param rowIndex 행 인덱스 (바디 셀인 경우)
+   * @param colIndex 열 인덱스
+   */
+  abstract updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void;
+  
   // FlowBlock 형식으로 변환 (기존 호환성)
   toFlowBlock(): FlowBlock {
     const dbFormat = this.toDbFormat();
@@ -421,6 +444,59 @@ export class GenericBlockInstance extends BlockInstance {
     }
     
     return [];
+  }
+
+  // 속성 기반 접근 메서드 (기본 구현)
+  getHeaderProperties(colIndex: number): Record<string, any> {
+    const dbFormat = this.toDbFormat();
+    if (dbFormat.header_cells && Array.isArray(dbFormat.header_cells) && dbFormat.header_cells[colIndex]) {
+      const headerObj = dbFormat.header_cells[colIndex];
+      if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
+        return { ...headerObj };
+      }
+    }
+    return {};
+  }
+
+  getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
+    const dbFormat = this.toDbFormat();
+    if (dbFormat.body_cells && Array.isArray(dbFormat.body_cells) && dbFormat.body_cells[rowIndex]) {
+      const row = dbFormat.body_cells[rowIndex];
+      if (typeof row === 'object' && row !== null && !Array.isArray(row) && colIndex === 0) {
+        return { ...row };
+      } else if (Array.isArray(row) && row[colIndex] && typeof row[colIndex] === 'object' && row[colIndex] !== null && !Array.isArray(row[colIndex])) {
+        return { ...row[colIndex] };
+      }
+    }
+    return {};
+  }
+
+  updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
+    // 기본 구현: toDbFormat() 결과를 수정하고 다시 data에 저장
+    const dbFormat = this.toDbFormat();
+    
+    if (rowIndex === undefined) {
+      // Header 셀 업데이트
+      if (dbFormat.header_cells && Array.isArray(dbFormat.header_cells) && dbFormat.header_cells[colIndex || 0]) {
+        const headerObj = dbFormat.header_cells[colIndex || 0];
+        if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
+          headerObj[propertyName] = value;
+          this.data.header_cells = dbFormat.header_cells;
+        }
+      }
+    } else {
+      // Body 셀 업데이트
+      if (dbFormat.body_cells && Array.isArray(dbFormat.body_cells) && dbFormat.body_cells[rowIndex]) {
+        const row = dbFormat.body_cells[rowIndex];
+        if (typeof row === 'object' && row !== null && !Array.isArray(row) && colIndex === 0) {
+          row[propertyName] = value;
+          this.data.body_cells = dbFormat.body_cells;
+        } else if (Array.isArray(row) && row[colIndex || 0] && typeof row[colIndex || 0] === 'object' && row[colIndex || 0] !== null && !Array.isArray(row[colIndex || 0])) {
+          row[colIndex || 0][propertyName] = value;
+          this.data.body_cells = dbFormat.body_cells;
+        }
+      }
+    }
   }
 }
 

@@ -208,21 +208,53 @@ export function registerBlockType(
  * 모듈 레지스트리를 사용하여 자동으로 블록 타입을 로드
  */
 import { GenericBlockInstance } from '../BlockInstance';
+import { getBlockDefaults, mergeWithDefaults } from './common/defaults';
 
 export class BlockInstanceFactory {
+  /**
+   * 기본값으로 초기화된 BlockInstance 생성 (새 블록 생성용)
+   */
+  static createWithDefaults(blockType: number, blockId: number): BlockInstance {
+    const defaults = getBlockDefaults(blockType);
+    
+    // 기본값을 DB 형식으로 변환하여 전달
+    // 각 BlockInstance의 constructor에서 기본값을 사용하도록 수정 필요
+    const InstanceClass = BlockInstanceRegistry[blockType];
+    
+    if (InstanceClass) {
+      // 빈 데이터로 생성하면 constructor에서 defaults 사용
+      return new InstanceClass(blockId, {
+        header_cells: [],
+        body_cells: []
+      });
+    }
+    
+    return new GenericBlockInstance(blockId, blockType, {
+      header_cells: [],
+      body_cells: []
+    });
+  }
+
+  /**
+   * DB 데이터로 BlockInstance 생성 (기존 데이터 로드용)
+   */
   static create(blockType: number, blockId: number, data: any): BlockInstance {
     // 레지스트리에서 블록 타입 찾기
     const InstanceClass = BlockInstanceRegistry[blockType];
     
     if (InstanceClass) {
       // 레지스트리에 등록된 클래스 사용
-      return new InstanceClass(blockId, data);
+      // data가 없거나 불완전하면 constructor에서 defaults로 보정
+      return new InstanceClass(blockId, {
+        header_cells: data?.header_cells || [],
+        body_cells: data?.body_cells || []
+      });
     }
     
     // 레지스트리에 없으면 GenericBlockInstance 사용
     return new GenericBlockInstance(blockId, blockType, {
-      header_cells: data.header_cells || [],
-      body_cells: data.body_cells || []
+      header_cells: data?.header_cells || [],
+      body_cells: data?.body_cells || []
     });
   }
 }

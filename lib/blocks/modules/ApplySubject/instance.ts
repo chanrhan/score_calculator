@@ -6,10 +6,10 @@ import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
 import { ApplySubjectStructure } from './structure';
 import { toFlowBlockType } from '../common/types';
+import { getBlockDefaults } from '../common/defaults';
 
 export class ApplySubjectBlockInstance extends BlockInstance {
   private headerCell: {
-    text_content: string;
     include_option: 'include' | 'exclude';
   };
   
@@ -20,52 +20,50 @@ export class ApplySubjectBlockInstance extends BlockInstance {
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.APPLY_SUBJECT, data);
     
-    // 기존 데이터 구조에서 변환 (하위 호환성)
+    // BlockStructure에서 기본값 가져오기
+    const defaults = getBlockDefaults(BLOCK_TYPE.APPLY_SUBJECT);
+    const defaultIncludeOption = defaults.include_option || 'include';
+    const defaultSubjectGroups = defaults.subject_groups || [];
+    
+    // header_cells 처리: 새로운 형식만 지원
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
-      const headerValues = data.header_cells[0];
-      if (Array.isArray(headerValues)) {
-        // 기존 형식: [['반영교과', 'include']]
+      const headerObj = data.header_cells[0];
+      if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
+        // 객체 형식: { include_option } (text_content는 제거됨)
         this.headerCell = {
-          text_content: headerValues[0] || '반영교과',
-          include_option: (headerValues[1] === 'exclude' ? 'exclude' : 'include') as 'include' | 'exclude',
-        };
-      } else if (typeof headerValues === 'object' && headerValues !== null) {
-        // 새로운 형식: { text_content: '반영교과', include_option: 'include' }
-        this.headerCell = {
-          text_content: headerValues.text_content || '반영교과',
-          include_option: (headerValues.include_option === 'exclude' ? 'exclude' : 'include') as 'include' | 'exclude',
+          include_option: (headerObj.include_option || defaultIncludeOption) as 'include' | 'exclude',
         };
       } else {
-        this.headerCell = { text_content: '반영교과', include_option: 'include' };
+        // 데이터가 없거나 형식이 맞지 않으면 기본값 사용
+        this.headerCell = {
+          include_option: defaultIncludeOption as 'include' | 'exclude',
+        };
       }
     } else {
-      this.headerCell = { text_content: '반영교과', include_option: 'include' };
+      // 데이터가 없으면 기본값 사용
+      this.headerCell = {
+        include_option: defaultIncludeOption as 'include' | 'exclude',
+      };
     }
     
-    // body_cells 변환
-    if (data.body_cells && Array.isArray(data.body_cells)) {
+    // body_cells 처리: 새로운 형식만 지원
+    if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
-        // 새로운 DB 형식: [{ subject_groups: [['수학', '사회']] }] 또는 [{ subject_groups: ['수학', '사회'] }]
         if (typeof row === 'object' && row !== null && 'subject_groups' in row) {
-          if (Array.isArray(row.subject_groups)) {
-            // subject_groups가 배열인 경우
-            if (row.subject_groups.length > 0 && Array.isArray(row.subject_groups[0])) {
-              // 중첩 배열: [['수학', '사회']] -> ['수학', '사회']
-              return { subject_groups: row.subject_groups[0].filter((v: any) => v !== null && v !== undefined) };
-            } else {
-              // 평면 배열: ['수학', '사회']
-              return { subject_groups: row.subject_groups.filter((v: any) => v !== null && v !== undefined) };
-            }
-          }
+          // 객체 형식: { subject_groups: [...] }
+          const subjectGroups = Array.isArray(row.subject_groups) 
+            ? row.subject_groups.filter((v: any) => v !== null && v !== undefined)
+            : defaultSubjectGroups;
+          return { subject_groups: subjectGroups };
         }
-        // 기존 형식: [['수학', '사회']]
-        if (Array.isArray(row) && row.length > 0 && Array.isArray(row[0])) {
-          return { subject_groups: row[0].filter((v: any) => v !== null && v !== undefined) };
-        }
-        return { subject_groups: [] };
+        // 형식이 맞지 않으면 기본값 사용
+        return { subject_groups: Array.isArray(defaultSubjectGroups) ? [...defaultSubjectGroups] : [] };
       });
     } else {
-      this.bodyCells = [{ subject_groups: [] }];
+      // 데이터가 없으면 기본값 사용
+      this.bodyCells = [{
+        subject_groups: Array.isArray(defaultSubjectGroups) ? [...defaultSubjectGroups] : []
+      }];
     }
   }
 
@@ -75,10 +73,8 @@ export class ApplySubjectBlockInstance extends BlockInstance {
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
-      // Header 셀 수정
+      // Header 셀 수정 (text_content는 제거됨)
       if (elementIndex === 0) {
-        this.headerCell.text_content = value;
-      } else if (elementIndex === 1) {
         this.headerCell.include_option = value as 'include' | 'exclude';
       }
     } else {
@@ -90,7 +86,13 @@ export class ApplySubjectBlockInstance extends BlockInstance {
   }
 
   addRow(rowIndex?: number): void {
-    const newRow = { subject_groups: [] };
+    // 기본값에서 subject_groups 가져오기
+    const defaults = getBlockDefaults(BLOCK_TYPE.APPLY_SUBJECT);
+    const defaultSubjectGroups = Array.isArray(defaults.subject_groups) 
+      ? [...defaults.subject_groups] 
+      : [];
+    
+    const newRow = { subject_groups: defaultSubjectGroups };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
     } else {
@@ -127,7 +129,7 @@ export class ApplySubjectBlockInstance extends BlockInstance {
   // 렌더링용 헬퍼 메서드
   getHeaderCellValues(colIndex: number): any[] {
     if (colIndex === 0) {
-      return [this.headerCell.text_content, this.headerCell.include_option];
+      return [null, this.headerCell.include_option]; // text_content는 제거됨
     }
     return [];
   }
@@ -137,6 +139,33 @@ export class ApplySubjectBlockInstance extends BlockInstance {
       return [this.bodyCells[rowIndex].subject_groups];
     }
     return [];
+  }
+
+  // 속성 기반 접근 메서드
+  getHeaderProperties(colIndex: number): Record<string, any> {
+    if (colIndex === 0) {
+      return {
+        include_option: this.headerCell.include_option,
+      };
+    }
+    return {};
+  }
+
+  getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
+    if (colIndex === 0 && this.bodyCells[rowIndex]) {
+      return {
+        subject_groups: this.bodyCells[rowIndex].subject_groups,
+      };
+    }
+    return {};
+  }
+
+  updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
+    if (propertyName === 'include_option') {
+      this.headerCell.include_option = value as 'include' | 'exclude';
+    } else if (propertyName === 'subject_groups' && rowIndex !== undefined && this.bodyCells[rowIndex]) {
+      this.bodyCells[rowIndex].subject_groups = Array.isArray(value) ? value : [value];
+    }
   }
 }
 

@@ -3,7 +3,6 @@
 
 import { FlowBlockType } from '@/types/block-structure';
 import React from 'react';
-import { BlockPropertyValues } from './types';
 
 /**
  * 블록 속성 스키마 정의
@@ -45,17 +44,40 @@ export type LayoutComponent = React.FC<LayoutRenderContext>;
 
 /**
  * 레이아웃 정의 (새로운 방식)
- * 각 열별로 React 컴포넌트 함수를 정의
+ * - 단일 컴포넌트: 모든 열에 동일한 레이아웃 적용
+ * - 열별 컴포넌트: 각 열마다 다른 레이아웃 적용 (GradeRatio, SeparationRatio 등)
  */
 export interface BlockLayoutDefinition {
-  // 헤더 레이아웃 (열별)
-  header?: {
+  // 헤더 레이아웃
+  // 단일 컴포넌트인 경우: 모든 열에 동일하게 적용
+  // 열별 컴포넌트인 경우: 각 열 인덱스에 해당하는 컴포넌트 사용
+  header?: LayoutComponent | {
     [columnIndex: number]: LayoutComponent;
   };
-  // 바디 레이아웃 (열별)
-  body?: {
+  // 바디 레이아웃
+  // 단일 컴포넌트인 경우: 모든 열에 동일하게 적용
+  // 열별 컴포넌트인 경우: 각 열 인덱스에 해당하는 컴포넌트 사용
+  body?: LayoutComponent | {
     [columnIndex: number]: LayoutComponent;
   };
+}
+
+/**
+ * 레이아웃 컴포넌트를 열 인덱스로 가져오는 헬퍼 함수
+ */
+export function getLayoutComponent(
+  layout: LayoutComponent | { [columnIndex: number]: LayoutComponent } | undefined,
+  colIndex: number
+): LayoutComponent | undefined {
+  if (!layout) return undefined;
+  
+  // 단일 컴포넌트인 경우
+  if (typeof layout === 'function') {
+    return layout;
+  }
+  
+  // 열별 컴포넌트인 경우
+  return layout[colIndex];
 }
 
 /**

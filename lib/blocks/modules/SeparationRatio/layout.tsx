@@ -5,8 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues } from '../common/types';
-import { extractBodyProperties, PropertyExtractors } from '../common/propertyExtractor';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
@@ -98,7 +97,7 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const LayoutComponent = SeparationRatioLayout.header[colIndex];
+    const LayoutComponent = getLayoutComponent(SeparationRatioLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
     }
@@ -119,31 +118,11 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const ratioKeys = ['general_ratio', 'career_ratio', 'arts_ratio'];
-    const ratioKey = ratioKeys[colIndex];
-    
-    const properties = extractBodyProperties(
-      dbFormat,
-      bodyRowIndex,
-      colIndex,
-      {
-        [ratioKey]: (cellData: any) => {
-          if (Array.isArray(cellData) && cellData[0]) {
-            return cellData[0];
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return (cellData as any)[ratioKey] || '100';
-          }
-          return '100';
-        },
-      },
-      { [ratioKey]: '100' }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getBodyProperties(bodyRowIndex, colIndex);
 
-    const LayoutComponent = SeparationRatioLayout.body[colIndex];
+    const LayoutComponent = getLayoutComponent(SeparationRatioLayout.body, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.bodyCell} /></td>;
     }
@@ -165,7 +144,7 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              block.updateCellValue(bodyRowIndex, colIndex, 0, value);
+              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
               onBlockChange?.(block.block_id, block);
             }}
           />

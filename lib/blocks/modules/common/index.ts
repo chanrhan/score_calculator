@@ -5,3 +5,4 @@ export * from './types';
 export * from './base';
 export * from './propertyExtractor';
 export * from './elementHelpers';
+export * from './defaults';

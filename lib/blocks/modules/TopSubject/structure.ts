@@ -28,13 +28,9 @@ export const TopSubjectStructure: BlockStructureDefinition = {
     top_subject_count: '3',
   },
   
-  // 레이아웃 정의는 layout.tsx로 이동
+  // 레이아웃 정의는 layout.tsx에서만 정의
   layout: {
-    header: {
-      0: [],
-    },
-    body: {
-      0: [],
-    },
+    header: {},
+    body: {},
   },
 };

@@ -25,7 +25,7 @@ export const ApplySubjectStructure: BlockStructureDefinition = {
   
   // 기본값
   defaults: {
-    include_option: 'include',
+    include_option: 0,
     subject_groups: [],
   },
   

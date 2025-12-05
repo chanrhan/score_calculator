@@ -5,12 +5,10 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues } from '../common/types';
-import { extractHeaderProperties, extractBodyProperties, PropertyExtractors } from '../common/propertyExtractor';
-import { createTokenElement, createTextElement, createTableElement } from '../common/elementHelpers';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
+import { createTokenElement, createTableElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { Table } from '@/components/builder/block_builder/CellElement/Table';
-import { Text } from '@/components/builder/block_builder/CellElement/Text';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import scoreMapStyles from './ScoreMap.module.css';
 
@@ -19,11 +17,10 @@ import scoreMapStyles from './ScoreMap.module.css';
  * 각 열별로 직접 HTML/CSS를 작성하고, 공통 컴포넌트만 사용
  */
 export const ScoreMapLayout: {
-  header: { [columnIndex: number]: LayoutComponent };
-  body: { [columnIndex: number]: LayoutComponent };
+  header: LayoutComponent;
+  body: LayoutComponent;
 } = {
-  header: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: ({ properties, readOnly, tokenMenus = [], onChange }) => {
       const variableScope = properties.variable_scope || '0';
       const filterOption = properties.filter_option || '0';
       
@@ -63,9 +60,7 @@ export const ScoreMapLayout: {
         </div>
       );
     },
-  },
-  body: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
       const inputType = properties.input_type || 'originalScore';
       const inputRange = properties.input_range === 1 ? 'range' : 'exact';
       const outputType = properties.output_type || 'score';
@@ -105,12 +100,7 @@ export const ScoreMapLayout: {
             tokenMenus={tokenMenus}
             autoFit={true}
           />
-          <Text
-            element={createTextElement({
-              content: '→',
-              optional: false,
-              visible: true,
-            })}
+          <span>→</span>
           <Token
             element={{
               type: 'Token',
@@ -159,7 +149,6 @@ export const ScoreMapLayout: {
         </div>
       );
     },
-  },
 };
 
 /**
@@ -172,36 +161,11 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractHeaderProperties(
-      dbFormat,
-      0,
-      {
-        variable_scope: (obj: any) => {
-          if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
-            return obj.variable_scope || '0';
-          }
-          if (Array.isArray(obj)) {
-            return obj[1] || '0';
-          }
-          return '0';
-        },
-        filter_option: (obj: any) => {
-          if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
-            return obj.filter_option || '0';
-          }
-          if (Array.isArray(obj)) {
-            return obj[2] || '0';
-          }
-          return '0';
-        },
-      },
-      { variable_scope: '0', filter_option: '0' }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getHeaderProperties(colIndex);
 
-    const LayoutComponent = ScoreMapLayout.header[colIndex];
+    const LayoutComponent = getLayoutComponent(ScoreMapLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
     }
@@ -215,13 +179,8 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              if (propertyName === 'variable_scope') {
-                block.updateCellValue(-1, colIndex, 1, value);
-                onBlockChange?.(block.block_id, block);
-              } else if (propertyName === 'filter_option') {
-                block.updateCellValue(-1, colIndex, 2, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, undefined, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>
@@ -236,55 +195,11 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractBodyProperties(
-      dbFormat,
-      bodyRowIndex,
-      colIndex,
-      {
-        input_type: (cellData: any) => {
-          if (typeof cellData === 'object' && cellData !== null && !Array.isArray(cellData)) {
-            return cellData.input_type || 'originalScore';
-          }
-          if (Array.isArray(cellData)) {
-            return cellData[0] || 'originalScore';
-          }
-          return 'originalScore';
-        },
-        input_range: (cellData: any) => {
-          if (typeof cellData === 'object' && cellData !== null && !Array.isArray(cellData)) {
-            return cellData.input_range ?? 1;
-          }
-          if (Array.isArray(cellData)) {
-            return cellData[1] === 'range' ? 1 : 0;
-          }
-          return 1;
-        },
-        output_type: (cellData: any) => {
-          if (typeof cellData === 'object' && cellData !== null && !Array.isArray(cellData)) {
-            return cellData.output_type || 'score';
-          }
-          if (Array.isArray(cellData)) {
-            return cellData[3] || 'score';
-          }
-          return 'score';
-        },
-        table: (cellData: any) => {
-          if (typeof cellData === 'object' && cellData !== null && !Array.isArray(cellData)) {
-            return cellData.table || [];
-          }
-          if (Array.isArray(cellData)) {
-            return cellData[5] || [];
-          }
-          return [];
-        },
-      },
-      { input_type: 'originalScore', input_range: 1, output_type: 'score', table: [] }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getBodyProperties(bodyRowIndex, colIndex);
 
-    const LayoutComponent = ScoreMapLayout.body[colIndex];
+    const LayoutComponent = getLayoutComponent(ScoreMapLayout.body, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.bodyCell} /></td>;
     }
@@ -306,19 +221,8 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              if (propertyName === 'input_type') {
-                block.updateCellValue(bodyRowIndex, colIndex, 0, value);
-                onBlockChange?.(block.block_id, block);
-              } else if (propertyName === 'input_range') {
-                block.updateCellValue(bodyRowIndex, colIndex, 1, value === 1 ? 'range' : 'exact');
-                onBlockChange?.(block.block_id, block);
-              } else if (propertyName === 'output_type') {
-                block.updateCellValue(bodyRowIndex, colIndex, 3, value);
-                onBlockChange?.(block.block_id, block);
-              } else if (propertyName === 'table') {
-                block.updateCellValue(bodyRowIndex, colIndex, 5, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>

@@ -5,8 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues } from '../common/types';
-import { extractBodyProperties, PropertyExtractors } from '../common/propertyExtractor';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
@@ -17,14 +16,11 @@ import topSubjectStyles from './TopSubject.module.css';
  * 각 열별로 직접 HTML/CSS를 작성하고, 공통 컴포넌트만 사용
  */
 export const TopSubjectLayout: {
-  header: { [columnIndex: number]: LayoutComponent };
-  body: { [columnIndex: number]: LayoutComponent };
+  header: LayoutComponent;
+  body: LayoutComponent;
 } = {
-  header: {
-    0: () => <span className={topSubjectStyles.label}>우수 N 과목</span>,
-  },
-  body: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: () => <span className={topSubjectStyles.label}>우수 N 과목</span>,
+  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
       const scope = properties.top_subject_scope || 'overall';
       const count = properties.top_subject_count || '3';
       
@@ -63,7 +59,6 @@ export const TopSubjectLayout: {
         </div>
       );
     },
-  },
 };
 
 /**
@@ -75,7 +70,7 @@ export class TopSubjectLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const LayoutComponent = TopSubjectLayout.header[colIndex];
+    const LayoutComponent = getLayoutComponent(TopSubjectLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
     }
@@ -96,37 +91,11 @@ export class TopSubjectLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractBodyProperties(
-      dbFormat,
-      bodyRowIndex,
-      colIndex,
-      {
-        top_subject_scope: (cellData: any) => {
-          if (Array.isArray(cellData)) {
-            return cellData[0] || 'overall';
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return cellData.top_subject_scope || 'overall';
-          }
-          return 'overall';
-        },
-        top_subject_count: (cellData: any) => {
-          if (Array.isArray(cellData)) {
-            return cellData[1] || '3';
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return cellData.top_subject_count || '3';
-          }
-          return '3';
-        },
-      },
-      { top_subject_scope: 'overall', top_subject_count: '3' }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getBodyProperties(bodyRowIndex, colIndex);
 
-    const LayoutComponent = TopSubjectLayout.body[colIndex];
+    const LayoutComponent = getLayoutComponent(TopSubjectLayout.body, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.bodyCell} /></td>;
     }
@@ -148,13 +117,8 @@ export class TopSubjectLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              if (propertyName === 'top_subject_scope') {
-                block.updateCellValue(bodyRowIndex, colIndex, 0, value);
-                onBlockChange?.(block.block_id, block);
-              } else if (propertyName === 'top_subject_count') {
-                block.updateCellValue(bodyRowIndex, colIndex, 1, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>

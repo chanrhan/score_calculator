@@ -5,8 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues } from '../common/types';
-import { extractHeaderProperties, extractBodyProperties, PropertyExtractors } from '../common/propertyExtractor';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
@@ -78,27 +77,11 @@ export class SubjectGroupRatioLayoutRenderer extends GenericBlockLayoutRenderer 
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractHeaderProperties(
-      dbFormat,
-      colIndex,
-      {
-        subject_group: (obj: any) => {
-          if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
-            return obj.subject_group || null;
-          }
-          if (Array.isArray(obj) && obj[0]) {
-            return obj[0] || null;
-          }
-          return null;
-        },
-      },
-      { subject_group: null }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getHeaderProperties(colIndex);
 
-    const LayoutComponent = SubjectGroupRatioLayout.header[colIndex];
+    const LayoutComponent = getLayoutComponent(SubjectGroupRatioLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
     }
@@ -112,10 +95,8 @@ export class SubjectGroupRatioLayoutRenderer extends GenericBlockLayoutRenderer 
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              if (propertyName === 'subject_group') {
-                block.updateCellValue(-1, colIndex, 0, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, undefined, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>
@@ -130,28 +111,11 @@ export class SubjectGroupRatioLayoutRenderer extends GenericBlockLayoutRenderer 
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractBodyProperties(
-      dbFormat,
-      bodyRowIndex,
-      colIndex,
-      {
-        ratio: (cellData: any) => {
-          if (Array.isArray(cellData) && cellData[0]) {
-            return cellData[0];
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return cellData.ratio || '100';
-          }
-          return '100';
-        },
-      },
-      { ratio: '100' }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getBodyProperties(bodyRowIndex, colIndex);
 
-    const LayoutComponent = SubjectGroupRatioLayout.body[colIndex];
+    const LayoutComponent = getLayoutComponent(SubjectGroupRatioLayout.body, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.bodyCell} /></td>;
     }
@@ -173,10 +137,8 @@ export class SubjectGroupRatioLayoutRenderer extends GenericBlockLayoutRenderer 
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              if (propertyName === 'ratio') {
-                block.updateCellValue(bodyRowIndex, colIndex, 0, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>

@@ -5,8 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues } from '../common/types';
-import { extractBodyProperties, PropertyExtractors } from '../common/propertyExtractor';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createInputFieldElement, createFormulaElement } from '../common/elementHelpers';
 import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
 import { Formula } from '@/components/builder/block_builder/CellElement/Formula';
@@ -18,14 +17,11 @@ import variableStyles from './Variable.module.css';
  * 각 열별로 직접 HTML/CSS를 작성하고, 공통 컴포넌트만 사용
  */
 export const VariableLayout: {
-  header: { [columnIndex: number]: LayoutComponent };
-  body: { [columnIndex: number]: LayoutComponent };
+  header: LayoutComponent;
+  body: LayoutComponent;
 } = {
-  header: {
-    0: () => <span className={variableStyles.label}>변수</span>,
-  },
-  body: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: () => <span className={variableStyles.label}>변수</span>,
+  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
       const varName = properties.var_name || '';
       const expr = properties.expr || '';
       
@@ -61,7 +57,6 @@ export const VariableLayout: {
         </div>
       );
     },
-  },
 };
 
 /**
@@ -73,7 +68,7 @@ export class VariableLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const LayoutComponent = VariableLayout.header[colIndex];
+    const LayoutComponent = getLayoutComponent(VariableLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
     }
@@ -94,37 +89,11 @@ export class VariableLayoutRenderer extends GenericBlockLayoutRenderer {
     context: RenderCellContext
   ): React.ReactNode {
     const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
-    const dbFormat = block.toDbFormat();
     
-    // 속성 값 추출
-    const properties = extractBodyProperties(
-      dbFormat,
-      bodyRowIndex,
-      colIndex,
-      {
-        var_name: (cellData: any) => {
-          if (Array.isArray(cellData)) {
-            return cellData[0] || '';
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return cellData.var_name || '';
-          }
-          return '';
-        },
-        expr: (cellData: any) => {
-          if (Array.isArray(cellData)) {
-            return cellData[1] || '';
-          }
-          if (typeof cellData === 'object' && cellData !== null) {
-            return cellData.expr || '';
-          }
-          return '';
-        },
-      },
-      { var_name: '', expr: '' }
-    );
+    // 속성 값 직접 가져오기
+    const properties = block.getBodyProperties(bodyRowIndex, colIndex);
 
-    const LayoutComponent = VariableLayout.body[colIndex];
+    const LayoutComponent = getLayoutComponent(VariableLayout.body, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.bodyCell} /></td>;
     }
@@ -146,13 +115,8 @@ export class VariableLayoutRenderer extends GenericBlockLayoutRenderer {
             tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
-              if (propertyName === 'var_name') {
-                block.updateCellValue(bodyRowIndex, colIndex, 0, value);
-                onBlockChange?.(block.block_id, block);
-              } else if (propertyName === 'expr') {
-                block.updateCellValue(bodyRowIndex, colIndex, 1, value);
-                onBlockChange?.(block.block_id, block);
-              }
+              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+              onBlockChange?.(block.block_id, block);
             }}
           />
         </div>

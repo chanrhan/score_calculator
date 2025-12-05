@@ -233,88 +233,13 @@ export class BlockAdapter {
  */
 export function createFlowBlockFromKind(kind: string, tokenMenus?: any[]): FlowBlock {
   const blockTypeId = getBlockTypeId(kind);
-  const blockType = getBlockType(kind as keyof typeof import('@/types/block-structure').BLOCK_TYPES);
   
-  // header_cells 생성
-  const headerCells: any[][] = [];
+  // BlockInstanceFactory를 사용하여 기본값으로 초기화된 BlockInstance 생성
+  const { BlockInstanceFactory } = require('./blocks/modules/registry');
+  const blockInstance = BlockInstanceFactory.createWithDefaults(blockTypeId, 0);
   
-  if (blockTypeId === BLOCK_TYPE.DIVISION) {
-    // Division 블록의 경우
-    if (blockType.header && blockType.header.length > 0) {
-      const firstHeader = blockType.header[0];
-      if (firstHeader.type === 'Token') {
-        const tokenMenu = tokenMenus?.find(tm => tm.key === firstHeader.menu_key);
-        const defaultValue = tokenMenu?.items?.[0]?.value || firstHeader.value || 'gender';
-        headerCells.push([defaultValue]);
-      }
-    } else {
-      headerCells.push(['gender']);
-    }
-  } else {
-    // 일반 블록의 경우
-    if (blockType.cols && blockType.cols.length > 0) {
-      const firstCol = blockType.cols[0];
-      const headerValues = firstCol.header.elements.map((el: CellElement) => {
-        if (el.type === 'Token') {
-          const tokenMenu = tokenMenus?.find(tm => tm.key === el.menu_key);
-          return tokenMenu?.items?.[0]?.value || el.value || '';
-        } else if (el.type === 'Text') {
-          return el.content || '';
-        }
-        return '';
-      });
-      headerCells.push(headerValues);
-    } else {
-      headerCells.push([]);
-    }
-  }
-  
-  // body_cells 생성
-  let bodyCells: any;
-  
-  if (blockTypeId === BLOCK_TYPE.DIVISION) {
-    // DivisionBlock의 경우 계층적 구조
-    bodyCells = [{
-      values: [],
-      children: []
-    }];
-  } else {
-    // 일반 블록의 경우
-    bodyCells = [];
-    if (blockType.cols && blockType.cols.length > 0) {
-      const firstCol = blockType.cols[0];
-      const initRows = firstCol.rows.length || 1;
-      
-      for (let rowIndex = 0; rowIndex < initRows; rowIndex++) {
-        const row = firstCol.rows[rowIndex] || firstCol.rows[0];
-        const rowValues = row.elements.map((el: CellElement) => {
-          if (el.type === 'Token') {
-            const tokenMenu = tokenMenus?.find(tm => tm.key === el.menu_key);
-            return tokenMenu?.items?.[0]?.value || el.value || '';
-          } else if (el.type === 'Text') {
-            return el.content || '';
-          } else if (el.type === 'InputField') {
-            return el.value || '';
-          } else if (el.type === 'Formula') {
-            return el.value || '';
-          } else if (el.type === 'Table') {
-            return el.value || [];
-          }
-          return '';
-        });
-        bodyCells.push([rowValues]);
-      }
-    } else {
-      bodyCells.push([[]]);
-    }
-  }
-  
-  return {
-    block_id: 0,
-    block_type: blockTypeId,
-    header_cells: headerCells,
-    body_cells: bodyCells
-  };
+  // FlowBlock 형식으로 변환
+  return blockInstance.toFlowBlock();
 }
 
 /**
