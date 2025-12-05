@@ -9,6 +9,7 @@ import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../com
 import { createTokenElement, createTableElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { Table } from '@/components/builder/block_builder/CellElement/Table';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import scoreMapStyles from './ScoreMap.module.css';
 
@@ -69,7 +70,7 @@ export const ScoreMapLayout: {
           <Token
             element={{
               type: 'Token',
-              menu_key: 'score_types',
+              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
               value: inputType,
               optional: false,
               visible: true,
@@ -84,7 +85,7 @@ export const ScoreMapLayout: {
           <Token
             element={{
               type: 'Token',
-              menu_key: 'match_types',
+              menu_key: TOKEN_MENU_KEYS.MATCH_OPTION,
               value: inputRange,
               optional: false,
               visible: true,
@@ -100,7 +101,7 @@ export const ScoreMapLayout: {
           <Token
             element={{
               type: 'Token',
-              menu_key: 'score_types',
+              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
               value: outputType,
               optional: false,
               visible: true,
@@ -115,7 +116,7 @@ export const ScoreMapLayout: {
           <Token
             element={{
               type: 'Token',
-              menu_key: 'match_types',
+              menu_key: TOKEN_MENU_KEYS.MATCH_OPTION,
               value: 'exact',
               optional: false,
               visible: true,

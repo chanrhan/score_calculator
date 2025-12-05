@@ -8,6 +8,7 @@ import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import applyTermStyles from './ApplyTerm.module.css';
 
@@ -27,7 +28,7 @@ export const ApplyTermLayout: {
           <span className={applyTermStyles.label}>반영학기</span>
           <Token
             element={createTokenElement({
-              menu_key: 'include_exclude',
+              menu_key: TOKEN_MENU_KEYS.INCLUDE_EXCLUDE,
               value: includeOption,
               optional: false,
               visible: true,

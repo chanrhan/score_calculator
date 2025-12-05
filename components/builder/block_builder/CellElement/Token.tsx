@@ -31,19 +31,35 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
   // 상수 파일에서 token_menu 데이터 가져오기
   React.useEffect(() => {
     const tokenMenu = getTokenMenu(menu_key)
-    const baseItems: TokenMenuItem[] = tokenMenu ? (tokenMenu.items || []) : []
+    // lib/data/token-menus.ts의 TokenMenuItem을 types/block-data.ts의 TokenMenuItem으로 변환
+    // 배열 인덱스를 order로 사용 (1부터 시작)
+    const baseItems: TokenMenuItem[] = tokenMenu 
+      ? (tokenMenu.items || []).map((item, idx) => ({
+          id: idx + 1,
+          order: idx + 1, // 배열 인덱스 기반 (1부터 시작)
+          label: item.label,
+          value: item.value,
+        }))
+      : []
 
     // var_use: 파이프라인 변수 병합
     let merged: TokenMenuItem[] = baseItems
     if (var_use) {
-      const nextOrderStart = (baseItems[baseItems.length - 1]?.order ?? 0) + 1
-      const vars: TokenMenuItem[] = Array.from(variablesByName.values()).map((v, idx) => ({ id: -1000 - idx, order: nextOrderStart + idx, value: v.variable_name, label: v.variable_name, created_at: undefined, updated_at: undefined })) as any
+      const nextOrderStart = baseItems.length + 1 // 배열 길이 기반으로 다음 order 계산
+      const vars: TokenMenuItem[] = Array.from(variablesByName.values()).map((v, idx) => ({ 
+        id: -1000 - idx, 
+        order: nextOrderStart + idx, 
+        value: v.variable_name, 
+        label: v.variable_name, 
+        created_at: undefined, 
+        updated_at: undefined 
+      })) as any
       merged = [...baseItems, ...vars]
     }
 
     // var_store: 하단에 "변수 추가" 액션 추가
     if (var_store) {
-      const order = (merged[merged.length - 1]?.order ?? 0) + 1
+      const order = merged.length + 1 // 배열 길이 기반으로 다음 order 계산
       merged = [...merged, { id: -1, order, value: '__add_variable__', label: '+ 새 변수 추가' } as any]
     }
 

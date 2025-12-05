@@ -9,6 +9,7 @@ import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../com
 import { createTokenElement, createFormulaElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { Formula } from '@/components/builder/block_builder/CellElement/Formula';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import formulaStyles from './Formula.module.css';
 
@@ -51,7 +52,7 @@ export const FormulaLayout: {
         <div className={formulaStyles.body}>
           <Token
             element={createTokenElement({
-              menu_key: 'score_types',
+              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
               value: scoreType,
               optional: false,
               visible: true,

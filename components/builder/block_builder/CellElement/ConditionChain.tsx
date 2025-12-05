@@ -7,6 +7,7 @@ import { Text } from './Text'
 import { InputField } from './InputField'
 import { Formula } from './Formula'
 import { SelectionInput } from './SelectionInput'
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus'
 import styles from './ConditionChain.module.css'
 
 interface ConditionChainProps {
@@ -36,7 +37,7 @@ function getRowSchema(base: ConditionChainItemType[], rowIndex: number): Conditi
   const schema = Array.isArray(base) ? base : []
   if (rowIndex >= 1) {
     // 둘째 요소부터는 맨 앞에 논리연산자 토큰을 추가
-    return [{ type: 'Token', menu_key: 'logical_operator' } as const, ...schema]
+    return [{ type: 'Token', menu_key: TOKEN_MENU_KEYS.LOGICAL_OPERATOR } as const, ...schema]
   }
   return schema
 }

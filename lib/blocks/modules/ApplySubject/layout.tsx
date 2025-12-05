@@ -9,6 +9,7 @@ import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../com
 import { createTokenElement, createListElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { List } from '@/components/builder/block_builder/CellElement/List';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import applySubjectStyles from './ApplySubject.module.css';
 
@@ -28,7 +29,7 @@ export const ApplySubjectLayout: {
           <span className={applySubjectStyles.label}>반영교과</span>
           <Token
             element={createTokenElement({
-              menu_key: 'include_exclude',
+              menu_key: TOKEN_MENU_KEYS.INCLUDE_EXCLUDE,
               value: includeOption,
               optional: false,
               visible: true,

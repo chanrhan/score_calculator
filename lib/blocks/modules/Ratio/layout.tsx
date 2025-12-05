@@ -8,6 +8,7 @@ import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import ratioStyles from './Ratio.module.css';
 
@@ -42,7 +43,7 @@ export const RatioLayout: {
           />
           <Token
             element={createTokenElement({
-              menu_key: 'score_types',
+              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
               value: scoreType,
               optional: false,
               visible: true,

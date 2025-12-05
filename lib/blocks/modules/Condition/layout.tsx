@@ -9,6 +9,7 @@ import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../com
 import { createTokenElement, createConditionChainElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { ConditionChain } from '@/components/builder/block_builder/CellElement/ConditionChain';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import conditionStyles from './Condition.module.css';
 
@@ -51,8 +52,8 @@ export const ConditionLayout: {
           <ConditionChain
             element={createConditionChainElement({
               item_type: [
-                { type: 'Token', menu_key: 'score_types' },
-                { type: 'Token', menu_key: 'operators' },
+                { type: 'Token', menu_key: TOKEN_MENU_KEYS.SCORE_TYPE },
+                { type: 'Token', menu_key: TOKEN_MENU_KEYS.OPERATOR },
                 { type: 'InputField' },
               ],
               value: conditions,

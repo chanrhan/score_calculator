@@ -8,6 +8,7 @@ import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import decimalStyles from './Decimal.module.css';
 
@@ -51,7 +52,7 @@ export const DecimalLayout: {
         <div className={decimalStyles.body}>
           <Token
             element={createTokenElement({
-              menu_key: 'score_types',
+              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
               value: scoreType,
               optional: false,
               visible: true,
@@ -81,7 +82,7 @@ export const DecimalLayout: {
           <span>자리</span>
           <Token
             element={createTokenElement({
-              menu_key: 'decimal_options',
+              menu_key: TOKEN_MENU_KEYS.DECIMAL_OPTION,
               value: decimalOption,
               optional: false,
               visible: true,
