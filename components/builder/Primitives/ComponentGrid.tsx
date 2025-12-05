@@ -24,10 +24,10 @@ import {
 } from '@/utils/divisionUpdater'
 import { convertDivisionToAnyBlock } from '@/utils/hierarchicalCellConverter'
 import { convertFlowBlockToDb } from '@/utils/blockToDbConverter'
-import { useBlockDataStore } from '@/store/useBlockDataStore'
 import { BlockInstance } from '@/lib/blocks/BlockInstance'
 import { LayoutRendererFactory } from '@/lib/blocks/layout/LayoutRendererFactory'
 import { RenderCellContext } from '@/lib/blocks/layout/BlockLayoutRenderer'
+import { ALL_TOKEN_MENUS } from '@/lib/data/token-menus'
 import styles from './ComponentGrid.module.css'
 import { toast } from 'sonner'
 
@@ -118,21 +118,20 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
 
 
   // 렌더링 컨텍스트 생성
-  const { tokenMenus } = useBlockDataStore();
-  
+  // tokenMenus는 이제 코드 상수로 관리되므로 하위 호환성을 위해 빈 배열 전달
   const renderContext: RenderCellContext = React.useMemo(() => ({
     readOnly,
     highlightedCaseSet,
     blockIdToSubjectNames,
     hoveredBlockId,
     setHoveredBlockId,
-    tokenMenus,
+    tokenMenus: [], // 더 이상 사용하지 않음 (하위 호환성 유지)
     combineState,
     onBlockChange,
     onBlockDelete,
     onBlockCombine,
     onInsertRow
-  }), [readOnly, highlightedCaseSet, blockIdToSubjectNames, hoveredBlockId, setHoveredBlockId, tokenMenus, combineState, onBlockChange, onBlockDelete, onBlockCombine, onInsertRow]);
+  }), [readOnly, highlightedCaseSet, blockIdToSubjectNames, hoveredBlockId, setHoveredBlockId, combineState, onBlockChange, onBlockDelete, onBlockCombine, onInsertRow]);
 
   // 2단계: 각 셀(r,c)의 내용 채우기
   const fillCellContent = (rowIndex: number, colIndex: number, blocks: BlockInstance[]) => {

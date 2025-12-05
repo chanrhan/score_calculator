@@ -4,7 +4,6 @@ import * as React from 'react';
 import clsx from 'clsx';
 import styles from './BlockPalette.module.css';
 import { BLOCK_TYPE, BLOCK_TYPE_MAP } from '@/types/block-types';
-import { useBlockDataStore } from '@/store/useBlockDataStore';
 import { BLOCK_TYPES } from '@/types/block-structure';
 
 // 전역 드래그 상태 (BlockPalette에서 사용)
@@ -98,7 +97,6 @@ function createCategoriesFromBlockTypes(): Category[] {
 export default function BlockPalette({ className }: Props) {
   const [clickedCategory, setClickedCategory] = React.useState<string | null>(null);
   const [bubblePosition, setBubblePosition] = React.useState<{ x: number; y: number } | null>(null);
-  const { tokenMenus } = useBlockDataStore();
 
   const categories = React.useMemo<Category[]>(() => {
     return createCategoriesFromBlockTypes();

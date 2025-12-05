@@ -3,61 +3,52 @@
 import * as React from 'react'
 import { TokenElement } from '@/types/block-structure'
 import { useUniversity } from '@/store/useUniversity'
-import type { TokenMenu, TokenMenuItem } from '@/types/block-data'
+import type { TokenMenuItem } from '@/types/block-data'
 import styles from './Token.module.css'
 import { usePipelineVariables } from '@/store/usePipelineVariables'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { getTokenMenu } from '@/lib/data/token-menus'
 
 interface TokenProps {
   element: TokenElement
   onChange?: (value: string) => void
   className?: string
-  tokenMenus?: TokenMenu[]
   autoFit?: boolean // 자동 크기 조정 옵션
 }
 
-export const Token: React.FC<TokenProps> = ({ element, onChange, className = '', tokenMenus = [], autoFit = true }) => {
+export const Token: React.FC<TokenProps> = ({ element, onChange, className = '', autoFit = true }) => {
   const { menu_key, value, optional, visible, var_use, var_store } = element
-  const { selectedUnivId } = useUniversity()
   const { variablesByName, currentKey, create } = usePipelineVariables()
   const [menuItems, setMenuItems] = React.useState<any[]>([])
-  const [loading, setLoading] = React.useState(true)
   const [selectWidth, setSelectWidth] = React.useState<number | undefined>(undefined)
   const [open, setOpen] = React.useState(false)
   const [newVarName, setNewVarName] = React.useState('')
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   
-  
-  // tokenMenus가 전달된 경우 우선 사용, 없으면 API 호출
+  // 상수 파일에서 token_menu 데이터 가져오기
   React.useEffect(() => {
+    const tokenMenu = getTokenMenu(menu_key)
+    const baseItems: TokenMenuItem[] = tokenMenu ? (tokenMenu.items || []) : []
 
-    if (tokenMenus.length > 0) {
-      // 전달받은 tokenMenus에서 해당 menu_key 찾기
-      const tokenMenu = tokenMenus.find(tm => tm.key === menu_key)
-      const baseItems: TokenMenuItem[] = tokenMenu ? (tokenMenu.items || []) : []
-
-      // var_use: 파이프라인 변수 병합
-      let merged: TokenMenuItem[] = baseItems
-      if (var_use) {
-        const nextOrderStart = (baseItems[baseItems.length - 1]?.order ?? 0) + 1
-        const vars: TokenMenuItem[] = Array.from(variablesByName.values()).map((v, idx) => ({ id: -1000 - idx, order: nextOrderStart + idx, value: v.variable_name, label: v.variable_name, created_at: undefined, updated_at: undefined })) as any
-        merged = [...baseItems, ...vars]
-      }
-
-      // var_store: 하단에 "변수 추가" 액션 추가
-      if (var_store) {
-        const order = (merged[merged.length - 1]?.order ?? 0) + 1
-        merged = [...merged, { id: -1, order, value: '__add_variable__', label: '+ 새 변수 추가' } as any]
-      }
-
-      setMenuItems(merged)
-      setLoading(false)
-      return
+    // var_use: 파이프라인 변수 병합
+    let merged: TokenMenuItem[] = baseItems
+    if (var_use) {
+      const nextOrderStart = (baseItems[baseItems.length - 1]?.order ?? 0) + 1
+      const vars: TokenMenuItem[] = Array.from(variablesByName.values()).map((v, idx) => ({ id: -1000 - idx, order: nextOrderStart + idx, value: v.variable_name, label: v.variable_name, created_at: undefined, updated_at: undefined })) as any
+      merged = [...baseItems, ...vars]
     }
-  }, [menu_key, selectedUnivId, tokenMenus, variablesByName, var_use, var_store])
+
+    // var_store: 하단에 "변수 추가" 액션 추가
+    if (var_store) {
+      const order = (merged[merged.length - 1]?.order ?? 0) + 1
+      merged = [...merged, { id: -1, order, value: '__add_variable__', label: '+ 새 변수 추가' } as any]
+    }
+
+    setMenuItems(merged)
+  }, [menu_key, variablesByName, var_use, var_store])
 
   // 선택된 값에 따른 동적 크기 계산
   React.useEffect(() => {
@@ -78,18 +69,6 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
   
   if (optional && !visible) {
     return null
-  }
-  
-  if (loading) {
-    return (
-      <select
-        disabled
-        className={`${styles.selectDisabled} ${className}`}
-        style={autoFit && selectWidth ? { width: `${selectWidth}px` } : {}}
-      >
-        <option>로딩 중...</option>
-      </select>
-    )
   }
   
   const onSelectChange = async (v: string) => {

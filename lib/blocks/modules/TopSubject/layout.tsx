@@ -20,7 +20,7 @@ export const TopSubjectLayout: {
   body: LayoutComponent;
 } = {
   header: () => <span className={topSubjectStyles.label}>우수 N 과목</span>,
-  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, onChange }) => {
       const scope = properties.top_subject_scope || 'overall';
       const count = properties.top_subject_count || '3';
       
@@ -38,7 +38,6 @@ export const TopSubjectLayout: {
                 onChange?.('top_subject_scope', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <Token
@@ -53,7 +52,6 @@ export const TopSubjectLayout: {
                 onChange?.('top_subject_count', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
         </div>
@@ -90,7 +88,7 @@ export class TopSubjectLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -114,7 +112,6 @@ export class TopSubjectLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

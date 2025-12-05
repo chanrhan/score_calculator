@@ -31,7 +31,6 @@ export type BlockPropertyValues = Record<string, any>;
 export interface LayoutRenderContext {
   properties: BlockPropertyValues;
   readOnly: boolean;
-  tokenMenus?: any[];
   onChange?: (propertyName: string, value: any) => void;
   className?: string;
 }

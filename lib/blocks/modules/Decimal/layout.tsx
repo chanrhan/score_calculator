@@ -19,7 +19,7 @@ export const DecimalLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: ({ properties, readOnly, onChange }) => {
       const variableScope = properties.variable_scope || '0';
       
       return (
@@ -37,13 +37,12 @@ export const DecimalLayout: {
                 onChange?.('variable_scope', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
         </div>
       );
     },
-  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, onChange }) => {
       const scoreType = properties.score_type || 'finalScore';
       const decimalPlaces = properties.decimal_places || '2';
       const decimalOption = properties.decimal_option || '0';
@@ -62,7 +61,6 @@ export const DecimalLayout: {
                 onChange?.('score_type', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <span>소수점</span>
@@ -78,7 +76,6 @@ export const DecimalLayout: {
                 onChange?.('decimal_places', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <span>자리</span>
@@ -94,7 +91,6 @@ export const DecimalLayout: {
                 onChange?.('decimal_option', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
         </div>
@@ -111,7 +107,7 @@ export class DecimalLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, onBlockChange, tokenMenus } = context;
+    const { readOnly, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getHeaderProperties(colIndex);
@@ -127,7 +123,6 @@ export class DecimalLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, undefined, colIndex);
@@ -145,7 +140,7 @@ export class DecimalLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -169,7 +164,6 @@ export class DecimalLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

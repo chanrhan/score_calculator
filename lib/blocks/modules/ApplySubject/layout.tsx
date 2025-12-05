@@ -20,7 +20,7 @@ export const ApplySubjectLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: ({ properties, readOnly, onChange }) => {
       const includeOption = properties.include_option || 'include';
       
       return (
@@ -38,13 +38,12 @@ export const ApplySubjectLayout: {
                 onChange?.('include_option', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
         </div>
       );
     },
-  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, onChange }) => {
       const subjectGroups = properties.subject_groups || [];
       
       return (
@@ -62,7 +61,6 @@ export const ApplySubjectLayout: {
                 onChange?.('subject_groups', value);
               }
             }}
-            tokenMenus={tokenMenus}
           />
         </div>
       );
@@ -78,7 +76,7 @@ export class ApplySubjectLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, onBlockChange, tokenMenus } = context;
+    const { readOnly, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getHeaderProperties(colIndex);
@@ -94,7 +92,6 @@ export class ApplySubjectLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, undefined, colIndex);
@@ -112,7 +109,7 @@ export class ApplySubjectLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -136,7 +133,6 @@ export class ApplySubjectLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

@@ -6,7 +6,6 @@ import { Token } from './Token'
 import { Text } from './Text'
 import { InputField } from './InputField'
 import { Formula } from './Formula'
-import type { TokenMenu } from '@/types/block-data'
 import styles from './List.module.css'
 import { OrderToken } from './OrderToken'
 
@@ -14,10 +13,9 @@ interface ListProps {
   element: ListElement
   onChange?: (value: any[]) => void
   className?: string
-  tokenMenus?: TokenMenu[]
 }
 
-export const List: React.FC<ListProps> = ({ element, onChange, className = '', tokenMenus = [] }) => {
+export const List: React.FC<ListProps> = ({ element, onChange, className = '' }) => {
   const { value, optional, visible, item_type, menu_key, menu_key2 } = element
 
   // if (optional && !visible) {
@@ -63,7 +61,6 @@ export const List: React.FC<ListProps> = ({ element, onChange, className = '', t
           <Token
             element={{ type: 'Token', menu_key: menu_key || '', value: itemValue, ...base }}
             onChange={(v) => updateItemAt(index, v)}
-            tokenMenus={tokenMenus}
           />
         )
       case 'OrderToken':
@@ -71,7 +68,6 @@ export const List: React.FC<ListProps> = ({ element, onChange, className = '', t
           <OrderToken
             element={{ type: 'OrderToken', menu_key: menu_key || '', menu_key2: menu_key2 || '', value: itemValue as (string | null)[], ...base }}
             onChange={(v) => updateItemAt(index, v)}
-            tokenMenus={tokenMenus}
           />
         )
       case 'InputField':

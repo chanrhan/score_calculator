@@ -19,7 +19,7 @@ export const AggregationLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: ({ properties, readOnly, onChange }) => {
       const variableScope = properties.variable_scope || '0';
       
       return (
@@ -37,13 +37,12 @@ export const AggregationLayout: {
                 onChange?.('variable_scope', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
         </div>
       );
     },
-  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, onChange }) => {
       const inputScoreType = properties.input_score_type || 'finalScore';
       const aggregationFunction = properties.aggregation_function || '0';
       const outputScoreType = properties.output_score_type || 'finalScore';
@@ -62,7 +61,6 @@ export const AggregationLayout: {
                 onChange?.('input_score_type', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <Token
@@ -77,7 +75,6 @@ export const AggregationLayout: {
                 onChange?.('aggregation_function', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <span>→</span>
@@ -93,7 +90,6 @@ export const AggregationLayout: {
                 onChange?.('output_score_type', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
         </div>
@@ -110,7 +106,7 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, onBlockChange, tokenMenus } = context;
+    const { readOnly, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getHeaderProperties(colIndex);
@@ -126,7 +122,6 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, undefined, colIndex);
@@ -144,7 +139,7 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -168,7 +163,6 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

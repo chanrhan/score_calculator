@@ -21,7 +21,7 @@ export const VariableLayout: {
   body: LayoutComponent;
 } = {
   header: () => <span className={variableStyles.label}>변수</span>,
-  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, onChange }) => {
       const varName = properties.var_name || '';
       const expr = properties.expr || '';
       
@@ -52,7 +52,6 @@ export const VariableLayout: {
                 onChange?.('expr', value);
               }
             }}
-            tokenMenus={tokenMenus}
           />
         </div>
       );
@@ -88,7 +87,7 @@ export class VariableLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -112,7 +111,6 @@ export class VariableLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

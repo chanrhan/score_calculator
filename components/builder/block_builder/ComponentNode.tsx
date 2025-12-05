@@ -5,7 +5,6 @@ import type { Component, FlowBlock } from '@/types/domain';
 import { Handle, Position } from 'reactflow';
 import clsx from 'clsx';
 import { usePipelines } from '@/store/usePipelines';
-import { useBlockDataStore } from '@/store/useBlockDataStore';
 import { createFlowBlockFromKind, getBlockTypeNameById, getBlockTypeId } from '@/lib/blockManager';
 import { ComponentGrid } from '../Primitives/ComponentGrid';
 import { BlockInstanceFactory } from '@/lib/blocks/modules/registry';
@@ -52,9 +51,6 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
     });
   }, [flowBlocks]);
   
-  // 전역 스토어에서 block_data와 token_menus 가져오기
-  const { blockData, tokenMenus } = useBlockDataStore();
-  
   // 결합 상태 변경 감지를 위한 강제 리렌더링
   React.useEffect(() => {
     // 결합 상태가 변경될 때마다 컴포넌트 리렌더링 강제
@@ -67,9 +63,9 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
     if (!kind) return;
 
     try {
-      // BLOCK_TYPES에서 직접 블록 생성 (block_data 사용 안 함)
+      // BLOCK_TYPES에서 직접 블록 생성 (tokenMenus는 더 이상 필요 없음)
       const capitalizedKind = kind.charAt(0).toUpperCase() + kind.slice(1).toLowerCase();
-      const block = createFlowBlockFromKind(capitalizedKind, tokenMenus);
+      const block = createFlowBlockFromKind(capitalizedKind);
 
       addFlowBlockToComponent(actualPipelineId, componentId, block, atIndex);
     } catch (error) {

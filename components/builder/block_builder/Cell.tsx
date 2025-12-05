@@ -3,9 +3,7 @@
 import * as React from 'react'
 import { CellElement } from '@/types/block-structure'
 import { Token, Text, InputField, Formula, Table, List, ConditionChain, SelectionInput, OrderToken } from './CellElement'
-import type { TokenMenu, BlockData } from '@/types/block-data'
 import { BLOCK_TYPE } from '@/types/block-types'
-import { useBlockDataStore } from '@/store/useBlockDataStore'
 import { getBlockTypeNameById } from '@/lib/blockManager'
 import { getBlockType } from '@/types/block-structure'
 import styles from './Cell.module.css'
@@ -23,28 +21,27 @@ interface CellProps {
 const CellElementRenderer: React.FC<{ 
   element: CellElement
   onChange?: (value: any) => void
-  tokenMenus?: TokenMenu[]
-}> = ({ element, onChange, tokenMenus = [] }) => {
+}> = ({ element, onChange }) => {
   // console.table(element);
   switch (element.type) {
     case 'Token':
-      return <Token element={element as any} onChange={onChange} tokenMenus={tokenMenus} autoFit={true} />
+      return <Token element={element as any} onChange={onChange} autoFit={true} />
     case 'Text':
       return <Text element={element as any} />
     case 'InputField':
       return <InputField element={element as any} onChange={onChange} autoFit={true} />
     case 'SelectionInput':
-      return <SelectionInput element={element as any} onChange={onChange} tokenMenus={tokenMenus} />
+      return <SelectionInput element={element as any} onChange={onChange} />
     case 'Formula':
-      return <Formula element={element as any} tokenMenus={tokenMenus} onChange={onChange} />
+      return <Formula element={element as any} onChange={onChange} />
     case 'Table':
       return <Table element={element as any} onChange={onChange} />
     case 'List':
-      return <List element={element as any} onChange={onChange} tokenMenus={tokenMenus} />
+      return <List element={element as any} onChange={onChange} />
     case 'ConditionChain':
-      return <ConditionChain element={element as any} onChange={onChange} tokenMenus={tokenMenus} />
+      return <ConditionChain element={element as any} onChange={onChange} />
     case 'OrderToken':
-      return <OrderToken element={element as any} onChange={onChange} tokenMenus={tokenMenus} />
+      return <OrderToken element={element as any} onChange={onChange} />
     default:
       return <span className={styles.errorText}>??</span>
   }
@@ -59,9 +56,6 @@ export const Cell: React.FC<CellProps> = ({
   isHeader = false,
   col_type
 }) => {
-  // 전역 스토어에서 token_menus 가져오기
-  const { tokenMenus } = useBlockDataStore();
-  
   // BLOCK_TYPES에서 직접 블록 구조 가져오기
   const blockTypeName = blockType ? getBlockTypeNameById(blockType) : null;
   const blockStructure = blockTypeName ? getBlockType(blockTypeName as keyof typeof import('@/types/block-structure').BLOCK_TYPES) : null;
@@ -154,7 +148,6 @@ export const Cell: React.FC<CellProps> = ({
             key={index}
             element={element}
             onChange={(value) => onChange?.(index, value)}
-            tokenMenus={tokenMenus}
           />
         ))}
       </div>

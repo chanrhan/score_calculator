@@ -7,17 +7,22 @@ export const DivisionStructure: FlowBlockType = {
   name: 'Division',
   color: 'green',
   col_editable: true,
-  header: {
-    gender: 'division_criteria',
-    grade: 'division_criteria',
-  },
-  children: {
-    gender: [
-      { type: 'Token', optional: false, visible: true, menu_key: 'division_values' }
-    ],
-    grade: [
-      { type: 'Token', optional: false, visible: true, menu_key: 'division_values' }
-    ],
-  },
+  header: [
+    {
+      type: 'Token',
+      optional: false,
+      visible: true,
+      menu_key: 'division_criteria',
+      value: 'gender',
+    },
+  ],
+  children: [
+    {
+      elements: [
+        { type: 'Token', optional: false, visible: true, menu_key: 'division_values', value: null }
+      ],
+      children: []
+    },
+  ],
 };
 

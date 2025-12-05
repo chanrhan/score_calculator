@@ -5,7 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues } from '../common/types';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
 import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
@@ -25,7 +25,7 @@ export const GradeRatioLayout: {
     2: () => <span className={gradeRatioStyles.label}>3학년</span>,
   },
   body: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+    0: ({ properties, readOnly, onChange }) => {
       const ratio = properties.grade1_ratio || '100';
       return (
         <Token
@@ -40,12 +40,11 @@ export const GradeRatioLayout: {
               onChange?.('grade1_ratio', value);
             }
           }}
-          tokenMenus={tokenMenus}
           autoFit={true}
         />
       );
     },
-    1: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+    1: ({ properties, readOnly, onChange }) => {
       const ratio = properties.grade2_ratio || '100';
       return (
         <Token
@@ -60,12 +59,11 @@ export const GradeRatioLayout: {
               onChange?.('grade2_ratio', value);
             }
           }}
-          tokenMenus={tokenMenus}
           autoFit={true}
         />
       );
     },
-    2: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+    2: ({ properties, readOnly, onChange }) => {
       const ratio = properties.grade3_ratio || '100';
       return (
         <Token
@@ -80,7 +78,6 @@ export const GradeRatioLayout: {
               onChange?.('grade3_ratio', value);
             }
           }}
-          tokenMenus={tokenMenus}
           autoFit={true}
         />
       );
@@ -117,7 +114,7 @@ export class GradeRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -141,8 +138,7 @@ export class GradeRatioLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
-            onChange={(propertyName, value) => {
+            onChange={(propertyName: string, value: any) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
               onBlockChange?.(block.block_id, block);

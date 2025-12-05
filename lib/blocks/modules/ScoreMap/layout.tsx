@@ -20,7 +20,7 @@ export const ScoreMapLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  header: ({ properties, readOnly, onChange }) => {
       const variableScope = properties.variable_scope || '0';
       const filterOption = properties.filter_option || '0';
       
@@ -39,7 +39,6 @@ export const ScoreMapLayout: {
                 onChange?.('variable_scope', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <Token
@@ -54,13 +53,12 @@ export const ScoreMapLayout: {
                 onChange?.('filter_option', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
         </div>
       );
     },
-  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, onChange }) => {
       const inputType = properties.input_type || 'originalScore';
       const inputRange = properties.input_range === 1 ? 'range' : 'exact';
       const outputType = properties.output_type || 'score';
@@ -81,7 +79,6 @@ export const ScoreMapLayout: {
                 onChange?.('input_type', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <Token
@@ -97,7 +94,6 @@ export const ScoreMapLayout: {
                 onChange?.('input_range', value === 'range' ? 1 : 0);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <span>→</span>
@@ -114,7 +110,6 @@ export const ScoreMapLayout: {
                 onChange?.('output_type', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <Token
@@ -126,7 +121,6 @@ export const ScoreMapLayout: {
               visible: true,
             }}
             onChange={() => {}}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <Table
@@ -160,7 +154,7 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, onBlockChange, tokenMenus } = context;
+    const { readOnly, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getHeaderProperties(colIndex);
@@ -176,7 +170,6 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, undefined, colIndex);
@@ -194,7 +187,7 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -218,7 +211,6 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

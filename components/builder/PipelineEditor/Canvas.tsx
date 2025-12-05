@@ -36,9 +36,9 @@ function createFlowBlockFromDetail(detail: any, blockDataList: any[], tokenMenus
   }
 
   try {
-    // BLOCK_TYPES에서 직접 블록 생성 (block_data 사용 안 함)
+    // BLOCK_TYPES에서 직접 블록 생성 (tokenMenus는 더 이상 필요 없음)
     const capitalizedKind = kind.charAt(0).toUpperCase() + kind.slice(1).toLowerCase();
-    return createFlowBlockFromKind(capitalizedKind, tokenMenus);
+    return createFlowBlockFromKind(capitalizedKind);
   } catch (error) {
     console.error('❌ Error creating FlowBlock from detail:', error);
     return null;
@@ -121,7 +121,8 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
     
   }, [connectBlocks, pipelineId]);
 
-  const { nodes, edges } = usePipelineGraph(pipeline, onSelectBlock, onBlockConnection, blockData, tokenMenus);
+  // tokenMenus는 더 이상 사용하지 않지만 하위 호환성을 위해 빈 배열 전달
+  const { nodes, edges } = usePipelineGraph(pipeline, onSelectBlock, onBlockConnection, blockData, []);
   const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState(nodes);
   const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState(edges);
   const flowWrapperRef = React.useRef<HTMLDivElement | null>(null);
@@ -279,10 +280,9 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
 
   
 
-        // BLOCK_TYPES에서 직접 FlowBlock 생성 (block_data 사용 안 함)
+        // BLOCK_TYPES에서 직접 FlowBlock 생성 (tokenMenus는 더 이상 필요 없음)
         const flowBlock = createFlowBlockFromKind(
-          getBlockTypeNameById(blockType), 
-          tokenMenus
+          getBlockTypeNameById(blockType)
         );
         if (flowBlock) {
           createComponentWithFlowBlock(pipelineId, flowBlock, { x, y });
@@ -310,7 +310,7 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
         const kind: string = detail.kind;
         if (!kind) return;
 
-        const base = createFlowBlockFromDetail(detail, blockData, tokenMenus);
+        const base = createFlowBlockFromDetail(detail, blockData, []);
         if (!base) return;
 
         const comp = createComponentWithFlowBlock(pipelineId, base, { x, y });

@@ -20,7 +20,7 @@ export const RatioLayout: {
   body: LayoutComponent;
 } = {
   header: () => <span className={ratioStyles.label}>반영비율</span>,
-  body: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+  body: ({ properties, readOnly, onChange }) => {
       const ratio = properties.ratio || '100';
       const scoreType = properties.score_type || 'finalScore';
       
@@ -38,7 +38,6 @@ export const RatioLayout: {
                 onChange?.('ratio', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
           <Token
@@ -53,7 +52,6 @@ export const RatioLayout: {
                 onChange?.('score_type', value);
               }
             }}
-            tokenMenus={tokenMenus}
             autoFit={true}
           />
         </div>
@@ -90,7 +88,7 @@ export class RatioLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -114,7 +112,6 @@ export class RatioLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

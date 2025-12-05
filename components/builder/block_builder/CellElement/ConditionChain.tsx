@@ -7,14 +7,12 @@ import { Text } from './Text'
 import { InputField } from './InputField'
 import { Formula } from './Formula'
 import { SelectionInput } from './SelectionInput'
-import type { TokenMenu } from '@/types/block-data'
 import styles from './ConditionChain.module.css'
 
 interface ConditionChainProps {
   element: ConditionChainElement
   onChange?: (value: Array<Record<string, any>>) => void
   className?: string
-  tokenMenus?: TokenMenu[]
 }
 
 function defaultFieldValue(type: ConditionChainItemType['type']): any {
@@ -48,7 +46,7 @@ function defaultRowForRowIndex(base: ConditionChainItemType[], rowIndex: number)
   return rowSchema.map((f) => defaultFieldValue(f.type))
 }
 
-export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChange, className = '', tokenMenus = [] }) => {
+export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChange, className = '' }) => {
   const { value, optional, visible, item_type } = element
 
   if (optional && !visible) {
@@ -91,7 +89,6 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
               }
             }
             onChange={(v) => updateItemAt(rowIndex, colIndex, v)}
-            tokenMenus={tokenMenus}
           />
         )
       case 'InputField':
@@ -106,7 +103,6 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
           <SelectionInput
             element={{ ...(field as any), value: fieldValue }}
             onChange={(v: string) => updateItemAt(rowIndex, colIndex, v)}
-            tokenMenus={tokenMenus}
           />
         )
       case 'Text':

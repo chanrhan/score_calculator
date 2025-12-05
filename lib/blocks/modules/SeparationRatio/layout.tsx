@@ -25,7 +25,7 @@ export const SeparationRatioLayout: {
     2: () => <span className={separationRatioStyles.label}>예체능교과</span>,
   },
   body: {
-    0: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+    0: ({ properties, readOnly, onChange }) => {
       const ratio = properties.general_ratio || '100';
       return (
         <Token
@@ -40,12 +40,11 @@ export const SeparationRatioLayout: {
               onChange?.('general_ratio', value);
             }
           }}
-          tokenMenus={tokenMenus}
           autoFit={true}
         />
       );
     },
-    1: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+    1: ({ properties, readOnly, onChange }) => {
       const ratio = properties.career_ratio || '100';
       return (
         <Token
@@ -60,12 +59,11 @@ export const SeparationRatioLayout: {
               onChange?.('career_ratio', value);
             }
           }}
-          tokenMenus={tokenMenus}
           autoFit={true}
         />
       );
     },
-    2: ({ properties, readOnly, tokenMenus = [], onChange }) => {
+    2: ({ properties, readOnly, onChange }) => {
       const ratio = properties.arts_ratio || '100';
       return (
         <Token
@@ -80,7 +78,6 @@ export const SeparationRatioLayout: {
               onChange?.('arts_ratio', value);
             }
           }}
-          tokenMenus={tokenMenus}
           autoFit={true}
         />
       );
@@ -117,7 +114,7 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, highlightedCaseSet, onBlockChange, tokenMenus } = context;
+    const { readOnly, highlightedCaseSet, onBlockChange } = context;
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
@@ -141,7 +138,6 @@ export class SeparationRatioLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            tokenMenus={tokenMenus}
             onChange={(propertyName, value) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
