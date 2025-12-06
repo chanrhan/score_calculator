@@ -1,0 +1,121 @@
+.divisionHead {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: white;
+  min-width: 200px;
+}
+
+.divisionHeadCollapsed {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: white;
+  padding: 8px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 4px;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  margin-right: auto;
+}
+
+.headerCells {
+  display: flex;
+  flex: 1;
+  gap: 1px;
+}
+
+.headerCell {
+  flex: 1;
+  min-width: 120px;
+  padding: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.bodyRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.bodyRow {
+  display: grid;
+  grid-template-columns: repeat(var(--total-cols, 1), 1fr);
+  gap: 1px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.bodyCell {
+  padding: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.cellContent {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cellKeyValue {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.keyInput,
+.valueInput {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.keyInput:focus,
+.valueInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.separator {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.menuButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #6b7280;
+}
+
+.menuButton:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.menuButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

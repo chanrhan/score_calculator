@@ -10,6 +10,8 @@ import { ComponentGrid } from '../Primitives/ComponentGrid';
 import { BlockInstanceFactory } from '@/lib/blocks/modules/registry';
 import styles from './ComponentNode.module.css';
 import { useResultsHighlight } from '@/components/results/ResultsHighlightContext';
+import { DivisionHeadData } from '@/types/division-head';
+import { createDefaultDivisionHead } from '@/lib/utils/divisionHeadUtils';
 
 type Props = {
   pipelineId?: string;
@@ -50,6 +52,19 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
       );
     });
   }, [flowBlocks]);
+  
+  // DivisionHead 데이터 로드
+  const [divisionHead, setDivisionHead] = React.useState<DivisionHeadData>(() => {
+    // Component에서 divisionHead 가져오기
+    return comp?.divisionHead || createDefaultDivisionHead();
+  });
+  
+  // Component가 변경되면 divisionHead 업데이트
+  React.useEffect(() => {
+    if (comp?.divisionHead) {
+      setDivisionHead(comp.divisionHead);
+    }
+  }, [comp?.divisionHead]);
   
   // 결합 상태 변경 감지를 위한 강제 리렌더링
   React.useEffect(() => {
@@ -122,6 +137,20 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
       <div className={styles.content}>
         <ComponentGrid
           blocks={blocks}
+          divisionHead={divisionHead}
+          onDivisionHeadChange={(data) => {
+            setDivisionHead(data);
+            // usePipelines 스토어 업데이트
+            const pipeline = getById(actualPipelineId);
+            if (pipeline) {
+              const updatedComponents = pipeline.components.map(c => 
+                c.id === componentId 
+                  ? { ...c, divisionHead: data }
+                  : c
+              );
+              update(actualPipelineId, { components: updatedComponents });
+            }
+          }}
           // 각 블록 셀 컨테이너에 하이라이트/툴팁을 적용하기 위해 ComponentGrid 내부의 셀 구조를 그대로 사용하고,
           // 블록명 행에서 강조 스타일을 적용
           onBlockChange={(blockId: number, updatedBlockInstance) => {

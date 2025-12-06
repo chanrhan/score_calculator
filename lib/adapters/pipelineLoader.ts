@@ -6,6 +6,7 @@ import type { HierarchicalCell } from '@/types/hierarchicalCell';
 import { ComponentGridLoadData } from './componentGridDb';
 import { BLOCK_TYPE } from '@/types/block-types';
 import type { FlowBlock } from '@/types/block-structure';
+import type { DivisionHeadData } from '@/types/division-head';
 // import { convertFromFlowBlock } from './blockAdapter';
 
 // 블록 타입 번호를 kind 문자열로 변환
@@ -54,7 +55,8 @@ function convertComponentGridToComponent(grid: ComponentGridLoadData): Component
         ) as Record<number, HierarchicalCell[]> : 
         undefined 
     },
-    blocks
+    blocks,
+    divisionHead: grid.divisionHead
   };
 
   return component;

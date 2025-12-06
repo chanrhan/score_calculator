@@ -129,14 +129,17 @@ model pipelines {
 }
 
 model component_grid {
-  pipeline_id  BigInt
-  component_id Int
-  order        Int
-  x            Int       @default(0)
-  y            Int       @default(0)
-  created_at   DateTime  @default(now())
-  blocks       block[]
-  pipeline     pipelines @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
+  pipeline_id        BigInt
+  component_id       Int
+  order              Int
+  x                  Int       @default(0)
+  y                  Int       @default(0)
+  created_at         DateTime  @default(now())
+  division_head_header Json?  // 구분 헤드 헤더 데이터
+  division_head_body   Json?  // 구분 헤드 바디 데이터
+  division_head_active Boolean @default(true)  // 활성화 상태
+  blocks             block[]
+  pipeline           pipelines @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
 
   @@id([pipeline_id, component_id])
   @@index([pipeline_id, order])

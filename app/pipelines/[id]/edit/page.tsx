@@ -10,6 +10,7 @@ import { convertComponentGridsToPipelineComponents, createEmptyPipeline } from '
 import { useBlockData } from '@/lib/hooks/useBlockData';
 import { usePipelineVariables } from '@/store/usePipelineVariables';
 import { toast } from 'sonner';
+import { createDefaultDivisionHead } from '@/lib/utils/divisionHeadUtils';
 import styles from './page.module.css';
 
 // DB pipeline id 사용 (ensure 후 세팅)
@@ -204,13 +205,19 @@ export default function PipelineEditPage() {
         }).filter(Boolean); // null 값 제거
 
         const hierarchicalDataMap = component.ui?.hierarchicalDataMap ?? undefined;
+        const divisionHead = component.divisionHead;
+        
+        // divisionHead가 없으면 기본값 생성 (항상 포함)
+        const finalDivisionHead = divisionHead || createDefaultDivisionHead();
+        
         return {
           id: Number.isFinite(component.id) ? component.id : undefined,
           order: component.position,
           x: Math.round(component.ui?.x ?? 0),
           y: Math.round(component.ui?.y ?? 0),
           blocks: flowBlocks,
-          ...(hierarchicalDataMap ? { hierarchicalDataMap } : {})
+          ...(hierarchicalDataMap ? { hierarchicalDataMap } : {}),
+          divisionHead: finalDivisionHead // 항상 포함
         } as any;
       });
 

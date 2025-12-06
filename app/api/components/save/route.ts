@@ -81,6 +81,11 @@ export async function PUT(request: NextRequest) {
       y: z.number().int().optional(),
       blocks: z.array(FlowBlockSchema),
       hierarchicalDataMap: z.record(z.string(), z.array(z.any())).optional(),
+      divisionHead: z.object({
+        header: z.array(z.object({ division_type: z.string() })),
+        body: z.array(z.array(z.record(z.string(), z.any()))),
+        isActive: z.boolean(),
+      }).optional(),
     });
     const BatchUpsertSchema = z.object({
       pipelineId: z.number().int().positive(),
@@ -106,6 +111,11 @@ export async function PUT(request: NextRequest) {
       y?: number;
       blocks: FlowBlock[];
       hierarchicalDataMap?: Record<string, any[]>; // 문자열 키로 변경
+      divisionHead?: {
+        header: Array<{ division_type: string }>;
+        body: Array<Array<Record<string, any>>>;
+        isActive: boolean;
+      };
     }>;
 
     const result = await upsertAllComponentGrids(validated.pipelineId, componentsPayload);

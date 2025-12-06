@@ -107,6 +107,7 @@ export type Component = {
   position: number; // 토폴로지/좌→우 실행 우선순위
   blocks: FlowBlock[]; // 좌→우 (새로운 FlowBlock 타입 사용)
   ui: { x: number; y: number; hierarchicalDataMap?: Record<number, import('@/types/hierarchicalCell').HierarchicalCell[]> };
+  divisionHead?: import('@/types/division-head').DivisionHeadData;
 };
 
 /** 블록 공통 베이스 */

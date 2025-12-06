@@ -6,6 +6,7 @@ import type { FlowBlock } from '../../types/block-structure';
 import type { HierarchicalCell } from '../../types/hierarchicalCell';
 import { BLOCK_TYPE } from '../../types/block-types';
 import { BlockInstanceFactory } from '../../lib/blocks/modules/registry';
+import type { DivisionHeadData } from '../../types/division-head';
 
 const prisma = new PrismaClient() as any;
 
@@ -17,6 +18,7 @@ export interface ComponentGridSaveData {
   y?: number;
   blocks: FlowBlock[];
   hierarchicalDataMap?: Record<string, HierarchicalCell[]>;
+  divisionHead?: DivisionHeadData;
 }
 
 export interface ComponentGridLoadData {
@@ -26,16 +28,22 @@ export interface ComponentGridLoadData {
   y: number;
   blocks: FlowBlock[];
   hierarchicalDataMap?: Record<string, HierarchicalCell[]>;
+  divisionHead?: DivisionHeadData;
 }
 
 /**
  * 단일 ComponentGrid를 DB에 저장
  */
 export async function saveComponentGridToDb(data: ComponentGridSaveData): Promise<void> {
-  const { pipelineId, componentId, order, x = 0, y = 0, blocks, hierarchicalDataMap } = data;
+  const { pipelineId, componentId, order, x = 0, y = 0, blocks, hierarchicalDataMap, divisionHead } = data;
  console.table(blocks)
   // 트랜잭션으로 ComponentGrid와 Block들을 함께 저장
   await prisma.$transaction(async (tx: any) => {
+    // DivisionHead 데이터 준비
+    const divisionHeadHeader = divisionHead?.header ? JSON.parse(JSON.stringify(divisionHead.header)) : null;
+    const divisionHeadBody = divisionHead?.body ? JSON.parse(JSON.stringify(divisionHead.body)) : null;
+    const divisionHeadActive = divisionHead?.isActive ?? true;
+    
     // ComponentGrid 저장 또는 업데이트
     await tx.component_grid.upsert({
       where: {
@@ -47,14 +55,20 @@ export async function saveComponentGridToDb(data: ComponentGridSaveData): Promis
       update: {
         order,
         x,
-        y
+        y,
+        division_head_header: divisionHeadHeader,
+        division_head_body: divisionHeadBody,
+        division_head_active: divisionHeadActive
       },
       create: {
         pipeline_id: BigInt(pipelineId),
         component_id: componentId,
         order,
         x,
-        y
+        y,
+        division_head_header: divisionHeadHeader,
+        division_head_body: divisionHeadBody,
+        division_head_active: divisionHeadActive
       }
     });
 
@@ -140,12 +154,23 @@ export async function loadComponentGridFromDb(
   // FlowBlock 형태로 변환 (UI 호환성)
   const blocks: FlowBlock[] = blockInstances.map(instance => instance.toFlowBlock());
 
+  // DivisionHead 데이터 로드
+  let divisionHead: DivisionHeadData | undefined;
+  if (componentGrid.division_head_header !== null || componentGrid.division_head_body !== null) {
+    divisionHead = {
+      header: (componentGrid.division_head_header as any) || [{ division_type: 'gender' }],
+      body: (componentGrid.division_head_body as any) || [[{}]],
+      isActive: componentGrid.division_head_active ?? true,
+    };
+  }
+
   return {
     componentId: componentGrid.component_id,
     order: componentGrid.order,
     x: componentGrid.x,
     y: componentGrid.y,
-    blocks
+    blocks,
+    divisionHead
   };
 }
 
@@ -199,12 +224,23 @@ export async function loadAllComponentGridsFromDb(pipelineId: number): Promise<C
         }
       });
 
+    // DivisionHead 데이터 로드
+    let divisionHead: DivisionHeadData | undefined;
+    if (componentGrid.division_head_header !== null || componentGrid.division_head_body !== null) {
+      divisionHead = {
+        header: (componentGrid.division_head_header as any) || [{ division_type: 'gender' }],
+        body: (componentGrid.division_head_body as any) || [[{}]],
+        isActive: componentGrid.division_head_active ?? true,
+      };
+    }
+
     return {
       componentId: componentGrid.component_id,
       order: componentGrid.order,
       x: componentGrid.x,
       y: componentGrid.y,
-      blocks
+      blocks,
+      divisionHead
     };
   });
 }
@@ -509,6 +545,7 @@ export async function upsertAllComponentGrids(
     y?: number;
     blocks: FlowBlock[];
     hierarchicalDataMap?: Record<string, HierarchicalCell[]>;
+    divisionHead?: DivisionHeadData;
   }>
 ): Promise<{ created: number; updated: number; deleted: number }> {
   let created = 0;
@@ -575,6 +612,11 @@ export async function upsertAllComponentGrids(
         existingIds: Array.from(existingIds)
       });
       
+      // DivisionHead 데이터 준비
+      const divisionHeadHeader = component.divisionHead?.header ? JSON.parse(JSON.stringify(component.divisionHead.header)) : null;
+      const divisionHeadBody = component.divisionHead?.body ? JSON.parse(JSON.stringify(component.divisionHead.body)) : null;
+      const divisionHeadActive = component.divisionHead?.isActive ?? true;
+      
       if (isUpdate) {
         // 업데이트
         finalComponentId = component.id!;
@@ -591,7 +633,10 @@ export async function upsertAllComponentGrids(
           data: {
             order: component.order,
             x: component.x || 0,
-            y: component.y || 0
+            y: component.y || 0,
+            division_head_header: divisionHeadHeader,
+            division_head_body: divisionHeadBody,
+            division_head_active: divisionHeadActive
           }
         });
 
@@ -630,7 +675,10 @@ export async function upsertAllComponentGrids(
             component_id: finalComponentId,
             order: finalOrder,
             x: component.x || 0,
-            y: component.y || 0
+            y: component.y || 0,
+            division_head_header: divisionHeadHeader,
+            division_head_body: divisionHeadBody,
+            division_head_active: divisionHeadActive
           }
         });
         
