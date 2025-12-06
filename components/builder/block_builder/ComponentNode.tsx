@@ -32,7 +32,7 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
   const actualPipelineId = pipelineId || data.pipelineId || '';
   const componentId = data.componentId || data.component?.id || 0;
   
-  const { addFlowBlockToComponent, deleteBlock, addColumnToBlock, connectBlocks, combineState, startCombine, cancelCombine, getById, updateBlock, updateAllBlocks } = usePipelines();
+  const { addFlowBlockToComponent, deleteBlock, addColumnToBlock, connectBlocks, combineState, startCombine, cancelCombine, getById, updateBlock, updateAllBlocks, update } = usePipelines();
   
   // 실시간으로 최신 컴포넌트 데이터 가져오기
   const pipeline = getById(actualPipelineId);

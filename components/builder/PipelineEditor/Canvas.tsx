@@ -130,23 +130,16 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
   const { focusedBlockId, focusBlockById } = useResultsHighlight();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    try {
-      console.log('[Canvas] nodes ready', { count: reactFlowNodes.length, ids: reactFlowNodes.map(n => n.id) });
-    } catch {}
-  }, [reactFlowNodes]);
 
   // Pipeline의 components를 사용하여 연결선 자동 생성
   React.useEffect(() => {
     if (!pipeline || pipeline.components.length === 0) {
-      // console.log('컴포넌트가 없어서 연결선 제거');
       setReactFlowEdges([]);
       return;
     }
 
     // Pipeline의 components를 position 순서대로 정렬
     const sortedComponents = [...pipeline.components].sort((a, b) => a.position - b.position);
-    // console.log('sortedComponents:', sortedComponents);
     
     // 연결선 생성 (position 순서대로)
     const newEdges: Edge[] = [];
@@ -237,7 +230,7 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
   // 외부 포커스 신호를 받아 해당 블록이 속한 컴포넌트 노드로 뷰 이동
   React.useEffect(() => {
     if (!focusedBlockId || !pipeline) return;
-    try { console.log('[Canvas] focusing blockId', focusedBlockId); } catch {}
+    // try { console.log('[Canvas] focusing blockId', focusedBlockId); } catch {}
     const comp = pipeline.components.find(c => (c.blocks || []).some(b => b.block_id === focusedBlockId));
     if (!comp) { try { console.warn('[Canvas] block not found in components', { focusedBlockId }); } catch {}; return; }
     const nodeId = `comp-${comp.id}`;
@@ -245,7 +238,7 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
     if (!node) { try { console.warn('[Canvas] node not found', { nodeId }); } catch {}; return; }
     // 노드가 준비된 뒤에만 포커스 적용하고, 성공 시에만 초기화
     requestAnimationFrame(() => {
-      try { console.log('[Canvas] fitView to', nodeId); } catch {}
+      // try { console.log('[Canvas] fitView to', nodeId); } catch {}
       rf.fitView({ nodes: [node], padding: 0.25, duration: 600, maxZoom: 1.2 });
       focusBlockById(null);
     });

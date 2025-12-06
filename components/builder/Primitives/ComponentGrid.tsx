@@ -31,23 +31,8 @@ import { ALL_TOKEN_MENUS } from '@/lib/data/token-menus'
 import styles from './ComponentGrid.module.css'
 import { toast } from 'sonner'
 import { DivisionHeadData } from '@/types/division-head'
-import { createDefaultDivisionHead, calculateRowspan, addRowToDivisionHead, removeRowFromDivisionHead, addColumnToDivisionHead, removeColumnFromDivisionHead } from '@/lib/utils/divisionHeadUtils'
-import { Token } from '../block_builder/CellElement/Token'
-import { MoreVertical, Plus, Trash2 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu'
+import { createDefaultDivisionHead } from '@/lib/utils/divisionHeadUtils'
+import { DivisionHead } from '../DivisionHead/DivisionHead'
 
 interface ComponentGridProps {
   blocks: BlockInstance[]
@@ -98,26 +83,6 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   
   // 호버 상태 관리
   const [hoveredBlockId, setHoveredBlockId] = React.useState<number | null>(null);
-
-  // 블록 타입별 색상 매핑 함수
-  const getBlockColor = (blockType: number): string => {
-    const colorMap: { [key: number]: string } = {
-      [BLOCK_TYPE.DIVISION]: '#10b981',           // purple
-      [BLOCK_TYPE.APPLY_SUBJECT]: '#3b82f6',      // blue
-      [BLOCK_TYPE.GRADE_RATIO]: '#3b82f6',        // blue
-      [BLOCK_TYPE.APPLY_TERM]: '#3b82f6',         // blue
-      [BLOCK_TYPE.TOP_SUBJECT]: '#3b82f6',        // blue
-      [BLOCK_TYPE.SUBJECT_GROUP_RATIO]: '#3b82f6', // blue
-      [BLOCK_TYPE.SEPARATION_RATIO]: '#3b82f6',   // blue
-      [BLOCK_TYPE.SCORE_MAP]: '#3b82f6',          // blue
-      [BLOCK_TYPE.FORMULA]: '#3b82f6',            // blue
-      [BLOCK_TYPE.VARIABLE]: '#ef4444',           // red
-      [BLOCK_TYPE.CONDITION]: '#8b5cf6',          // purple
-      [BLOCK_TYPE.AGGREGATION]: '#8b5cf6',        // green
-    };
-    return colorMap[blockType] || '#6b7280'; // 기본 회색
-  };
-
 
   // 1단계: 전체 행×열 크기 계산
   const calculateTotalRows = (blocks: BlockInstance[]) => {
@@ -194,311 +159,23 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
     const renderer = LayoutRendererFactory.create(targetBlock.block_type);
     return renderer.renderCell(targetBlock, rowIndex, blockColIndex, totalRows, renderContext);
   };
-
-
-
-  // DivisionBlock 전용 Body 셀 렌더링
-  // const renderDivisionBodyCells = (block: FlowBlock, bodyRowIndex: number, colIndex: number, totalBodyRows: number) => {
-  //   // DivisionBlock의 계층적 구조에서 해당 위치의 셀 정보 가져오기
-  //   const renderCell = renderDivisionCell(block, bodyRowIndex, colIndex, totalBodyRows);
-    
-  //   // 구분 블록인 경우 col_type 전달
-  //   const colType = block.header_cells?.[colIndex]?.[0] || null;
-    
-  //   // rowspan 정보는 미리 계산된 그리드에서 가져옴
-  //   const rowspan = rowspanGrid[bodyRowIndex][colIndex];
-    
-  //   return (
-  //     <div className="body-cell p-2 relative min-h-[40px]">
-  //       <Cell
-  //         values={renderCell?.content || []}
-  //         onChange={(elementIndex, value) => {
-  //           // DivisionBlock의 계층적 구조 업데이트
-  //           const updatedBlock = updateDivisionCellValue(
-  //             block,
-  //             bodyRowIndex,
-  //             colIndex,
-  //             elementIndex,
-  //             value
-  //           );
-  //           onBlockChange?.(block.block_id, updatedBlock);
-  //         }}
-  //         blockType={block.block_type}
-  //         isHeader={false}
-  //         col_type={colType}
-  //       />
-        
-  //       {/* 행 추가 버튼 (하단 오버레이) */}
-  //       <div 
-  //         className="absolute bottom-0 left-0 right-0 h-2 bg-transparent hover:bg-blue-200 cursor-pointer opacity-0 hover:opacity-100 transition-opacity"
-  //         onClick={(e) => {
-  //           e.stopPropagation();
-  //           // DivisionBlock에 형제 셀 추가 (행 추가)
-  //           const updatedBlock = addRowToAllBlocks(
-  //             blocks,
-  //             bodyRowIndex,
-  //             colIndex
-  //           );
-  //           onBlockChange?.(block.block_id, updatedBlock);
-  //         }}
-  //         title="행 추가"
-  //       />
-  //     </div>
-  //   );
-  // };
-
-  
-  // 4단계: 최종 렌더링 (HTML 테이블 구조)
-  // const hasDivisionBlock = blocks.some(block => block.block_type === BLOCK_TYPE.DIVISION);
-  
-  // if (hasDivisionBlock) {
-  //   return renderDivisionTable(blocks, totalRows, totalCols);
-  // }
   
   // DivisionHead 셀 렌더링 헬퍼
   const renderDivisionHeadCell = (rowIndex: number, colIndex: number) => {
-    // 비활성화 상태일 때는 왼쪽 막대 형태로만 표시
-    if (!divisionHeadData.isActive) {
-      if (rowIndex === 0 && colIndex === 0) {
-        return (
-          <td 
-            key="dh-collapsed"
-            className="border border-gray-300 bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors"
-            rowSpan={totalRowsWithDivisionHead}
-            style={{ 
-              width: '30px',
-              writingMode: 'vertical-rl',
-              textOrientation: 'mixed',
-              verticalAlign: 'middle',
-              textAlign: 'center'
-            }}
-            onClick={() => !readOnly && onDivisionHeadChange?.({ ...divisionHeadData, isActive: true })}
-            title="클릭하여 구분 헤드 활성화"
-          >
-            <span className="text-xs font-semibold text-gray-600">구분</span>
-          </td>
-        )
-      }
-      return null
-    }
-    
-    if (rowIndex === 0) {
-      // 1행: 옵션 부분 (점 3개 아이콘)
-      if (colIndex === 0 && divisionHeadCols > 0) {
-        return (
-          <td 
-            key="dh-options"
-            className="border border-gray-300 p-2 bg-gray-50"
-            colSpan={divisionHeadCols}
-          >
-            <div className="flex items-center justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="p-1 hover:bg-gray-200 rounded" disabled={readOnly}>
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() => onDivisionHeadChange?.({ ...divisionHeadData, isActive: false })}
-                  >
-                    비활성화
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const { header, body } = addColumnToDivisionHead(divisionHeadData.header, divisionHeadData.body);
-                      onDivisionHeadChange?.({ ...divisionHeadData, header, body });
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    열 추가
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </td>
-        )
-      }
-      return null
-    } else if (rowIndex === 1) {
-      // 헤더 행 (division_type Token 행)
-      if (colIndex < divisionHeadCols) {
-        const headerCell = divisionHeadData.header[colIndex];
-        return (
-          <td key={`dh-header-${colIndex}`} className="border border-gray-300 p-2 bg-gray-50">
-            <Token
-              element={{
-                type: 'Token',
-                optional: false,
-                visible: true,
-                menu_key: 'division_type',
-                value: headerCell?.division_type || '',
-              }}
-              onChange={(value) => {
-                const newHeader = divisionHeadData.header.map((cell, idx) =>
-                  idx === colIndex ? { division_type: value } : cell
-                );
-                onDivisionHeadChange?.({ ...divisionHeadData, header: newHeader });
-              }}
-              autoFit={true}
-            />
-          </td>
-        )
-      }
-      return null
-    } else {
-      // 바디 행들
-      const bodyRowIndex = rowIndex - 2;
-      if (bodyRowIndex >= 0 && bodyRowIndex < divisionHeadData.body.length && colIndex < divisionHeadCols) {
-        const cell = divisionHeadData.body[bodyRowIndex]?.[colIndex] || {};
-        const rowspan = calculateRowspan(divisionHeadData.body, bodyRowIndex, colIndex);
-        
-        // 병합된 셀인지 확인
-        let isMerged = false;
-        for (let r = 0; r < bodyRowIndex; r++) {
-          const prevRowspan = calculateRowspan(divisionHeadData.body, r, colIndex);
-          if (r + prevRowspan > bodyRowIndex) {
-            isMerged = true;
-            break;
-          }
-        }
-        
-        if (isMerged) return null;
-        
-        return (
-          <td
-            key={`dh-body-${bodyRowIndex}-${colIndex}`}
-            className="border border-gray-300 p-2"
-            rowSpan={rowspan > 1 ? rowspan : undefined}
-          >
-            <ContextMenu>
-              <ContextMenuTrigger asChild>
-                <div className="min-h-[40px]">
-                  {Object.entries(cell).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-2 mb-1">
-                      <input
-                        type="text"
-                        value={key}
-                        onChange={(e) => {
-                          const newKey = e.target.value;
-                          const newBody = divisionHeadData.body.map((row, rIdx) => {
-                            if (rIdx === bodyRowIndex) {
-                              return row.map((c, cIdx) => {
-                                if (cIdx === colIndex) {
-                                  const newCell = { ...c };
-                                  delete newCell[key];
-                                  newCell[newKey] = value;
-                                  return newCell;
-                                }
-                                return c;
-                              });
-                            }
-                            return row;
-                          });
-                          onDivisionHeadChange?.({ ...divisionHeadData, body: newBody });
-                        }}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
-                        placeholder="키"
-                        disabled={readOnly}
-                      />
-                      <span>:</span>
-                      <input
-                        type="text"
-                        value={String(value || '')}
-                        onChange={(e) => {
-                          const newBody = divisionHeadData.body.map((row, rIdx) => {
-                            if (rIdx === bodyRowIndex) {
-                              return row.map((c, cIdx) => {
-                                if (cIdx === colIndex) {
-                                  return { ...c, [key]: e.target.value };
-                                }
-                                return c;
-                              });
-                            }
-                            return row;
-                          });
-                          onDivisionHeadChange?.({ ...divisionHeadData, body: newBody });
-                        }}
-                        className="flex-1 px-2 py-1 border rounded text-sm"
-                        placeholder="값"
-                        disabled={readOnly}
-                      />
-                    </div>
-                  ))}
-                  {Object.keys(cell).length === 0 && (
-                    <div className="flex items-center gap-2 text-gray-400 text-sm">
-                      빈 셀
-                    </div>
-                  )}
-                </div>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem
-                  onClick={() => {
-                    const { header, body } = removeColumnFromDivisionHead(
-                      divisionHeadData.header,
-                      divisionHeadData.body,
-                      colIndex
-                    );
-                    onDivisionHeadChange?.({ ...divisionHeadData, header, body });
-                  }}
-                  disabled={divisionHeadData.header.length <= 1}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  열 삭제
-                </ContextMenuItem>
-                <ContextMenuSeparator />
-                <ContextMenuItem
-                  onClick={() => {
-                    // 행 추가는 컴포넌트 내 모든 블록에 영향을 줘야 함
-                    // DivisionHead에 행 추가
-                    const newDivisionHeadBody = addRowToDivisionHead(divisionHeadData.body, bodyRowIndex, colIndex);
-                    onDivisionHeadChange?.({ ...divisionHeadData, body: newDivisionHeadBody });
-                    
-                    // 모든 블록에도 행 추가 (onInsertRow 사용)
-                    if (onInsertRow) {
-                      const updatedBlocks = blocks.map(block => {
-                        // BlockInstance의 addRow 메서드 사용
-                        block.addRow(bodyRowIndex);
-                        return block;
-                      });
-                      onInsertRow(updatedBlocks);
-                    }
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  행 추가
-                </ContextMenuItem>
-                <ContextMenuItem
-                  onClick={() => {
-                    if (divisionHeadData.body.length <= 1) return;
-                    // 행 삭제는 컴포넌트 내 모든 블록에 영향을 줘야 함
-                    const newDivisionHeadBody = removeRowFromDivisionHead(divisionHeadData.body, bodyRowIndex);
-                    onDivisionHeadChange?.({ ...divisionHeadData, body: newDivisionHeadBody });
-                    
-                    // 모든 블록에서도 행 삭제 (onInsertRow 사용)
-                    if (onInsertRow) {
-                      const updatedBlocks = blocks.map(block => {
-                        // BlockInstance의 removeRow 메서드 사용
-                        block.removeRow(bodyRowIndex);
-                        return block;
-                      });
-                      onInsertRow(updatedBlocks);
-                    }
-                  }}
-                  disabled={divisionHeadData.body.length <= 1}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  행 삭제
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
-          </td>
-        )
-      }
-      return null
-    }
+    return (
+      <DivisionHead
+        key={`dh-${rowIndex}-${colIndex}`}
+        data={divisionHeadData}
+        onChange={(data) => onDivisionHeadChange?.(data)}
+        readOnly={readOnly}
+        renderAsTableCell={true}
+        rowIndex={rowIndex}
+        colIndex={colIndex}
+        totalRows={totalRowsWithDivisionHead}
+        onInsertRow={onInsertRow}
+        blocks={blocks}
+      />
+    )
   }
 
   return (
