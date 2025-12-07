@@ -131,8 +131,10 @@ export class GenericBlockInstance extends BlockInstance {
       this.data.body_cells = [];
     }
     const newRow: any[] = [];
-    if (rowIndex !== undefined) {
-      this.data.body_cells.splice(rowIndex, 0, newRow);
+    if (rowIndex !== undefined && rowIndex >= 0) {
+      // 다른 블록들과 일관되게 rowIndex + 1 위치에 삽입
+      // 명세서에 따르면 R+1 자리에 행이 삽입되어야 함
+      this.data.body_cells.splice(rowIndex + 1, 0, newRow);
     } else {
       this.data.body_cells.push(newRow);
     }

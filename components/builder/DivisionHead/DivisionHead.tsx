@@ -140,21 +140,63 @@ function renderTableCell({
     // 바디 행들
     const bodyRowIndex = rowIndex - 2
     const divisionHeadCols = header.length
-    if (bodyRowIndex >= 0 && bodyRowIndex < body.length && colIndex < divisionHeadCols) {
+    
+    // 디버깅: 구분 헤드 바디 셀 렌더링
+    console.log(`🎯 구분헤드바디 [${rowIndex}, ${colIndex}]:`, {
+      bodyRowIndex,
+      divisionHeadCols,
+      bodyLength: body.length,
+      조건체크: `bodyRowIndex >= 0 (${bodyRowIndex >= 0}) && colIndex < divisionHeadCols (${colIndex < divisionHeadCols})`,
+      렌더링여부: bodyRowIndex >= 0 && colIndex < divisionHeadCols,
+    });
+    
+    // bodyRowIndex가 body.length보다 크거나 같으면 빈 셀 렌더링
+    // (블록에만 행이 있는 경우)
+    if (bodyRowIndex >= 0 && colIndex < divisionHeadCols) {
+      // bodyRowIndex가 body.length 범위를 벗어나면 빈 셀 렌더링
+      if (bodyRowIndex >= body.length) {
+        return (
+          <td
+            key={`dh-body-empty-${bodyRowIndex}-${colIndex}`}
+            className="border border-gray-300 p-2"
+            style={{ minHeight: '40px', height: 'auto', verticalAlign: 'top' }}
+          >
+            {/* 빈 셀 */}
+          </td>
+        )
+      }
       const cell = body[bodyRowIndex]?.[colIndex] || {}
       const rowspan = calculateRowspan(body, bodyRowIndex, colIndex)
       
       // 병합된 셀인지 확인
+      // 현재 행의 셀이 body 배열에 존재하면 항상 렌더링
+      // 위쪽 행의 rowspan이 현재 행을 포함하는지 확인하되,
+      // 현재 행의 셀이 존재하면 새로운 셀로 렌더링
       let isMerged = false
-      for (let r = 0; r < bodyRowIndex; r++) {
-        const prevRowspan = calculateRowspan(body, r, colIndex)
-        if (r + prevRowspan > bodyRowIndex) {
-          isMerged = true
-          break
+      if (bodyRowIndex > 0) {
+        for (let r = 0; r < bodyRowIndex; r++) {
+          const prevRowspan = calculateRowspan(body, r, colIndex)
+          // 위쪽 행의 rowspan이 현재 행을 포함하는지 확인
+          if (r + prevRowspan > bodyRowIndex) {
+            // 현재 행의 셀이 body 배열에 존재하는지 확인
+            // 존재하면 새로운 행이므로 렌더링 (병합하지 않음)
+            if (body[bodyRowIndex]?.[colIndex] !== undefined) {
+              // 현재 행의 셀이 존재하므로 병합하지 않고 렌더링
+              isMerged = false
+              break
+            } else {
+              // 현재 행의 셀이 없으면 병합
+              isMerged = true
+              break
+            }
+          }
         }
       }
       
-      if (isMerged) return null
+      // 병합된 셀이면 null 반환
+      if (isMerged) {
+        return null
+      }
 
       const divisionType = header[colIndex]?.division_type || ''
       const cellData = cell || {}
@@ -180,10 +222,11 @@ function renderTableCell({
           key={`dh-body-${bodyRowIndex}-${colIndex}-${divisionType}`}
           className="border border-gray-300 p-2"
           rowSpan={rowspan > 1 ? rowspan : undefined}
+          style={{ minHeight: '40px', height: 'auto', verticalAlign: 'top' }}
         >
           <ContextMenu>
             <ContextMenuTrigger asChild>
-              <div className="min-h-[40px]">
+              <div style={{ minHeight: '40px', display: 'flex', alignItems: 'center', padding: '8px 0' }}>
                 {CellTypeComponent ? (
                   <CellTypeComponent
                     cellData={cellData}
@@ -244,7 +287,7 @@ function renderTableCell({
                       </div>
                     ))}
                     {Object.keys(cellData).length === 0 && (
-                      <div className="flex items-center gap-2 text-gray-400 text-sm">
+                      <div className="flex items-center gap-2 text-gray-400 text-sm" style={{ minHeight: '24px' }}>
                         빈 셀
                       </div>
                     )}
@@ -271,14 +314,21 @@ function renderTableCell({
               <ContextMenuSeparator />
               <ContextMenuItem
                 onClick={() => {
+                  // 구분 헤드에 행 추가
                   const newBody = addRowToDivisionHead(body, bodyRowIndex, colIndex)
                   onChange({ ...data, body: newBody })
                   
+                  // 블록에도 행 추가
                   if (onInsertRow && blocks) {
                     const updatedBlocks = blocks.map(block => {
-                      block.addRow(bodyRowIndex)
+                      const blockBodyRowIndex = rowIndex - 2
+                      block.addRow(blockBodyRowIndex)
                       return block
                     })
+                    console.log('➕ 행 추가:', { 
+                      구분헤드행: `${body.length} → ${newBody.length}`, 
+                      블록개수: blocks.length 
+                    });
                     onInsertRow(updatedBlocks)
                   }
                 }}
@@ -339,6 +389,7 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
   blocks = [],
 }) => {
   const { header, body, isActive } = data
+
 
   // 테이블 셀 형태로 렌더링하는 경우
   if (renderAsTableCell && rowIndex !== undefined && colIndex !== undefined) {
@@ -419,10 +470,16 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
   }
 
   const handleAddRow = (rowIndex: number, colIndex: number) => {
+    // rowIndex는 구분 헤드의 body 배열 인덱스 (0부터 시작)
     const newBody = addRowToDivisionHead(body, rowIndex, colIndex)
     onChange({ ...data, body: newBody })
     
     // 블록에도 행 추가
+    // handleAddRow는 renderAsTableCell=false일 때 사용되므로,
+    // rowIndex는 이미 구분 헤드의 body 인덱스
+    // 하지만 블록의 addRow는 블록의 body 인덱스를 받아야 함
+    // 구분 헤드와 블록의 body 인덱스는 같은 테이블 행에 대해 동일해야 함
+    // 따라서 rowIndex를 그대로 전달
     if (onInsertRow && blocks) {
       const updatedBlocks = blocks.map(block => {
         block.addRow(rowIndex)

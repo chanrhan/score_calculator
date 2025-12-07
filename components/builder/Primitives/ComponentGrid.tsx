@@ -63,9 +63,14 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   combineState
 }) => {
   // DivisionHead가 없으면 기본값 생성
+  // divisionHead 객체의 변경을 감지하기 위해 body.length를 의존성으로 사용
+  const divisionHeadBodyLength = divisionHead?.body?.length ?? 0;
+  const divisionHeadHeaderLength = divisionHead?.header?.length ?? 0;
+  const divisionHeadIsActive = divisionHead?.isActive ?? true;
+  
   const divisionHeadData = React.useMemo(() => {
     return divisionHead || createDefaultDivisionHead()
-  }, [divisionHead])
+  }, [divisionHead, divisionHeadBodyLength, divisionHeadHeaderLength, divisionHeadIsActive])
   // block_data는 더 이상 사용하지 않음 (BLOCK_TYPES 직접 사용)
   // const { blockData } = useBlockDataStore();
   const { highlightedBlockIds, blockIdToSubjectNames, highlightedRowsByBlockId, readOnly, snapshots } = useResultsHighlight();
@@ -107,16 +112,53 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   const totalRows = calculateTotalRows(blocks);
   const totalCols = calculateTotalCols(blocks);
   
-  // DivisionHead 열 개수 추가
-  const divisionHeadCols = divisionHeadData.isActive ? divisionHeadData.header.length : 0
-  const totalColsWithDivisionHead = totalCols + divisionHeadCols
+  // DivisionHead 열 개수
+  // 비활성화되어 있어도 막대 형태로 1열은 차지함
+  const divisionHeadCols = React.useMemo(() => {
+    return divisionHeadData.isActive ? divisionHeadData.header.length : 1;
+  }, [divisionHeadData.isActive, divisionHeadData.header.length]);
   
-  // DivisionHead의 행 개수 계산
-  const divisionHeadRows = divisionHeadData.isActive 
-    ? divisionHeadData.body.length + 1 // 헤더 1행 + 바디 행들
-    : 1 // 비활성화 시에도 막대 형태로 1행 차지
-  const totalRowsWithDivisionHead = Math.max(totalRows, divisionHeadRows)
+  // 전체 행×열 크기 계산 (구분 헤드 + 블록)
+  const totalRowsWithDivisionHead = React.useMemo(() => {
+    // 블록의 바디 행 수
+    const blockBodyRows = totalRows - 2; // totalRows는 옵션(1행) + 헤더(1행) + 바디 행들
+    // 구분 헤드의 바디 행 수
+    const divisionHeadBodyRows = divisionHeadData.isActive ? divisionHeadData.body.length : 0;
+    // 전체 바디 행 수는 둘 중 큰 값
+    const maxBodyRows = Math.max(blockBodyRows, divisionHeadBodyRows);
+    // 전체 행 수 = 옵션(1행) + 헤더(1행) + 바디 행들
+    return 2 + maxBodyRows;
+  }, [totalRows, divisionHeadData.isActive, divisionHeadData.body.length])
 
+  // 전체 열 수 (구분 헤드 + 블록)
+  const totalColsWithDivisionHead = totalCols + divisionHeadCols;
+
+  // 전체 그리드 구조 로그 (렌더링 시 한 번만 출력)
+  React.useEffect(() => {
+    const gridInfo = {
+      '구분 헤드': {
+        활성화: divisionHeadData.isActive,
+        열개수: divisionHeadCols,
+        바디행수: divisionHeadData.body.length,
+        헤더: divisionHeadData.header,
+        바디: divisionHeadData.body,
+      },
+      '블록들': {
+        개수: blocks.length,
+        총열개수: totalCols,
+        각블록열개수: blocks.map(b => {
+          const db = b.toDbFormat();
+          return { id: b.block_id, 열개수: db.header_cells?.length || 1 };
+        }),
+      },
+      '전체 그리드': {
+        총행수: totalRowsWithDivisionHead,
+        총열수: totalColsWithDivisionHead,
+        구조: `[${totalRowsWithDivisionHead}행 × ${totalColsWithDivisionHead}열] = 구분헤드(${divisionHeadCols}열) + 블록들(${totalCols}열)`,
+      },
+    };
+    console.log('📊 전체 그리드 구조:', gridInfo);
+  }, [divisionHeadData, divisionHeadCols, blocks, totalCols, totalRowsWithDivisionHead, totalColsWithDivisionHead])
 
   // 렌더링 컨텍스트 생성
   // tokenMenus는 이제 코드 상수로 관리되므로 하위 호환성을 위해 빈 배열 전달
@@ -135,6 +177,7 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   }), [readOnly, highlightedCaseSet, blockIdToSubjectNames, hoveredBlockId, setHoveredBlockId, combineState, onBlockChange, onBlockDelete, onBlockCombine, onInsertRow]);
 
   // 2단계: 각 셀(r,c)의 내용 채우기
+  // colIndex는 블록들의 열 인덱스 (0부터 시작, 구분 헤드 열 제외)
   const fillCellContent = (rowIndex: number, colIndex: number, blocks: BlockInstance[]) => {
     // 현재 열이 어느 블록에 속하는지 찾기
     let currentCol = 0;
@@ -153,7 +196,27 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
       currentCol += cols;
     }
     
-    if (!targetBlock) return <div className="empty-cell" />;
+    if (!targetBlock) {
+      // 디버깅: 블록을 찾지 못한 경우
+      if (rowIndex >= 2) {
+        console.warn(`⚠️ 블록을 찾지 못함 [${rowIndex}, ${colIndex}]:`, {
+          블록열인덱스: colIndex,
+          블록개수: blocks.length,
+          블록총열개수: totalCols,
+        });
+      }
+      return <div className="empty-cell" />;
+    }
+    
+    // 디버깅: 블록 셀 렌더링
+    if (rowIndex >= 2) {
+      console.log(`📦 블록셀 [${rowIndex}, ${colIndex}]:`, {
+        블록ID: targetBlock.block_id,
+        블록타입: targetBlock.block_type,
+        블록내부열인덱스: blockColIndex,
+        블록열범위: `${currentCol} ~ ${currentCol + (targetBlock.toDbFormat().header_cells?.length || 1) - 1}`,
+      });
+    }
     
     // LayoutRenderer를 사용하여 셀 렌더링
     const renderer = LayoutRendererFactory.create(targetBlock.block_type);
@@ -161,12 +224,17 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   };
   
   // DivisionHead 셀 렌더링 헬퍼
-  const renderDivisionHeadCell = (rowIndex: number, colIndex: number) => {
+  // rowIndex: 전체 그리드의 행 인덱스
+  // colIndex: 구분 헤드 내부의 열 인덱스 (0부터 시작)
+  const renderDivisionHeadCell = (rowIndex: number, colIndex: number, data: DivisionHeadData) => {
     return (
       <DivisionHead
-        key={`dh-${rowIndex}-${colIndex}`}
-        data={divisionHeadData}
-        onChange={(data) => onDivisionHeadChange?.(data)}
+        key={`dh-${rowIndex}-${colIndex}-${data.body.length}`}
+        data={data}
+        onChange={(data) => {
+          console.log('✅ 구분헤드 변경:', { 바디행수: data.body.length });
+          onDivisionHeadChange?.(data)
+        }}
         readOnly={readOnly}
         renderAsTableCell={true}
         rowIndex={rowIndex}
@@ -178,55 +246,71 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
     )
   }
 
+  // 각 위치(r,c)에 맞는 셀 렌더링 함수
+  const renderCellAtPosition = (rowIndex: number, colIndex: number): React.ReactNode => {
+    // 구분 헤드 열인지 확인
+    const isDivisionHeadCol = colIndex < divisionHeadCols;
+    
+    // 디버깅: 각 셀 렌더링 시점
+    if (rowIndex >= 2) { // 바디 행만 로그
+      console.log(`📍 셀 렌더링 [${rowIndex}, ${colIndex}]:`, {
+        전체열인덱스: colIndex,
+        구분헤드열개수: divisionHeadCols,
+        구분헤드열인가: isDivisionHeadCol,
+        블록열인덱스: isDivisionHeadCol ? null : colIndex - divisionHeadCols,
+      });
+    }
+    
+    if (isDivisionHeadCol) {
+      // 구분 헤드 열 (0 ~ divisionHeadCols - 1)
+      // colIndex는 전체 그리드의 열 인덱스이므로, 구분 헤드 내부 열 인덱스로 변환
+      // 구분 헤드가 항상 첫 번째 열부터 시작하므로, colIndex가 구분 헤드 내부 열 인덱스와 동일
+      const divisionHeadInternalColIndex = divisionHeadData.isActive ? colIndex : 0;
+      return renderDivisionHeadCell(rowIndex, divisionHeadInternalColIndex, divisionHeadData);
+    }
+    
+    // 블록 열인 경우
+    // 전체 그리드에서 블록 영역의 열 인덱스 = colIndex - divisionHeadCols
+    // 이 값은 블록들의 열 인덱스 (0부터 시작)
+    const blockColIndex = colIndex - divisionHeadCols;
+    
+    return (
+      <td key={`block-${rowIndex}-${colIndex}`} className="border border-gray-300 p-0" style={{ minHeight: '40px' }}>
+        {fillCellContent(rowIndex, blockColIndex, blocks)}
+      </td>
+    );
+  };
+
   return (
     <div className="component-grid overflow-auto">
       <table className="w-full border-collapse border border-gray-300">
-        <thead>
-          {/* 1행: 옵션 부분 (점 3개 아이콘) */}
-          <tr>
-            {/* DivisionHead 옵션 (활성화/비활성화 상태 모두 렌더링) */}
-            {renderDivisionHeadCell(0, 0)}
-            {/* 블록 옵션 (각 블록의 1행) */}
-            {Array.from({ length: totalCols }, (_, colIndex) => (
-              <td key={colIndex} className="border border-gray-300 p-0">
-                {fillCellContent(0, colIndex, blocks)}
-              </td>
-            ))}
-          </tr>
-          {/* 2행: 헤더 */}
-          <tr>
-            {/* DivisionHead 헤더 셀들 */}
-            {divisionHeadData.isActive && Array.from({ length: divisionHeadCols }, (_, colIndex) => 
-              renderDivisionHeadCell(1, colIndex)
-            )}
-            {/* 블록 헤더 열들 */}
-            {Array.from({ length: totalCols }, (_, colIndex) => (
-              <td key={colIndex} className="border border-gray-300 p-0">
-                {fillCellContent(1, colIndex, blocks)}
-              </td>
-            ))}
-          </tr>
-        </thead>
         <tbody>
-          {/* 3행 이상: 바디 */}
-          {Array.from({ length: Math.max(totalRows - 2, divisionHeadData.isActive ? divisionHeadData.body.length : 0) }, (_, rowIndex) => {
-            return (
-              <tr key={rowIndex}>
-                {/* DivisionHead 바디 셀들 */}
-                {divisionHeadData.isActive && Array.from({ length: divisionHeadCols }, (_, colIndex) => 
-                  renderDivisionHeadCell(rowIndex + 2, colIndex)
-                )}
-                {/* 블록 바디 열들 */}
-                {Array.from({ length: totalCols }, (_, colIndex) => {
-                  return (
-                    <td key={colIndex} className="border border-gray-300 p-0">
-                      {rowIndex < totalRows - 2 ? fillCellContent(rowIndex + 2, colIndex, blocks) : null}
-                    </td>
-                  );
-                })}
-              </tr>
-            )
-          })}
+          {React.useMemo(() => {
+            // 전체 행을 순회하면서 각 행 렌더링
+            return Array.from({ length: totalRowsWithDivisionHead }, (_, rowIndex) => {
+              return (
+                <tr 
+                  key={`row-${rowIndex}-${divisionHeadData.body.length}`}
+                  style={{ minHeight: '40px', height: 'auto' }}
+                >
+                  {/* 각 열을 순회하면서 해당 위치의 셀 렌더링 */}
+                  {Array.from({ length: totalColsWithDivisionHead }, (_, colIndex) => 
+                    renderCellAtPosition(rowIndex, colIndex)
+                  )}
+                </tr>
+              );
+            });
+          }, [
+            totalRowsWithDivisionHead, 
+            totalColsWithDivisionHead, 
+            divisionHeadData, 
+            divisionHeadCols, 
+            totalCols, 
+            blocks, 
+            readOnly, 
+            onDivisionHeadChange, 
+            onInsertRow
+          ])}
         </tbody>
       </table>
     </div>

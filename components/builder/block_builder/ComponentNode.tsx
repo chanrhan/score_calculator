@@ -59,10 +59,23 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
     return comp?.divisionHead || createDefaultDivisionHead();
   });
   
-  // Component가 변경되면 divisionHead 업데이트
+  // 이전 comp.divisionHead 값을 추적하기 위한 ref
+  const prevCompDivisionHeadRef = React.useRef<string | null>(null);
+  
+  // Component가 변경되면 divisionHead 업데이트 (깊은 비교로 실제 변경 시에만 업데이트)
   React.useEffect(() => {
-    if (comp?.divisionHead) {
-      setDivisionHead(comp.divisionHead);
+    const currentCompDivisionHeadStr = comp?.divisionHead 
+      ? JSON.stringify(comp.divisionHead) 
+      : null;
+    
+    // 이전 값과 비교하여 실제로 변경되었을 때만 업데이트
+    if (currentCompDivisionHeadStr !== prevCompDivisionHeadRef.current) {
+      if (comp?.divisionHead) {
+        setDivisionHead(comp.divisionHead);
+      } else {
+        setDivisionHead(createDefaultDivisionHead());
+      }
+      prevCompDivisionHeadRef.current = currentCompDivisionHeadStr;
     }
   }, [comp?.divisionHead]);
   
@@ -136,6 +149,7 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
       {/* 블록 그리드 */}
       <div className={styles.content}>
         <ComponentGrid
+          key={`component-grid-${componentId}`}
           blocks={blocks}
           divisionHead={divisionHead}
           onDivisionHeadChange={(data) => {
