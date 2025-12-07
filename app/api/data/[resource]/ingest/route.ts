@@ -69,11 +69,11 @@ export async function POST(req: NextRequest, { params }: { params: { resource: s
       .filter((r: any) => r.subject_name && r.subject_separation_code)
 
     if (resource === 'admissions') {
-      await dataRepo.upsertTokenItems('admission_code', mapped as any)
+      await dataRepo.upsertAdmissions(mapped as any)
       return NextResponse.json({ ok: true, data: { summary: { inserted: (mapped as any[]).length, updated: 0, skipped: 0 } } })
     }
     if (resource === 'units') {
-      await dataRepo.upsertTokenItems('major_code', mapped as any)
+      await dataRepo.upsertUnits(mapped as any)
       return NextResponse.json({ ok: true, data: { summary: { inserted: (mapped as any[]).length, updated: 0, skipped: 0 } } })
     }
     if (resource === 'curricula') {

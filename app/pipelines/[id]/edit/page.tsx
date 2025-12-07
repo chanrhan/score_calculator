@@ -9,6 +9,7 @@ import { createFlowBlockFromKind, getBlockTypeNameById, getBlockTypeId } from '@
 import { convertComponentGridsToPipelineComponents, createEmptyPipeline } from '@/lib/adapters/pipelineLoader';
 import { useBlockData } from '@/lib/hooks/useBlockData';
 import { usePipelineVariables } from '@/store/usePipelineVariables';
+import { useBlockDataStore } from '@/store/useBlockDataStore';
 import { toast } from 'sonner';
 import { createDefaultDivisionHead } from '@/lib/utils/divisionHeadUtils';
 import styles from './page.module.css';
@@ -82,6 +83,18 @@ export default function PipelineEditPage() {
           try { await loadVars(parsedUnivId, pipelineId); } catch {}
         }
         
+        // admission_code, major_code 토큰 메뉴 미리 로드 (캐싱)
+        if (parsedUnivId) {
+          const { loadDynamicTokenMenu } = useBlockDataStore.getState();
+          try {
+            await Promise.all([
+              loadDynamicTokenMenu(parsedUnivId, 'admission_code'),
+              loadDynamicTokenMenu(parsedUnivId, 'major_code'),
+            ]);
+          } catch (error) {
+            console.error('Failed to preload token menus:', error);
+          }
+        }
         
         // 로컬 스토어에 파이프라인 엔트리가 없으면 생성 (정규화된 ID 기준)
         if (!getById(localPipelineId)) {

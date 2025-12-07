@@ -56,11 +56,10 @@ export default function SettingsDataUploadPage() {
     const load = async () => {
       if (!selectedUnivId) return
       if (resource === 'admissions' || resource === 'units') {
-        const menuKey = resource === 'admissions' ? 'admission_code' : 'major_code'
-        const r = await fetch(`/api/token-menus/${selectedUnivId}/${menuKey}`)
+        const r = await fetch(`/api/data/${resource}?univ_id=${selectedUnivId}`)
         if (r.ok) {
-          const data = await r.json()
-          setRows(Array.isArray(data?.items) ? data.items : [])
+          const json = await r.json()
+          setRows(Array.isArray(json?.data) ? json.data : [])
           setColumns(['value', 'label'])
         }
       } else {
@@ -81,11 +80,10 @@ export default function SettingsDataUploadPage() {
     const json = await res.json()
     if (!json?.ok) return alert(json?.error || '업로드 실패')
     if (resource === 'admissions' || resource === 'units') {
-      const menuKey = resource === 'admissions' ? 'admission_code' : 'major_code'
-      const r = await fetch(`/api/token-menus/${selectedUnivId}/${menuKey}`)
+      const r = await fetch(`/api/data/${resource}?univ_id=${selectedUnivId}`)
       if (r.ok) {
-        const data = await r.json()
-        setRows(Array.isArray(data?.items) ? data.items : [])
+        const json = await r.json()
+        setRows(Array.isArray(json?.data) ? json.data : [])
       }
     } else {
       await loadCurricula()
@@ -96,19 +94,22 @@ export default function SettingsDataUploadPage() {
     if (!selectedUnivId) return alert('사이드바에서 대학교를 선택해주세요')
     if (resource === 'admissions' || resource === 'units') {
       if (!newRow.value || !newRow.label) return alert('코드와 이름을 입력해주세요')
-      const menuKey = resource === 'admissions' ? 'admission_code' : 'major_code'
-      const resp = await fetch(`/api/token-menu-items/${selectedUnivId}/${menuKey}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: newRow.value, label: newRow.label })
+      const payload = [{
+        code: newRow.value,
+        name: newRow.label,
+      }]
+      const resp = await fetch(`/api/data/${resource}/ingest`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: payload, univ_id: selectedUnivId })
       })
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}))
         return alert(err?.error || '추가 실패')
       }
       setNewRow({})
-      const r = await fetch(`/api/token-menus/${selectedUnivId}/${menuKey}`)
+      const r = await fetch(`/api/data/${resource}?univ_id=${selectedUnivId}`)
       if (r.ok) {
-        const data = await r.json()
-        setRows(Array.isArray(data?.items) ? data.items : [])
+        const json = await r.json()
+        setRows(Array.isArray(json?.data) ? json.data : [])
       }
       return
     } else if (resource === 'curricula') {
@@ -150,12 +151,16 @@ export default function SettingsDataUploadPage() {
   const handleDeleteRow = async (row: any) => {
     if (!selectedUnivId) return
     if (resource === 'admissions' || resource === 'units') {
-      const menuKey = resource === 'admissions' ? 'admission_code' : 'major_code'
-      await fetch(`/api/token-menu-items/${selectedUnivId}/${menuKey}/${row.order}`, { method: 'DELETE' })
-      const r = await fetch(`/api/token-menus/${selectedUnivId}/${menuKey}`)
+      const code = row.value || row.code
+      await fetch(`/api/data/${resource}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ univ_id: selectedUnivId, code })
+      })
+      const r = await fetch(`/api/data/${resource}?univ_id=${selectedUnivId}`)
       if (r.ok) {
-        const data = await r.json()
-        setRows(Array.isArray(data?.items) ? data.items : [])
+        const json = await r.json()
+        setRows(Array.isArray(json?.data) ? json.data : [])
       }
       return
     } else if (resource === 'curricula') {
@@ -175,13 +180,16 @@ export default function SettingsDataUploadPage() {
     if (!confirm('현재 탭의 데이터를 모두 삭제하시겠습니까?')) return
     try {
       if (resource === 'admissions' || resource === 'units') {
-        const menuKey = resource === 'admissions' ? 'admission_code' : 'major_code'
-        const res = await fetch(`/api/token-menu-items/${selectedUnivId}/${menuKey}`, { method: 'DELETE' })
+        const res = await fetch(`/api/data/${resource}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ univ_id: selectedUnivId, delete_all: true })
+        })
         if (!res.ok) return alert('전체 삭제 실패')
-        const r = await fetch(`/api/token-menus/${selectedUnivId}/${menuKey}`)
+        const r = await fetch(`/api/data/${resource}?univ_id=${selectedUnivId}`)
         if (r.ok) {
-          const data = await r.json()
-          setRows(Array.isArray(data?.items) ? data.items : [])
+          const json = await r.json()
+          setRows(Array.isArray(json?.data) ? json.data : [])
         }
       } else if (resource === 'curricula') {
         // 편제 일괄 삭제 (단일 API 호출)

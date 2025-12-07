@@ -12,7 +12,7 @@ interface InputFieldProps {
 }
 
 export const InputField: React.FC<InputFieldProps> = ({ element, onChange, className = '', autoFit = true }) => {
-  const { value, optional, visible } = element
+  const { value, optional, visible, inputType = 'text' } = element
   const [inputWidth, setInputWidth] = React.useState<number | undefined>(undefined)
   
   if (optional && !visible) {
@@ -34,7 +34,7 @@ export const InputField: React.FC<InputFieldProps> = ({ element, onChange, class
   
   return (
     <input
-      type="text"
+      type={inputType}
       value={value}
       onChange={(e) => onChange?.(e.target.value)}
       className={`${styles.input} ${className}`}

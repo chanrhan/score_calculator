@@ -219,9 +219,9 @@ export async function POST(req: NextRequest, { params }: { params: { resource: s
           // 데이터 업로드
           const { dataRepo } = await import('@/services/data-repo')
           if (sheetType === 'admissions') {
-            await dataRepo.upsertTokenItems('admission_code', mapped)
+            await dataRepo.upsertAdmissions(mapped)
           } else if (sheetType === 'units') {
-            await dataRepo.upsertTokenItems('major_code', mapped)
+            await dataRepo.upsertUnits(mapped)
           } else if (sheetType === 'organizations') {
             await dataRepo.upsertTokenItems('organization_code', mapped)
           } else if (sheetType === 'curricula') {

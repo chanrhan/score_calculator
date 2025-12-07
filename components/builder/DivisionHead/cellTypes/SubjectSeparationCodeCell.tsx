@@ -1,4 +1,7 @@
 import * as React from 'react'
+import { List } from '@/components/builder/block_builder/CellElement/List'
+import { createListElement } from '@/lib/blocks/modules/common/elementHelpers'
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus'
 
 interface SubjectSeparationCodeCellProps {
   cellData: Record<string, any>
@@ -11,7 +14,25 @@ export const SubjectSeparationCodeCell: React.FC<SubjectSeparationCodeCellProps>
   onChange,
   readOnly = false,
 }) => {
-  // TODO: 과목구분 셀 타입 구현
-    return <div>과목구분</div>
+  const codes = Array.isArray(cellData.codes) ? cellData.codes : []
+
+  return (
+    <div>
+      <List
+        element={createListElement({
+          item_type: 'Token',
+          menu_key: TOKEN_MENU_KEYS.SUBJECT_SEPARATION_CODE,
+          value: codes,
+          optional: false,
+          visible: true,
+        })}
+        onChange={(value) => {
+          if (!readOnly) {
+            onChange('codes', Array.isArray(value) ? value : [])
+          }
+        }}
+      />
+    </div>
+  )
 }
 

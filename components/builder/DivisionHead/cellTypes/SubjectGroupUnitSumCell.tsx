@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { InputField } from '@/components/builder/block_builder/CellElement/InputField'
+import { createInputFieldElement } from '@/lib/blocks/modules/common/elementHelpers'
 
 interface SubjectGroupUnitSumCellProps {
   cellData: Record<string, any>
@@ -11,7 +13,25 @@ export const SubjectGroupUnitSumCell: React.FC<SubjectGroupUnitSumCellProps> = (
   onChange,
   readOnly = false,
 }) => {
-  // TODO: 교과군별 이수단위 합 셀 타입 구현
-  return <div>교과군별 이수단위 합</div>
+  const value = cellData.value !== undefined ? Number(cellData.value) : 0
+
+  return (
+    <div>
+      <InputField
+        element={createInputFieldElement({
+          value: String(value),
+          optional: false,
+          visible: true,
+          inputType: 'number',
+        })}
+        onChange={(newValue) => {
+          if (!readOnly) {
+            onChange('value', Number(newValue))
+          }
+        }}
+        autoFit={true}
+      />
+    </div>
+  )
 }
 

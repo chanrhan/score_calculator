@@ -82,11 +82,13 @@ export function createInputFieldElement(props: {
   value: string;
   optional?: boolean;
   visible?: boolean;
+  inputType?: 'text' | 'number';
 }) {
   return {
     value: props.value,
     optional: props.optional ?? false,
     visible: props.visible ?? true,
+    inputType: props.inputType ?? 'text',
   } as any;
 }
 

@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { List } from '@/components/builder/block_builder/CellElement/List'
+import { createListElement } from '@/lib/blocks/modules/common/elementHelpers'
 
 interface AdmissionCodeCellProps {
   cellData: Record<string, any>
@@ -11,7 +13,25 @@ export const AdmissionCodeCell: React.FC<AdmissionCodeCellProps> = ({
   onChange,
   readOnly = false,
 }) => {
-  // TODO: 모집전형 셀 타입 구현
-  return <div>전형코드</div>
+  const codes = Array.isArray(cellData.codes) ? cellData.codes : []
+
+  return (
+    <div>
+      <List
+        element={createListElement({
+          item_type: 'Token',
+          menu_key: 'admission_code',
+          value: codes,
+          optional: false,
+          visible: true,
+        })}
+        onChange={(value) => {
+          if (!readOnly) {
+            onChange('codes', Array.isArray(value) ? value : [])
+          }
+        }}
+      />
+    </div>
+  )
 }
 

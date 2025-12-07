@@ -13,17 +13,6 @@ export interface TokenMenu {
   items: TokenMenuItem[]
 }
 
-export const AGGREGATION_TYPE_MENU: TokenMenu = {
-  key: 'aggregation_type',
-  name: '집계 유형',
-  items: [
-    { label: '이수단위 가중평균', value: '0' },
-    { label: '평균', value: '1' },
-    { label: '과목 개수', value: '2' },
-    { label: '합', value: '3' },
-  ]
-} as const
-
 export const APPLICANT_SC_CODE_MENU: TokenMenu = {
   key: 'applicant_sc_code',
   name: '지원자 유형',
@@ -269,7 +258,6 @@ export const AGGREGATION_FUNC_MENU: TokenMenu = {
 
 // 모든 메뉴를 키로 접근할 수 있는 객체
 export const TOKEN_MENUS = {
-  aggregation_type: AGGREGATION_TYPE_MENU,
   applicant_sc_code: APPLICANT_SC_CODE_MENU,
   calculation_scope: CALCULATION_SCOPE_MENU,
   compare_option: COMPARE_OPTION_MENU,
@@ -301,7 +289,6 @@ export function getTokenMenu(key: string): TokenMenu | undefined {
 
 // 각 메뉴의 key를 상수로 export
 export const TOKEN_MENU_KEYS = {
-  AGGREGATION_TYPE: AGGREGATION_TYPE_MENU.key,
   APPLICANT_SC_CODE: APPLICANT_SC_CODE_MENU.key,
   CALCULATION_SCOPE: CALCULATION_SCOPE_MENU.key,
   COMPARE_OPTION: COMPARE_OPTION_MENU.key,
@@ -328,7 +315,6 @@ export const TOKEN_MENU_KEYS = {
 
 // 모든 메뉴 배열
 export const ALL_TOKEN_MENUS: readonly TokenMenu[] = [
-  AGGREGATION_TYPE_MENU,
   APPLICANT_SC_CODE_MENU,
   CALCULATION_SCOPE_MENU,
   COMPARE_OPTION_MENU,

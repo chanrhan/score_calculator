@@ -46,6 +46,7 @@ export interface FormulaElement extends CellElementBase {
 export interface InputFieldElement extends CellElementBase {
   type: 'InputField'
   value: string // 자유 입력값
+  inputType?: 'text' | 'number' // 입력 필드 타입 (기본값: 'text')
 }
 
 // SelectionInput Element (입력 + 토큰 선택)
@@ -81,7 +82,7 @@ export interface ListElement extends CellElementBase {
 export type ConditionChainItemType =
   | { type: 'Token'; menu_key: string }
   | { type: 'Text'; content: string }
-  | { type: 'InputField' }
+  | { type: 'InputField'; inputType?: 'text' | 'number' }
   | { type: 'Formula' }
   | { type: 'SelectionInput'; menu_key: string }
 

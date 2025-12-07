@@ -9,7 +9,68 @@ export async function GET(
   try {
     const { univ_id, key } = params;
 
-    // 선택된 대학의 메뉴 또는 공통 메뉴(scope=1)를 찾기
+    // admission_code와 major_code는 admission/major 테이블에서 조회
+    if (key === 'admission_code') {
+      const admissions = await prisma.admission.findMany({
+        where: { univ_id },
+        orderBy: { code: 'asc' },
+      });
+      
+      // token_menu 형식으로 변환
+      const items = admissions.map((admission, index) => ({
+        id: index + 1,
+        order: index + 1,
+        label: admission.name,
+        value: admission.code,
+        menu_key: 'admission_code',
+        univ_id: admission.univ_id,
+        created_at: admission.created_at,
+        updated_at: admission.created_at,
+      }));
+
+      return NextResponse.json({
+        id: 0,
+        key: 'admission_code',
+        name: '모집 전형 코드',
+        univ_id,
+        scope: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+        items,
+      });
+    }
+
+    if (key === 'major_code') {
+      const majors = await prisma.major.findMany({
+        where: { univ_id },
+        orderBy: { code: 'asc' },
+      });
+      
+      // token_menu 형식으로 변환
+      const items = majors.map((major, index) => ({
+        id: index + 1,
+        order: index + 1,
+        label: major.name,
+        value: major.code,
+        menu_key: 'major_code',
+        univ_id: major.univ_id,
+        created_at: major.created_at,
+        updated_at: major.created_at,
+      }));
+
+      return NextResponse.json({
+        id: 0,
+        key: 'major_code',
+        name: '모집 단위 코드',
+        univ_id,
+        scope: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+        items,
+      });
+    }
+
+    // 기타 토큰 메뉴는 token_menu 테이블에서 조회
     const tokenMenu = await prisma.token_menu.findFirst({
       where: {
         key,
@@ -27,11 +88,15 @@ export async function GET(
       },
     });
 
+    // 토큰 메뉴가 없을 경우 빈 items 배열을 포함한 객체 반환
     if (!tokenMenu) {
-      return NextResponse.json(
-        { error: 'Token menu not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        key,
+        univ_id: null,
+        name: '',
+        scope: 0,
+        items: [],
+      });
     }
 
     return NextResponse.json(tokenMenu);

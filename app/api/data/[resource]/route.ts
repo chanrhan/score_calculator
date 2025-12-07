@@ -9,12 +9,22 @@ export async function GET(req: NextRequest, { params }: { params: { resource: st
     const univ_id = String(new URL(req.url).searchParams.get('univ_id') || '')
     if (!univ_id) return NextResponse.json({ ok: false, error: 'univ_id is required' }, { status: 400 })
     if (resource === 'admissions') {
-      const menu = await prisma.token_menu.findFirst({ where: { key: 'admission_code', OR: [{ univ_id }, { scope: 1 }] }, include: { items: { orderBy: { order: 'asc' } } } })
-      return NextResponse.json({ ok: true, data: menu?.items ?? [] })
+      const rows = await prisma.admission.findMany({
+        where: { univ_id },
+        orderBy: { code: 'asc' },
+      })
+      // token_menu_item 형식과 호환되도록 변환 (value, label)
+      const data = rows.map(r => ({ value: r.code, label: r.name }))
+      return NextResponse.json({ ok: true, data })
     }
     if (resource === 'units') {
-      const menu = await prisma.token_menu.findFirst({ where: { key: 'major_code', OR: [{ univ_id }, { scope: 1 }] }, include: { items: { orderBy: { order: 'asc' } } } })
-      return NextResponse.json({ ok: true, data: menu?.items ?? [] })
+      const rows = await prisma.major.findMany({
+        where: { univ_id },
+        orderBy: { code: 'asc' },
+      })
+      // token_menu_item 형식과 호환되도록 변환 (value, label)
+      const data = rows.map(r => ({ value: r.code, label: r.name }))
+      return NextResponse.json({ ok: true, data })
     }
     if (resource === 'curricula') {
       // 편제는 subject_organization 기준으로 반환
@@ -41,15 +51,25 @@ export async function DELETE(req: NextRequest, { params }: { params: { resource:
     if (!univ_id) return NextResponse.json({ ok: false, error: 'univ_id is required' }, { status: 400 })
 
     if (resource === 'admissions') {
-      const order = Number(body?.order || 0)
-      if (!order) return NextResponse.json({ ok: false, error: 'order is required' }, { status: 400 })
-      await prisma.token_menu_item.delete({ where: { univ_id_menu_key_order: { univ_id, menu_key: 'admission_code', order } } })
+      const delete_all = Boolean(body?.delete_all)
+      if (delete_all) {
+        await prisma.admission.deleteMany({ where: { univ_id } })
+        return NextResponse.json({ ok: true })
+      }
+      const code = String(body?.code || body?.value || '')
+      if (!code) return NextResponse.json({ ok: false, error: 'code is required (or set delete_all=true)' }, { status: 400 })
+      await prisma.admission.delete({ where: { univ_id_code: { univ_id, code } } })
       return NextResponse.json({ ok: true })
     }
     if (resource === 'units') {
-      const order = Number(body?.order || 0)
-      if (!order) return NextResponse.json({ ok: false, error: 'order is required' }, { status: 400 })
-      await prisma.token_menu_item.delete({ where: { univ_id_menu_key_order: { univ_id, menu_key: 'major_code', order } } })
+      const delete_all = Boolean(body?.delete_all)
+      if (delete_all) {
+        await prisma.major.deleteMany({ where: { univ_id } })
+        return NextResponse.json({ ok: true })
+      }
+      const code = String(body?.code || body?.value || '')
+      if (!code) return NextResponse.json({ ok: false, error: 'code is required (or set delete_all=true)' }, { status: 400 })
+      await prisma.major.delete({ where: { univ_id_code: { univ_id, code } } })
       return NextResponse.json({ ok: true })
     }
     if (resource === 'curricula') {

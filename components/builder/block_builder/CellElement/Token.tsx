@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getTokenMenu } from '@/lib/data/token-menus'
+import { useBlockDataStore } from '@/store/useBlockDataStore'
 
 interface TokenProps {
   element: TokenElement
@@ -21,6 +22,8 @@ interface TokenProps {
 export const Token: React.FC<TokenProps> = ({ element, onChange, className = '', autoFit = true }) => {
   const { menu_key, value, optional, visible, var_use, var_store } = element
   const { variablesByName, currentKey, create } = usePipelineVariables()
+  const { selectedUnivId } = useUniversity()
+  const { getDynamicTokenMenu, loadDynamicTokenMenu } = useBlockDataStore()
   const [menuItems, setMenuItems] = React.useState<any[]>([])
   const [selectWidth, setSelectWidth] = React.useState<number | undefined>(undefined)
   const [open, setOpen] = React.useState(false)
@@ -28,43 +31,66 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   
-  // 상수 파일에서 token_menu 데이터 가져오기
+  // 상수 파일에서 token_menu 데이터 가져오기, 없으면 스토어 캐시 또는 API에서 동적으로 로드
   React.useEffect(() => {
-    const tokenMenu = getTokenMenu(menu_key)
-    // lib/data/token-menus.ts의 TokenMenuItem을 types/block-data.ts의 TokenMenuItem으로 변환
-    // 배열 인덱스를 order로 사용 (1부터 시작)
-    const baseItems: TokenMenuItem[] = tokenMenu 
-      ? (tokenMenu.items || []).map((item, idx) => ({
+    const loadMenuItems = async () => {
+      // 먼저 상수 파일에서 확인
+      const tokenMenu = getTokenMenu(menu_key)
+      let baseItems: TokenMenuItem[] = []
+      
+      if (tokenMenu) {
+        // 상수 파일에 있으면 사용
+        baseItems = (tokenMenu.items || []).map((item, idx) => ({
           id: idx + 1,
-          order: idx + 1, // 배열 인덱스 기반 (1부터 시작)
+          order: idx + 1,
           label: item.label,
           value: item.value,
         }))
-      : []
+      } else if (selectedUnivId && menu_key) {
+        // 상수 파일에 없으면 스토어 캐시에서 확인
+        let dynamicMenu = getDynamicTokenMenu(selectedUnivId, menu_key)
+        
+        // 캐시에 없으면 API에서 로드 (스토어에 캐싱됨)
+        if (!dynamicMenu) {
+          dynamicMenu = await loadDynamicTokenMenu(selectedUnivId, menu_key)
+        }
+        
+        if (dynamicMenu) {
+          baseItems = (dynamicMenu.items || []).map((item: any, idx: number) => ({
+            id: item.id || idx + 1,
+            order: item.order || idx + 1,
+            label: item.label,
+            value: item.value,
+          }))
+        }
+      }
 
-    // var_use: 파이프라인 변수 병합
-    let merged: TokenMenuItem[] = baseItems
-    if (var_use) {
-      const nextOrderStart = baseItems.length + 1 // 배열 길이 기반으로 다음 order 계산
-      const vars: TokenMenuItem[] = Array.from(variablesByName.values()).map((v, idx) => ({ 
-        id: -1000 - idx, 
-        order: nextOrderStart + idx, 
-        value: v.variable_name, 
-        label: v.variable_name, 
-        created_at: undefined, 
-        updated_at: undefined 
-      })) as any
-      merged = [...baseItems, ...vars]
+      // var_use: 파이프라인 변수 병합
+      let merged: TokenMenuItem[] = baseItems
+      if (var_use) {
+        const nextOrderStart = baseItems.length + 1
+        const vars: TokenMenuItem[] = Array.from(variablesByName.values()).map((v, idx) => ({ 
+          id: -1000 - idx, 
+          order: nextOrderStart + idx, 
+          value: v.variable_name, 
+          label: v.variable_name, 
+          created_at: undefined, 
+          updated_at: undefined 
+        })) as any
+        merged = [...baseItems, ...vars]
+      }
+
+      // var_store: 하단에 "변수 추가" 액션 추가
+      if (var_store) {
+        const order = merged.length + 1
+        merged = [...merged, { id: -1, order, value: '__add_variable__', label: '+ 새 변수 추가' } as any]
+      }
+
+      setMenuItems(merged)
     }
 
-    // var_store: 하단에 "변수 추가" 액션 추가
-    if (var_store) {
-      const order = merged.length + 1 // 배열 길이 기반으로 다음 order 계산
-      merged = [...merged, { id: -1, order, value: '__add_variable__', label: '+ 새 변수 추가' } as any]
-    }
-
-    setMenuItems(merged)
-  }, [menu_key, variablesByName, var_use, var_store])
+    loadMenuItems()
+  }, [menu_key, selectedUnivId, variablesByName, var_use, var_store])
 
   // 선택된 값에 따른 동적 크기 계산
   React.useEffect(() => {

@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { InputField } from '@/components/builder/block_builder/CellElement/InputField'
+import { createInputFieldElement } from '@/lib/blocks/modules/common/elementHelpers'
 
 interface FilteredBlockIdCellProps {
   cellData: Record<string, any>
@@ -11,7 +13,25 @@ export const FilteredBlockIdCell: React.FC<FilteredBlockIdCellProps> = ({
   onChange,
   readOnly = false,
 }) => {
-  // TODO: 필터링된 블록 ID 셀 타입 구현
-    return <div>필터링된 블록 ID</div>
+  const value = cellData.value !== undefined ? Number(cellData.value) : 0
+
+  return (
+    <div>
+      <InputField
+        element={createInputFieldElement({
+          value: String(value),
+          optional: false,
+          visible: true,
+          inputType: 'number',
+        })}
+        onChange={(newValue) => {
+          if (!readOnly) {
+            onChange('value', Number(newValue))
+          }
+        }}
+        autoFit={true}
+      />
+    </div>
+  )
 }
 

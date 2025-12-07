@@ -1,4 +1,6 @@
 import * as React from 'react'
+import { List } from '@/components/builder/block_builder/CellElement/List'
+import { createListElement } from '@/lib/blocks/modules/common/elementHelpers'
 
 interface MajorCodeCellProps {
   cellData: Record<string, any>
@@ -11,7 +13,25 @@ export const MajorCodeCell: React.FC<MajorCodeCellProps> = ({
   onChange,
   readOnly = false,
 }) => {
-  // TODO: 모집단위 셀 타입 구현
-  return <div>모집단위</div>
+  const codes = Array.isArray(cellData.codes) ? cellData.codes : []
+
+  return (
+    <div>
+      <List
+        element={createListElement({
+          item_type: 'Token',
+          menu_key: 'major_code',
+          value: codes,
+          optional: false,
+          visible: true,
+        })}
+        onChange={(value) => {
+          if (!readOnly) {
+            onChange('codes', Array.isArray(value) ? value : [])
+          }
+        }}
+      />
+    </div>
+  )
 }
 
