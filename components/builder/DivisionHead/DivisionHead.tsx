@@ -169,32 +169,29 @@ function renderTableCell({
       const rowspan = calculateRowspan(body, bodyRowIndex, colIndex)
       
       // 병합된 셀인지 확인
-      // 현재 행의 셀이 body 배열에 존재하면 항상 렌더링
-      // 위쪽 행의 rowspan이 현재 행을 포함하는지 확인하되,
-      // 현재 행의 셀이 존재하면 새로운 셀로 렌더링
+      // 위쪽 행의 rowspan이 현재 행을 포함하는지 확인
+      // 포함하면 현재 행의 셀은 병합된 셀이므로 렌더링하지 않음
       let isMerged = false
       if (bodyRowIndex > 0) {
         for (let r = 0; r < bodyRowIndex; r++) {
           const prevRowspan = calculateRowspan(body, r, colIndex)
           // 위쪽 행의 rowspan이 현재 행을 포함하는지 확인
+          // r + prevRowspan > bodyRowIndex 이면 현재 행이 위쪽 행의 병합 범위에 포함됨
           if (r + prevRowspan > bodyRowIndex) {
-            // 현재 행의 셀이 body 배열에 존재하는지 확인
-            // 존재하면 새로운 행이므로 렌더링 (병합하지 않음)
-            if (body[bodyRowIndex]?.[colIndex] !== undefined) {
-              // 현재 행의 셀이 존재하므로 병합하지 않고 렌더링
-              isMerged = false
-              break
-            } else {
-              // 현재 행의 셀이 없으면 병합
-              isMerged = true
-              break
-            }
+            // 현재 행이 위쪽 행의 병합 범위에 포함되므로 병합된 셀
+            isMerged = true
+            break
           }
         }
       }
       
-      // 병합된 셀이면 null 반환
+      // 병합된 셀이면 null 반환 (렌더링하지 않음)
       if (isMerged) {
+        console.log(`🚫 병합된 셀 [${rowIndex}, ${colIndex}]:`, {
+          bodyRowIndex,
+          colIndex,
+          isMerged,
+        });
         return null
       }
 

@@ -266,7 +266,14 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
       // colIndex는 전체 그리드의 열 인덱스이므로, 구분 헤드 내부 열 인덱스로 변환
       // 구분 헤드가 항상 첫 번째 열부터 시작하므로, colIndex가 구분 헤드 내부 열 인덱스와 동일
       const divisionHeadInternalColIndex = divisionHeadData.isActive ? colIndex : 0;
-      return renderDivisionHeadCell(rowIndex, divisionHeadInternalColIndex, divisionHeadData);
+      const divisionHeadCell = renderDivisionHeadCell(rowIndex, divisionHeadInternalColIndex, divisionHeadData);
+      
+      // 병합된 셀은 null을 반환하므로, null이면 null 그대로 반환하여 렌더링하지 않음
+      if (divisionHeadCell === null) {
+        return null;
+      }
+      
+      return divisionHeadCell;
     }
     
     // 블록 열인 경우
