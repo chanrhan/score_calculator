@@ -4,9 +4,8 @@
 import { DivisionHeadBody, DivisionHeadHeader, CellMergeInfo } from '@/types/division-head';
 
 /**
- * 각 셀의 rowspan 계산
- * 열 인덱스가 낮을수록 더 많은 행과 병합됨
- * 단, colIndex = 0일 때는 왼쪽 열이 없으므로 병합이 일어나지 않음 (명세: C = 0이라면 병합되지 않음)
+ * 각 셀의 rowspan 값 반환
+ * 셀 객체에 rowspan 속성이 있으면 그 값을 반환하고, 없으면 기본값 1 반환
  */
 export function calculateRowspan(
   body: DivisionHeadBody,
@@ -19,57 +18,23 @@ export function calculateRowspan(
   const totalCols = body[0]?.length || 0;
   if (colIndex >= totalCols) return 1;
   
-  // colIndex = 0일 때는 왼쪽 열이 없으므로 병합이 일어나지 않음
-  // 명세: C = 0이라면 병합되지 않음
-  if (colIndex === 0) {
-    return 1;
-  }
+  const cell = body[rowIndex]?.[colIndex];
+  if (!cell) return 1;
   
-  // 현재 행부터 시작하여 같은 값이 연속되는 행 개수 계산
-  let rowspan = 1;
-  const currentCell = body[rowIndex]?.[colIndex];
-  
-  // 같은 열에서 아래로 내려가며 같은 부모 셀을 가진 행 개수 계산
-  for (let r = rowIndex + 1; r < body.length; r++) {
-    // 왼쪽 열들(0 ~ colIndex-1)이 모두 같은지 확인
-    let isSame = true;
-    for (let c = 0; c < colIndex; c++) {
-      const prevCell = body[rowIndex]?.[c];
-      const currCell = body[r]?.[c];
-      
-      // 객체 비교 (간단한 JSON 비교)
-      if (JSON.stringify(prevCell) !== JSON.stringify(currCell)) {
-        isSame = false;
-        break;
-      }
-    }
-    
-    // 현재 열의 셀도 비교하여 실제로 같은 셀인지 확인
-    // 빈 객체 {}끼리는 같은 것으로 간주하되, 행이 추가되었으면 다른 행으로 간주
-    const currentCell = body[rowIndex]?.[colIndex];
-    const nextCell = body[r]?.[colIndex];
-    const currentCellStr = JSON.stringify(currentCell || {});
-    const nextCellStr = JSON.stringify(nextCell || {});
-    
-    // 현재 열의 셀이 같고, 왼쪽 열들도 모두 같으면 병합
-    if (isSame && currentCellStr === nextCellStr) {
-      rowspan++;
-    } else {
-      break;
-    }
-  }
-  
-  return rowspan;
+  // 셀의 rowspan 속성을 읽어서 반환 (없으면 기본값 1)
+  return cell.rowspan !== undefined ? cell.rowspan : 1;
 }
 
 /**
  * 행 추가 시 병합 로직
- * 명세서 division-head-row-col.md에 따른 구현:
- * (R,C)를 기준으로 "행 추가"를 실행했을 경우:
- * 1. R+1 자리에 행이 하나 삽입된다
- * 2. (R,C-1) 셀과 (R+1, C-1) 셀은 병합된다 (rowspan) - C = 0이라면 병합되지 않음
- * 3. 병합되지 않은 독립된 (R+1,C) 셀이 하나 추가된다
- *    - 구분 헤드 블록의 열 개수가 M개라면, (R+1,C), (R+1,C+1), (R+1,C+2), ... , (R+1, M) 셀이 추가된다
+ * division-head-rowspan-rule.md 규칙에 따른 구현:
+ * (r,c) 셀에서 행 추가 시:
+ * 1. r+1번째 행 위치에 새로운 행이 하나 삽입된다
+ *    - (r+1, k) (k >= c) 셀: rowspan = 1
+ *    - (r+1, m) (m < c) 셀: rowspan = 0
+ * 2. (c > 0) 일 경우, (r+1, c-1).rowspan = 0 이면
+ *    - r+1에서 1씩 빼면서 셀을 순차적으로 방문
+ *    - 방문한 셀의 rowspan > 0 인 경우, 해당 셀의 rowspan 값에 1을 더하고 반복문 종료
  */
 export function addRowToDivisionHead(
   body: DivisionHeadBody,
@@ -77,37 +42,69 @@ export function addRowToDivisionHead(
   selectedColIndex: number
 ): DivisionHeadBody {
   if (!body || body.length === 0) {
-    // 빈 바디인 경우 기본 행 추가
-    return [[{}]];
+    // 빈 바디인 경우 기본 행 추가 (rowspan: 1)
+    return [[{ rowspan: 1 }]];
   }
   
-  const newBody = body.map(row => [...row]);
+  // rowspan=0인 셀에서는 행 추가 불가
+  const selectedCell = body[selectedRowIndex]?.[selectedColIndex];
+  if (selectedCell?.rowspan === 0) {
+    throw new Error('rowspan=0인 셀에서는 행을 추가할 수 없습니다.');
+  }
+  
+  const newBody = body.map(row => row.map(cell => ({ ...cell })));
   const totalCols = body[0]?.length || 0;
+  const insertRowIndex = selectedRowIndex + 1;
   
   // 새 행 생성
   const newRow: Array<Record<string, any>> = [];
   for (let colIndex = 0; colIndex < totalCols; colIndex++) {
     if (colIndex < selectedColIndex) {
-      // 왼쪽 열들 (0 ~ C-1): 병합 처리
-      // (R,C-1) 셀과 (R+1, C-1) 셀은 병합되므로, 
-      // 병합된 셀은 데이터에 존재하지 않음 (빈 객체로 표시)
-      // 실제 병합은 calculateRowspan에서 처리됨
-      newRow.push({});
+      // (r+1, m) (m < c) 셀: rowspan = 0
+      newRow.push({ rowspan: 0 });
     } else {
-      // 오른쪽 열들 (C ~ M-1): 독립된 셀 추가
-      // (R+1,C), (R+1,C+1), ..., (R+1,M-1) 셀이 추가됨
-      newRow.push({});
+      // (r+1, k) (k >= c) 셀: rowspan = 1
+      newRow.push({ rowspan: 1 });
     }
   }
   
-  // 새 행을 선택된 행 아래에 삽입 (R+1 자리)
-  newBody.splice(selectedRowIndex + 1, 0, newRow);
+  // 새 행을 삽입
+  newBody.splice(insertRowIndex, 0, newRow);
+  
+  // c > 0일 경우, t < c 인 모든 (r+1, t)셀에 대해서 rowspan = 0 일 경우 rowspan 조정
+  // 문서 규칙: "(c > 0) 일 경우, 1) t < c 인 모든 (r+1, t)셀에 대해서 rowspan = 0 일 경우, 
+  //            r+1에서 1을 하나씩 빼면서 셀을 순차적으로 방문하여
+  //            방문한 셀의 rowspan > 0 인 경우, 해당 셀의 rowspan 값에 1을 더하고 즉시 반복문 종료"
+  if (selectedColIndex > 0) {
+    // t < c 인 모든 열에 대해 각각 처리
+    for (let t = 0; t < selectedColIndex; t++) {
+      const cellInNewRow = newRow[t];
+      
+      // (r+1, t).rowspan = 0 일 경우에만 처리
+      if (cellInNewRow.rowspan === 0) {
+        // r+1에서 1씩 빼면서 셀을 순차적으로 방문
+        for (let r = insertRowIndex - 1; r >= 0; r--) {
+          const cell = newBody[r]?.[t];
+          if (cell && cell.rowspan > 0) {
+            cell.rowspan += 1;
+            break; // 즉시 반복문 종료
+          }
+        }
+      }
+    }
+  }
   
   return newBody;
 }
 
 /**
  * 행 삭제
+ * division-head-rowspan-rule.md 규칙에 따른 구현:
+ * r행을 삭제했을 경우:
+ * - 삭제된 행에 rowspan=0인 셀이 있다면,
+ *   - 해당 셀 위치에서 r에서 1씩 빼면서 셀을 순차적으로 방문
+ *   - 방문한 셀의 rowspan > 0 인 경우, 해당 셀의 rowspan 값에 1을 빼고 반복문 종료
+ * - 구분 헤드 바디의 행 수가 1이라면, 행은 삭제할 수 없다.
  */
 export function removeRowFromDivisionHead(
   body: DivisionHeadBody,
@@ -116,7 +113,31 @@ export function removeRowFromDivisionHead(
   if (!body || body.length === 0) return [];
   if (body.length <= 1) return body; // 최소 1개 행 유지
   
-  const newBody = body.map(row => [...row]);
+  const newBody = body.map(row => row.map(cell => ({ ...cell })));
+  const rowToDelete = newBody[rowIndex];
+  
+  // 삭제된 행에 rowspan=0인 셀이 있는지 확인하고 rowspan 조정
+  if (rowToDelete) {
+    const totalCols = rowToDelete.length;
+    
+    for (let colIndex = 0; colIndex < totalCols; colIndex++) {
+      const cell = rowToDelete[colIndex];
+      
+      if (cell?.rowspan === 0) {
+        // 해당 셀 위치에서 r에서 1씩 빼면서 셀을 순차적으로 방문
+        for (let r = rowIndex - 1; r >= 0; r--) {
+          const prevCell = newBody[r]?.[colIndex];
+          if (prevCell && prevCell.rowspan > 0) {
+            // rowspan이 1보다 작아지지 않도록 보장 (최소값 1)
+            prevCell.rowspan = Math.max(1, prevCell.rowspan - 1);
+            break; // 즉시 반복문 종료
+          }
+        }
+      }
+    }
+  }
+  
+  // 행 삭제
   newBody.splice(rowIndex, 1);
   
   return newBody;
@@ -124,15 +145,7 @@ export function removeRowFromDivisionHead(
 
 /**
  * 열 추가
- * 명세서 division-head-row-col.md에 따른 구현:
- * - 구분 헤드 블록에 새로운 열을 추가한다 (맨 오른쪽)
- * - N개의 열이 있다면, N+1 열은 N열의 병합 상태를 그대로 복사한다
- * 
- * 병합 상태 복사:
- * - N열의 각 행에서 rowspan을 계산하여 N+1 열의 각 행에서도 같은 rowspan을 가지도록 셀을 추가
- * - 병합 상태는 셀의 값에 의해 결정되므로, N+1 열의 각 행에 빈 셀을 추가하면
- *   calculateRowspan에서 자동으로 병합 상태를 계산함
- * - N열에서 병합된 셀은 N+1 열에서도 같은 병합 상태를 가지도록 빈 셀을 추가
+ * 새 열의 각 행에 rowspan: 1 기본값을 가진 셀 추가
  */
 export function addColumnToDivisionHead(
   header: DivisionHeadHeader,
@@ -141,13 +154,12 @@ export function addColumnToDivisionHead(
   const newHeader = [...header, { division_type: '' }];
   
   if (!body || body.length === 0) {
-    return { header: newHeader, body: [[{}]] };
+    return { header: newHeader, body: [[{ rowspan: 1 }]] };
   }
   
-  // N+1 열의 각 행에 빈 셀을 추가
-  // 병합 상태는 calculateRowspan에서 자동으로 계산됨
+  // 새 열의 각 행에 rowspan: 1 기본값을 가진 셀 추가
   const newBody = body.map(row => {
-    const newRow = [...row, {}];
+    const newRow = [...row, { rowspan: 1 }];
     return newRow;
   });
   
@@ -187,7 +199,7 @@ export function createDefaultDivisionHead(): {
 } {
   return {
     header: [{ division_type: 'gender' }],
-    body: [[{}]],
+    body: [[{ rowspan: 1 }]],
     isActive: true,
   };
 }

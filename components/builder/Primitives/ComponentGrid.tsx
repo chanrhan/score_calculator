@@ -268,9 +268,17 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
       const divisionHeadInternalColIndex = divisionHeadData.isActive ? colIndex : 0;
       const divisionHeadCell = renderDivisionHeadCell(rowIndex, divisionHeadInternalColIndex, divisionHeadData);
       
-      // 병합된 셀은 null을 반환하므로, null이면 null 그대로 반환하여 렌더링하지 않음
+      // rowspan=0이거나 병합된 셀은 null을 반환하므로, 빈 td로 렌더링하여 테이블 구조 유지
       if (divisionHeadCell === null) {
-        return null;
+        return (
+          <td 
+            key={`dh-empty-${rowIndex}-${colIndex}`}
+            className="border border-gray-300 p-2"
+            style={{ minHeight: '40px', height: 'auto', verticalAlign: 'top' }}
+          >
+            {/* 빈 셀 (rowspan=0 또는 병합된 셀) */}
+          </td>
+        );
       }
       
       return divisionHeadCell;

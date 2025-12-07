@@ -167,6 +167,12 @@ function renderTableCell({
       }
       const cell = body[bodyRowIndex]?.[colIndex] || {}
       const rowspan = calculateRowspan(body, bodyRowIndex, colIndex)
+      const actualRowspan = cell?.rowspan !== undefined ? cell.rowspan : 1
+      
+      // rowspan=0이면 null 반환 (문서 규칙: rowspan=0인 셀은 렌더링하지 않음)
+      if (rowspan === 0) {
+        return null
+      }
       
       // 병합된 셀인지 확인
       // 위쪽 행의 rowspan이 현재 행을 포함하는지 확인
@@ -187,19 +193,19 @@ function renderTableCell({
       
       // 병합된 셀이면 null 반환 (렌더링하지 않음)
       if (isMerged) {
-        console.log(`🚫 병합된 셀 [${rowIndex}, ${colIndex}]:`, {
-          bodyRowIndex,
-          colIndex,
-          isMerged,
-        });
         return null
       }
 
       const divisionType = header[colIndex]?.division_type || ''
-      const cellData = cell || {}
+      // rowspan 속성은 UI에 표시하지 않으므로 제외
+      const { rowspan: _, ...cellDataWithoutRowspan } = cell || {}
+      const cellData = cellDataWithoutRowspan
       const CellTypeComponent = divisionType ? getDivisionHeadCellType(divisionType) : null
 
       const handleCellChange = (key: string, value: any) => {
+        // rowspan 속성은 변경 불가
+        if (key === 'rowspan') return
+        
         const newBody = body.map((row, rIdx) => {
           if (rIdx === bodyRowIndex) {
             return row.map((c, cIdx) => {
@@ -223,16 +229,29 @@ function renderTableCell({
         >
           <ContextMenu>
             <ContextMenuTrigger asChild>
-              <div style={{ minHeight: '40px', display: 'flex', alignItems: 'center', padding: '8px 0' }}>
-                {CellTypeComponent ? (
-                  <CellTypeComponent
-                    cellData={cellData}
-                    onChange={handleCellChange}
-                    readOnly={readOnly}
-                  />
-                ) : (
-                  <>
-                    {Object.entries(cellData).map(([key, value]) => (
+              <div style={{ minHeight: '40px', display: 'flex', flexDirection: 'column', padding: '8px 0' }}>
+                {/* 디버깅: rowspan 값 표시 */}
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#666', 
+                  marginBottom: '4px',
+                  padding: '2px 4px',
+                  backgroundColor: '#f0f0f0',
+                  borderRadius: '2px',
+                  fontWeight: 'bold'
+                }}>
+                  rowspan: {rowspan} (실제: {actualRowspan}) [r:{bodyRowIndex}, c:{colIndex}] 전체행:{rowIndex}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {CellTypeComponent ? (
+                    <CellTypeComponent
+                      cellData={cellData}
+                      onChange={handleCellChange}
+                      readOnly={readOnly}
+                    />
+                  ) : (
+                    <>
+                      {Object.entries(cellData).map(([key, value]) => (
                       <div key={key} className="flex items-center gap-2 mb-1">
                         <input
                           type="text"
@@ -290,6 +309,7 @@ function renderTableCell({
                     )}
                   </>
                 )}
+                </div>
               </div>
             </ContextMenuTrigger>
             <ContextMenuContent>
@@ -311,24 +331,30 @@ function renderTableCell({
               <ContextMenuSeparator />
               <ContextMenuItem
                 onClick={() => {
-                  // 구분 헤드에 행 추가
-                  const newBody = addRowToDivisionHead(body, bodyRowIndex, colIndex)
-                  onChange({ ...data, body: newBody })
-                  
-                  // 블록에도 행 추가
-                  if (onInsertRow && blocks) {
-                    const updatedBlocks = blocks.map(block => {
-                      const blockBodyRowIndex = rowIndex - 2
-                      block.addRow(blockBodyRowIndex)
-                      return block
-                    })
-                    console.log('➕ 행 추가:', { 
-                      구분헤드행: `${body.length} → ${newBody.length}`, 
-                      블록개수: blocks.length 
-                    });
-                    onInsertRow(updatedBlocks)
+                  try {
+                    // 구분 헤드에 행 추가
+                    const newBody = addRowToDivisionHead(body, bodyRowIndex, colIndex)
+                    onChange({ ...data, body: newBody })
+                    
+                    // 블록에도 행 추가
+                    if (onInsertRow && blocks) {
+                      const updatedBlocks = blocks.map(block => {
+                        const blockBodyRowIndex = rowIndex - 2
+                        block.addRow(blockBodyRowIndex)
+                        return block
+                      })
+                      console.log('➕ 행 추가:', { 
+                        구분헤드행: `${body.length} → ${newBody.length}`, 
+                        블록개수: blocks.length 
+                      });
+                      onInsertRow(updatedBlocks)
+                    }
+                  } catch (error) {
+                    console.error('행 추가 실패:', error)
+                    // 에러 발생 시 사용자에게 알림 (선택사항)
                   }
                 }}
+                disabled={rowspan === 0}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 행 추가
@@ -431,6 +457,9 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
     key: string,
     value: any
   ) => {
+    // rowspan 속성은 변경 불가
+    if (key === 'rowspan') return
+    
     const newBody: DivisionHeadBody = body.map((row, rIdx) => {
       if (rIdx === rowIndex) {
         return row.map((cell, cIdx) => {
@@ -467,22 +496,27 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
   }
 
   const handleAddRow = (rowIndex: number, colIndex: number) => {
-    // rowIndex는 구분 헤드의 body 배열 인덱스 (0부터 시작)
-    const newBody = addRowToDivisionHead(body, rowIndex, colIndex)
-    onChange({ ...data, body: newBody })
-    
-    // 블록에도 행 추가
-    // handleAddRow는 renderAsTableCell=false일 때 사용되므로,
-    // rowIndex는 이미 구분 헤드의 body 인덱스
-    // 하지만 블록의 addRow는 블록의 body 인덱스를 받아야 함
-    // 구분 헤드와 블록의 body 인덱스는 같은 테이블 행에 대해 동일해야 함
-    // 따라서 rowIndex를 그대로 전달
-    if (onInsertRow && blocks) {
-      const updatedBlocks = blocks.map(block => {
-        block.addRow(rowIndex)
-        return block
-      })
-      onInsertRow(updatedBlocks)
+    try {
+      // rowIndex는 구분 헤드의 body 배열 인덱스 (0부터 시작)
+      const newBody = addRowToDivisionHead(body, rowIndex, colIndex)
+      onChange({ ...data, body: newBody })
+      
+      // 블록에도 행 추가
+      // handleAddRow는 renderAsTableCell=false일 때 사용되므로,
+      // rowIndex는 이미 구분 헤드의 body 인덱스
+      // 하지만 블록의 addRow는 블록의 body 인덱스를 받아야 함
+      // 구분 헤드와 블록의 body 인덱스는 같은 테이블 행에 대해 동일해야 함
+      // 따라서 rowIndex를 그대로 전달
+      if (onInsertRow && blocks) {
+        const updatedBlocks = blocks.map(block => {
+          block.addRow(rowIndex)
+          return block
+        })
+        onInsertRow(updatedBlocks)
+      }
+    } catch (error) {
+      console.error('행 추가 실패:', error)
+      // 에러 발생 시 사용자에게 알림 (선택사항)
     }
   }
 
@@ -572,6 +606,12 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
           <div key={rowIndex} className={styles.bodyRow}>
             {row.map((cell, colIndex) => {
               const rowspan = calculateRowspan(body, rowIndex, colIndex)
+              const actualRowspan = cell?.rowspan !== undefined ? cell.rowspan : 1
+              
+              // rowspan=0이면 null 반환 (문서 규칙: rowspan=0인 셀은 렌더링하지 않음)
+              if (rowspan === 0) {
+                return null
+              }
               
               // 병합된 셀인지 확인 (위쪽 행에서 이미 병합된 경우)
               let isMerged = false
@@ -583,12 +623,15 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
                 }
               }
 
+              // 병합된 셀이면 null 반환 (렌더링하지 않음)
               if (isMerged) {
-                return null // 병합된 셀은 렌더링하지 않음
+                return null
               }
 
               const divisionType = header[colIndex]?.division_type || ''
-              const cellData = cell || {}
+              // rowspan 속성은 UI에 표시하지 않으므로 제외
+              const { rowspan: _, ...cellDataWithoutRowspan } = cell || {}
+              const cellData = cellDataWithoutRowspan
 
               // division_type에 해당하는 셀 타입 컴포넌트 가져오기
               const CellTypeComponent = divisionType
@@ -597,6 +640,8 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
 
               // 셀 데이터 변경 핸들러
               const handleCellChange = (key: string, value: any) => {
+                // rowspan 속성은 변경 불가
+                if (key === 'rowspan') return
                 handleBodyCellChange(rowIndex, colIndex, key, value)
               }
 
@@ -610,7 +655,19 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
                         gridRow: `span ${rowspan}`,
                       }}
                     >
-                      <div className={styles.cellContent}>
+                      <div className={styles.cellContent} style={{ display: 'flex', flexDirection: 'column' }}>
+                        {/* 디버깅: rowspan 값 표시 */}
+                        <div style={{ 
+                          fontSize: '10px', 
+                          color: '#666', 
+                          marginBottom: '4px',
+                          padding: '2px 4px',
+                          backgroundColor: '#f0f0f0',
+                          borderRadius: '2px',
+                          fontWeight: 'bold'
+                        }}>
+                          rowspan: {rowspan} (실제: {actualRowspan}) [r:{rowIndex}, c:{colIndex}]
+                        </div>
                         {/* division_type에 따라 셀 타입 컴포넌트 렌더링 */}
                         {CellTypeComponent ? (
                           <CellTypeComponent
@@ -715,7 +772,14 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
                     </ContextMenuItem>
                     <ContextMenuSeparator />
                     <ContextMenuItem
-                      onClick={() => handleAddRow(rowIndex, colIndex)}
+                      onClick={() => {
+                        try {
+                          handleAddRow(rowIndex, colIndex)
+                        } catch (error) {
+                          console.error('행 추가 실패:', error)
+                        }
+                      }}
+                      disabled={rowspan === 0}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       행 추가
