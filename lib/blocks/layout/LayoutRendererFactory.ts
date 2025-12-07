@@ -3,8 +3,6 @@
 
 import { BlockLayoutRenderer } from './BlockLayoutRenderer';
 import { GenericBlockLayoutRenderer } from './GenericBlockLayoutRenderer';
-import { DivisionBlockLayoutRenderer } from './DivisionBlockLayoutRenderer';
-import { BLOCK_TYPE } from '@/types/block-types';
 import { BlockLayoutRendererRegistry } from '../modules/registry';
 
 export class LayoutRendererFactory {
@@ -28,15 +26,8 @@ export class LayoutRendererFactory {
       // 레지스트리에 등록된 팩토리 사용
       renderer = rendererFactory();
     } else {
-      // 레지스트리에 없으면 기존 방식으로 fallback
-      switch (blockType) {
-        case BLOCK_TYPE.DIVISION:
-          renderer = new DivisionBlockLayoutRenderer();
-          break;
-        default:
-          renderer = new GenericBlockLayoutRenderer();
-          break;
-      }
+      // 레지스트리에 없으면 GenericBlockLayoutRenderer 사용
+      renderer = new GenericBlockLayoutRenderer();
     }
 
     // 캐시에 저장

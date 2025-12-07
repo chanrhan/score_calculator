@@ -478,37 +478,6 @@ export const BLOCK_TYPES = {
     ],
   },
 
-  Division: {
-    name: 'Division',
-    color: 'purple',
-    col_editable: true,
-    header: [
-      {
-        type: 'Token',
-        optional: false,
-        visible: true,
-        menu_key: 'division_criteria',
-        value: 'gender',
-      },
-    ],
-    children: [
-      {
-        elements: [
-          {
-            type: 'Token',
-            optional: false,
-            visible: true,
-            menu_key: 'division_values',
-            value: 'male',
-          },
-        ],
-        children: [
-          
-        ],
-      },
-    ],
-  },
-
   Aggregation: {
     name: 'Aggregation',
     color: 'purple',

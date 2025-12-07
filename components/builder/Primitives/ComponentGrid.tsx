@@ -5,7 +5,7 @@ import { useEffect, useMemo } from 'react'
 import { FlowBlock } from '@/types/block-structure'
 import { HierarchicalCell } from '@/utils/divisionRenderer'
 import { Cell } from '../block_builder/Cell'
-import { Link2, ArrowLeft, ArrowRight, X, Eye } from 'lucide-react'
+import { Eye } from 'lucide-react'
 import { useResultsHighlight } from '@/components/results/ResultsHighlightContext'
 import type { BlockData, TokenMenu } from '@/types/block-data'
 import { BLOCK_TYPE, BLOCK_TYPE_MAP } from '@/types/block-types'
@@ -157,7 +157,6 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
         구조: `[${totalRowsWithDivisionHead}행 × ${totalColsWithDivisionHead}열] = 구분헤드(${divisionHeadCols}열) + 블록들(${totalCols}열)`,
       },
     };
-    console.log('📊 전체 그리드 구조:', gridInfo);
   }, [divisionHeadData, divisionHeadCols, blocks, totalCols, totalRowsWithDivisionHead, totalColsWithDivisionHead])
 
   // 렌더링 컨텍스트 생성
@@ -197,25 +196,7 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
     }
     
     if (!targetBlock) {
-      // 디버깅: 블록을 찾지 못한 경우
-      if (rowIndex >= 2) {
-        console.warn(`⚠️ 블록을 찾지 못함 [${rowIndex}, ${colIndex}]:`, {
-          블록열인덱스: colIndex,
-          블록개수: blocks.length,
-          블록총열개수: totalCols,
-        });
-      }
       return <div className="empty-cell" />;
-    }
-    
-    // 디버깅: 블록 셀 렌더링
-    if (rowIndex >= 2) {
-      console.log(`📦 블록셀 [${rowIndex}, ${colIndex}]:`, {
-        블록ID: targetBlock.block_id,
-        블록타입: targetBlock.block_type,
-        블록내부열인덱스: blockColIndex,
-        블록열범위: `${currentCol} ~ ${currentCol + (targetBlock.toDbFormat().header_cells?.length || 1) - 1}`,
-      });
     }
     
     // LayoutRenderer를 사용하여 셀 렌더링
@@ -232,7 +213,6 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
         key={`dh-${rowIndex}-${colIndex}-${data.body.length}`}
         data={data}
         onChange={(data) => {
-          console.log('✅ 구분헤드 변경:', { 바디행수: data.body.length });
           onDivisionHeadChange?.(data)
         }}
         readOnly={readOnly}
@@ -250,16 +230,6 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   const renderCellAtPosition = (rowIndex: number, colIndex: number): React.ReactNode => {
     // 구분 헤드 열인지 확인
     const isDivisionHeadCol = colIndex < divisionHeadCols;
-    
-    // 디버깅: 각 셀 렌더링 시점
-    if (rowIndex >= 2) { // 바디 행만 로그
-      console.log(`📍 셀 렌더링 [${rowIndex}, ${colIndex}]:`, {
-        전체열인덱스: colIndex,
-        구분헤드열개수: divisionHeadCols,
-        구분헤드열인가: isDivisionHeadCol,
-        블록열인덱스: isDivisionHeadCol ? null : colIndex - divisionHeadCols,
-      });
-    }
     
     if (isDivisionHeadCol) {
       // 구분 헤드 열 (0 ~ divisionHeadCols - 1)
@@ -332,89 +302,3 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   );
 
 };
-
-// 결합 버튼 컴포넌트
-interface CombineButtonProps {
-  blockId: number
-  combineState?: {
-    isCombineMode: boolean
-    sourceBlockId: number | null
-    sourcePipelineId: string | null
-  }
-  onCombine: (blockId: number, side?: 'left' | 'right') => void
-}
-
-const CombineButton: React.FC<CombineButtonProps> = ({ blockId, combineState, onCombine }) => {
-  const isCombineMode = combineState?.isCombineMode || false
-  const isSourceBlock = combineState?.sourceBlockId === blockId
-  
-  const getCombineButtonStyle = () => {
-    if (!isCombineMode) {
-      return "bg-blue-600 text-white p-1 rounded hover:bg-blue-700"
-    }
-    
-    if (isSourceBlock) {
-      return "bg-yellow-500 text-white p-1 rounded hover:bg-yellow-600"
-    }
-    
-    return "bg-green-500 text-white p-1 rounded hover:bg-green-600"
-  }
-  
-  // 결합 모드가 아닌 경우: 일반 결합 버튼 표시
-  if (!isCombineMode) {
-    return (
-      <button 
-        className={getCombineButtonStyle()}
-        onClick={(e) => {
-          e.stopPropagation()
-          onCombine(blockId)
-        }}
-        title="결합"
-      >
-        <Link2 className="w-4 h-4" />
-      </button>
-    )
-  }
-  
-  // 결합 모드에서 소스 블록인 경우: 취소 버튼 표시
-  if (isSourceBlock) {
-    return (
-      <button 
-        className={getCombineButtonStyle()}
-        onClick={(e) => {
-          e.stopPropagation()
-          onCombine(blockId)
-        }}
-        title="결합 취소"
-      >
-        <X className="w-4 h-4" />
-      </button>
-    )
-  }
-  
-  // 결합 모드에서 다른 블록인 경우: 방향 버튼들 표시
-  return (
-    <div className="flex gap-1">
-      <button 
-        className="bg-green-500 text-white p-1 rounded hover:bg-green-600"
-        onClick={(e) => {
-          e.stopPropagation()
-          onCombine(blockId, 'left')
-        }}
-        title="왼쪽에 결합"
-      >
-        <ArrowLeft className="w-4 h-4" />
-      </button>
-      <button 
-        className="bg-green-500 text-white p-1 rounded hover:bg-green-600"
-        onClick={(e) => {
-          e.stopPropagation()
-          onCombine(blockId, 'right')
-        }}
-        title="오른쪽에 결합"
-      >
-        <ArrowRight className="w-4 h-4" />
-      </button>
-    </div>
-  )
-}

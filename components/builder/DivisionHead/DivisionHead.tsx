@@ -141,15 +141,6 @@ function renderTableCell({
     const bodyRowIndex = rowIndex - 2
     const divisionHeadCols = header.length
     
-    // 디버깅: 구분 헤드 바디 셀 렌더링
-    console.log(`🎯 구분헤드바디 [${rowIndex}, ${colIndex}]:`, {
-      bodyRowIndex,
-      divisionHeadCols,
-      bodyLength: body.length,
-      조건체크: `bodyRowIndex >= 0 (${bodyRowIndex >= 0}) && colIndex < divisionHeadCols (${colIndex < divisionHeadCols})`,
-      렌더링여부: bodyRowIndex >= 0 && colIndex < divisionHeadCols,
-    });
-    
     // bodyRowIndex가 body.length보다 크거나 같으면 빈 셀 렌더링
     // (블록에만 행이 있는 경우)
     if (bodyRowIndex >= 0 && colIndex < divisionHeadCols) {
@@ -167,7 +158,6 @@ function renderTableCell({
       }
       const cell = body[bodyRowIndex]?.[colIndex] || {}
       const rowspan = calculateRowspan(body, bodyRowIndex, colIndex)
-      const actualRowspan = cell?.rowspan !== undefined ? cell.rowspan : 1
       
       // rowspan=0이면 null 반환 (문서 규칙: rowspan=0인 셀은 렌더링하지 않음)
       if (rowspan === 0) {
@@ -229,21 +219,8 @@ function renderTableCell({
         >
           <ContextMenu>
             <ContextMenuTrigger asChild>
-              <div style={{ minHeight: '40px', display: 'flex', flexDirection: 'column', padding: '8px 0' }}>
-                {/* 디버깅: rowspan 값 표시 */}
-                <div style={{ 
-                  fontSize: '10px', 
-                  color: '#666', 
-                  marginBottom: '4px',
-                  padding: '2px 4px',
-                  backgroundColor: '#f0f0f0',
-                  borderRadius: '2px',
-                  fontWeight: 'bold'
-                }}>
-                  rowspan: {rowspan} (실제: {actualRowspan}) [r:{bodyRowIndex}, c:{colIndex}] 전체행:{rowIndex}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {CellTypeComponent ? (
+              <div style={{ minHeight: '40px', display: 'flex', alignItems: 'center', padding: '8px 0' }}>
+                {CellTypeComponent ? (
                     <CellTypeComponent
                       cellData={cellData}
                       onChange={handleCellChange}
@@ -309,7 +286,6 @@ function renderTableCell({
                     )}
                   </>
                 )}
-                </div>
               </div>
             </ContextMenuTrigger>
             <ContextMenuContent>
@@ -343,10 +319,6 @@ function renderTableCell({
                         block.addRow(blockBodyRowIndex)
                         return block
                       })
-                      console.log('➕ 행 추가:', { 
-                        구분헤드행: `${body.length} → ${newBody.length}`, 
-                        블록개수: blocks.length 
-                      });
                       onInsertRow(updatedBlocks)
                     }
                   } catch (error) {
@@ -606,7 +578,6 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
           <div key={rowIndex} className={styles.bodyRow}>
             {row.map((cell, colIndex) => {
               const rowspan = calculateRowspan(body, rowIndex, colIndex)
-              const actualRowspan = cell?.rowspan !== undefined ? cell.rowspan : 1
               
               // rowspan=0이면 null 반환 (문서 규칙: rowspan=0인 셀은 렌더링하지 않음)
               if (rowspan === 0) {
@@ -655,19 +626,7 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
                         gridRow: `span ${rowspan}`,
                       }}
                     >
-                      <div className={styles.cellContent} style={{ display: 'flex', flexDirection: 'column' }}>
-                        {/* 디버깅: rowspan 값 표시 */}
-                        <div style={{ 
-                          fontSize: '10px', 
-                          color: '#666', 
-                          marginBottom: '4px',
-                          padding: '2px 4px',
-                          backgroundColor: '#f0f0f0',
-                          borderRadius: '2px',
-                          fontWeight: 'bold'
-                        }}>
-                          rowspan: {rowspan} (실제: {actualRowspan}) [r:{rowIndex}, c:{colIndex}]
-                        </div>
+                      <div className={styles.cellContent}>
                         {/* division_type에 따라 셀 타입 컴포넌트 렌더링 */}
                         {CellTypeComponent ? (
                           <CellTypeComponent

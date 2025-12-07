@@ -1,0 +1,106 @@
+---
+alwaysApply: false
+---
+# 블록별 데이터, 인스턴스 정보 명세
+- /types/block-types.ts 에 명시된 블록 코드는 아래와 같이 정정
+    - 구분, 변수 블록 제거
+    - 블록의 코드(번호) 변경 
+  APPLY_SUBJECT: 1,               // 반영교과 블록
+  APPLY_TERM: 2,                  // 반영학기 블록
+  TOP_SUBJECT: 3,                  // 상위 과목 선정 블록
+  GRADE_RATIO: 4,                 // 학년별 반영비율 블록
+  SUBJECT_GROUP_RATIO: 5,          // 교과군별 반영비율 블록
+  SEPARATION_RATIO: 6,             // 과목구분별 반영비율 블록
+  RATIO: 7,                       // 반영 비율 블록
+  SCORE_MAP: 8,                    // 배점표 블록
+  FORMULA: 9,                      // 수식 블록
+  CONDITION: 10,                   // 조건 블록
+  AGGREGATION: 11,                 // 집계 블록,
+  DECIMAL: 12,                     // 소수점 처리 블록
+
+
+# 블록 정보
+- 각 속성이 나열된 순서는 렌더링 시 배치되는 순서(왼쪽->오른쪽 순)
+- `{}` 사이 값은 레이아웃 시 셀 요소(Cell Element)를 의미함
+    - {List=item_type:Token} 은 List 요소의 item_type이 Token이라는 것을 의미함
+    - {Token=menu_key:division_type} 은 Token의 menu_key가 division_type이라는 것을 의미함 
+
+## 1. 반영 교과 블록 (ApplySubject)
+- header properties
+    - include_option: string {Token=menu_key:include_option}
+- body properties
+    - subject_groups: Array<string> {List=item_type:{Token=menu_key:subject_group}}
+
+## 2. 반영 학기 블록 (ApplyTerm)
+- header properties
+    - include_option: string {Token=menu_key:include_option}
+- body properties
+    - terms: Array<boolean> {InputField=type:string}
+    - top_count: number {InputField=type:number}
+
+## 3. 상위 과목 선정 블록 (TopSubject)
+- header properties
+- body properties
+    - topsubject_option: string {Token=menu_key:topsubject_option}
+    - target: string {Token=menu_key:score_type}
+    - top_count: number {InputField=type:number}
+    - topsubject_order: Array<string> {List=item_type:{OrderToken=menu_key:topsubject_order,menu_key2:order}}
+
+## 4. 학년별 반영비율 블록 (GradeRatio)
+- header properties
+    - grade: string {Token=menu_key:grade}
+- body properties
+    - ratio: number {InputField=type:number}
+
+## 5. 교과군별 반영비울 블록 (SubjectGroupRatio)
+- header properties
+    - subject_groups: Array<string> {List=item_type:{Token=menu_key:subject_group}}
+- body properties
+    - ratio: number {InputField=type:number}
+
+## 6. 과목구분별 반영비율 블록 (SeparationRatio)
+- header properties
+    - subject_separations: Array<string> {List=item_type:{Token=menu_key:subject_separation}}
+- body properties
+     - ratio: number {InputField=type:number}
+
+## 7. 반영비율 (Ratio)
+- header properties
+- body properties
+     - ratio: number {InputField=type:number}
+
+## 8. 배점표 블록 (ScoreMap)
+- header properties
+    - var_scope: string {Token=menu_key:var_scope}
+- body properties
+    - input_prop: string {Token=menu_key:score_type}
+    - output_prop: string {Token=menu_key:score_type}
+    - table: Array<Array<string>> {Table}
+
+## 9. 수식 블록 (Formula)
+- header properties
+    - var_scope: string {Token=menu_key:var_scope}
+- body properties
+    - expr: string {Formula}
+    - output_prop: string {Token=menu_key:variable}
+
+## 10. 조건 블록 (Condition)
+- header properties
+    - var_scope: string {Token=menu_key:var_scope}
+- body properties
+    - exprs: Array<object> {ConditionChain=item_type:[{Token=menu_key:variable},{Token=menu_key:operator},{Formula}]}
+
+## 11. 집계 블록 (Aggregation)
+- header properties
+- body properties
+    - input_prop: string {Token=menu_key:variable}
+    - func: string {Token=menu_key:aggregation_func}
+    - output_prop: string {Token=menu_key:variable}
+
+## 12. 소수점 처리 블록 (Decimal)
+- header properties
+- body properties
+    - input_prop: string {Token=menu_key:score_type}
+    - decimal_place: number {InputField=type:number}
+    - decimal_func: string {Token=menu_key:decimal_func}
+

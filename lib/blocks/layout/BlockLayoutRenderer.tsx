@@ -4,6 +4,7 @@
 import React from 'react';
 import { BlockInstance } from '../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
+import { Link2, ArrowLeft, ArrowRight, X } from 'lucide-react';
 
 export interface RenderCellContext {
   readOnly: boolean;
@@ -98,6 +99,8 @@ export abstract class BlockLayoutRenderer {
     const tooltip = (blockIdToSubjectNames[block.block_id] || []).filter(Boolean).join(', ');
     const blockTypeName = this.getBlockTypeName(block.block_type);
     const isColEditable = block.getStructure()?.col_editable || false;
+    const isHovered = hoveredBlockId === block.block_id;
+    const shouldShowActions = isHovered || combineState?.isCombineMode;
 
     return (
       <td
@@ -120,9 +123,12 @@ export abstract class BlockLayoutRenderer {
         }}
       >
         <span title={tooltip || undefined}>{blockTypeName} 블록</span>
-        <div className={`${styles.blockActions} ${combineState?.isCombineMode ? styles.combineMode : ''}`}>
+        <div 
+          className={`${styles.blockActions} ${combineState?.isCombineMode ? styles.combineMode : ''}`}
+          style={{ opacity: shouldShowActions ? 1 : 0 }}
+        >
           {/* 삭제 버튼 */}
-          {onBlockDelete && !readOnly && hoveredBlockId === block.block_id && (
+          {onBlockDelete && !readOnly && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -135,7 +141,7 @@ export abstract class BlockLayoutRenderer {
             </button>
           )}
           {/* 열 추가 버튼 */}
-          {isColEditable && !readOnly && hoveredBlockId === block.block_id && (
+          {isColEditable && !readOnly && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -148,7 +154,60 @@ export abstract class BlockLayoutRenderer {
               +열
             </button>
           )}
-          {/* 결합 버튼은 외부 CombineButton 컴포넌트 사용 */}
+          {/* 결합 버튼 */}
+          {onBlockCombine && !readOnly && (
+            <>
+              {!combineState?.isCombineMode ? (
+                // 결합 모드가 아닌 경우: 일반 결합 버튼 표시
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBlockCombine(block.block_id);
+                  }}
+                  className={styles.combineButton}
+                  title="결합"
+                >
+                  <Link2 className="w-4 h-4" />
+                </button>
+              ) : combineState.sourceBlockId === block.block_id ? (
+                // 결합 모드에서 소스 블록인 경우: 취소 버튼 표시
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBlockCombine(block.block_id);
+                  }}
+                  className={`${styles.combineButton} ${styles.combineButtonSource}`}
+                  title="결합 취소"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              ) : (
+                // 결합 모드에서 다른 블록인 경우: 방향 버튼들 표시
+                <div className={styles.combineButtons}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBlockCombine(block.block_id, 'left');
+                    }}
+                    className={styles.combineDirectionButton}
+                    title="왼쪽에 결합"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBlockCombine(block.block_id, 'right');
+                    }}
+                    className={styles.combineDirectionButton}
+                    title="오른쪽에 결합"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </td>
     );

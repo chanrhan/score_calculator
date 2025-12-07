@@ -12,12 +12,6 @@ import {
   ApplySubjectLayoutRenderer 
 } from './ApplySubject';
 
-// Division 모듈
-import { 
-  DivisionBlockInstance, 
-  DivisionLayoutRenderer 
-} from './Division';
-
 // GradeRatio 모듈
 import { 
   GradeRatioBlockInstance, 
@@ -113,7 +107,6 @@ export function getFlowBlockType(blockType: number): FlowBlockType {
  * 블록 인스턴스 생성자 레지스트리 (B 인스턴스)
  */
 export const BlockInstanceRegistry: Record<number, new (blockId: number, data: BlockInstanceData) => BlockInstance> = {
-  [BLOCK_TYPE.DIVISION]: DivisionBlockInstance,
   [BLOCK_TYPE.APPLY_SUBJECT]: ApplySubjectBlockInstance,
   [BLOCK_TYPE.GRADE_RATIO]: GradeRatioBlockInstance,
   [BLOCK_TYPE.APPLY_TERM]: ApplyTermBlockInstance,
@@ -133,7 +126,6 @@ export const BlockInstanceRegistry: Record<number, new (blockId: number, data: B
  * 블록 레이아웃 렌더러 레지스트리 (C 객체)
  */
 export const BlockLayoutRendererRegistry: Record<number, () => BlockLayoutRenderer> = {
-  [BLOCK_TYPE.DIVISION]: () => new DivisionLayoutRenderer(),
   [BLOCK_TYPE.APPLY_SUBJECT]: () => new ApplySubjectLayoutRenderer(),
   [BLOCK_TYPE.GRADE_RATIO]: () => new GradeRatioLayoutRenderer(),
   [BLOCK_TYPE.APPLY_TERM]: () => new ApplyTermLayoutRenderer(),

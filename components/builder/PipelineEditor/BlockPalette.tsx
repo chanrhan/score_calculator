@@ -36,7 +36,6 @@ function createCategoriesFromBlockTypes(): Category[] {
 
   // BLOCK_TYPE과 BLOCK_TYPES를 매핑하여 카테고리 생성
   const blockTypeMapping: Array<{ typeId: number; typeKey: keyof typeof BLOCK_TYPES; category: string }> = [
-    { typeId: BLOCK_TYPE.DIVISION, typeKey: 'Division', category: '구분' },
     { typeId: BLOCK_TYPE.APPLY_SUBJECT, typeKey: 'ApplySubject', category: '필터' },
     { typeId: BLOCK_TYPE.GRADE_RATIO, typeKey: 'GradeRatio', category: '필터' },
     { typeId: BLOCK_TYPE.APPLY_TERM, typeKey: 'ApplyTerm', category: '필터' },
@@ -113,7 +112,6 @@ export default function BlockPalette({ className }: Props) {
     
     // 블록 타입 ID로부터 BLOCK_TYPES의 키 찾기
     const blockTypeMapping: Record<number, string> = {
-      [BLOCK_TYPE.DIVISION]: 'division',
       [BLOCK_TYPE.APPLY_SUBJECT]: 'applysubject',
       [BLOCK_TYPE.GRADE_RATIO]: 'graderatio',
       [BLOCK_TYPE.APPLY_TERM]: 'applyterm',
