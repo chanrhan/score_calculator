@@ -11,21 +11,17 @@ export class ApplyTermBlockInstance extends BlockInstance {
   };
   
   private bodyCells: Array<{
-    term_1_1: string;
-    term_1_2: string;
-    term_2_1: string;
-    term_2_2: string;
-    term_3_1: string;
-    term_3_2: string;
-    top_terms: string | null;
+    terms: string;
+    top_count: number;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.APPLY_TERM, data);
     
-    // 기본값 정의 (structure.ts 제거)
-    const defaultIncludeOption = 'include';
-    const defaultTermValue = '1-1:on';
+    // 기본값 정의
+    const defaultIncludeOption = '0';
+    const defaultTerms = '';
+    const defaultTopCount = 0;
     
     // header_cells 처리
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
@@ -46,35 +42,20 @@ export class ApplyTermBlockInstance extends BlockInstance {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            term_1_1: row.term_1_1 || defaultTermValue,
-            term_1_2: row.term_1_2 || defaultTermValue,
-            term_2_1: row.term_2_1 || defaultTermValue,
-            term_2_2: row.term_2_2 || defaultTermValue,
-            term_3_1: row.term_3_1 || defaultTermValue,
-            term_3_2: row.term_3_2 || defaultTermValue,
-            top_terms: row.top_terms !== undefined ? row.top_terms : null,
+            terms: row.terms !== undefined ? String(row.terms) : defaultTerms,
+            top_count: row.top_count !== undefined ? Number(row.top_count) : defaultTopCount,
           };
         }
         return {
-          term_1_1: defaultTermValue,
-          term_1_2: defaultTermValue,
-          term_2_1: defaultTermValue,
-          term_2_2: defaultTermValue,
-          term_3_1: defaultTermValue,
-          term_3_2: defaultTermValue,
-          top_terms: null,
+          terms: defaultTerms,
+          top_count: defaultTopCount,
         };
       });
     } else {
       // 기본 1*1 구조
       this.bodyCells = [{
-        term_1_1: defaultTermValue,
-        term_1_2: defaultTermValue,
-        term_2_1: defaultTermValue,
-        term_2_2: defaultTermValue,
-        term_3_1: defaultTermValue,
-        term_3_2: defaultTermValue,
-        top_terms: null,
+        terms: defaultTerms,
+        top_count: defaultTopCount,
       }];
     }
   }
@@ -85,38 +66,24 @@ export class ApplyTermBlockInstance extends BlockInstance {
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
-      if (elementIndex === 1) {
+      if (elementIndex === 0) {
         this.headerCell.include_option = value;
       }
     } else {
       if (this.bodyCells[rowIndex]) {
-        const termMap: Record<number, keyof typeof this.bodyCells[0]> = {
-          1: 'term_1_1',
-          2: 'term_1_2',
-          3: 'term_2_1',
-          4: 'term_2_2',
-          5: 'term_3_1',
-          6: 'term_3_2',
-          7: 'top_terms',
-        };
-        const propName = termMap[elementIndex];
-        if (propName) {
-          (this.bodyCells[rowIndex] as any)[propName] = value;
+        if (elementIndex === 0) {
+          this.bodyCells[rowIndex].terms = String(value);
+        } else if (elementIndex === 1) {
+          this.bodyCells[rowIndex].top_count = Number(value) || 0;
         }
       }
     }
   }
 
   addRow(rowIndex?: number): void {
-    const defaultTermValue = '1-1:on';
     const newRow = {
-      term_1_1: defaultTermValue,
-      term_1_2: defaultTermValue,
-      term_2_1: defaultTermValue,
-      term_2_2: defaultTermValue,
-      term_3_1: defaultTermValue,
-      term_3_2: defaultTermValue,
-      top_terms: null,
+      terms: '',
+      top_count: 0,
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -161,7 +128,7 @@ export class ApplyTermBlockInstance extends BlockInstance {
 
   getHeaderCellValues(colIndex: number): any[] {
     if (colIndex === 0) {
-      return [null, this.headerCell.include_option];
+      return [this.headerCell.include_option];
     }
     return [];
   }
@@ -169,14 +136,8 @@ export class ApplyTermBlockInstance extends BlockInstance {
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return [
-        null,
-        this.bodyCells[rowIndex].term_1_1,
-        this.bodyCells[rowIndex].term_1_2,
-        this.bodyCells[rowIndex].term_2_1,
-        this.bodyCells[rowIndex].term_2_2,
-        this.bodyCells[rowIndex].term_3_1,
-        this.bodyCells[rowIndex].term_3_2,
-        this.bodyCells[rowIndex].top_terms,
+        this.bodyCells[rowIndex].terms,
+        this.bodyCells[rowIndex].top_count,
       ];
     }
     return [];
@@ -194,13 +155,8 @@ export class ApplyTermBlockInstance extends BlockInstance {
   getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return {
-        term_1_1: this.bodyCells[rowIndex].term_1_1,
-        term_1_2: this.bodyCells[rowIndex].term_1_2,
-        term_2_1: this.bodyCells[rowIndex].term_2_1,
-        term_2_2: this.bodyCells[rowIndex].term_2_2,
-        term_3_1: this.bodyCells[rowIndex].term_3_1,
-        term_3_2: this.bodyCells[rowIndex].term_3_2,
-        top_terms: this.bodyCells[rowIndex].top_terms,
+        terms: this.bodyCells[rowIndex].terms,
+        top_count: this.bodyCells[rowIndex].top_count,
       };
     }
     return {};
@@ -210,8 +166,10 @@ export class ApplyTermBlockInstance extends BlockInstance {
     if (propertyName === 'include_option') {
       this.headerCell.include_option = value;
     } else if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      if (propertyName in this.bodyCells[rowIndex]) {
-        (this.bodyCells[rowIndex] as any)[propertyName] = value;
+      if (propertyName === 'terms') {
+        this.bodyCells[rowIndex].terms = String(value);
+      } else if (propertyName === 'top_count') {
+        this.bodyCells[rowIndex].top_count = Number(value) || 0;
       }
     }
   }

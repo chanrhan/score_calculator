@@ -22,7 +22,7 @@ export const ApplySubjectLayout: {
   body: LayoutComponent;
 } = {
   header: ({ properties, readOnly, onChange }) => {
-      const includeOption = properties.include_option || 'include';
+      const includeOption = properties.include_option || '0';
       
       return (
         <div className={applySubjectStyles.header}>
@@ -52,14 +52,14 @@ export const ApplySubjectLayout: {
           <List
             element={createListElement({
               item_type: 'Token',
-              menu_key: 'subject_groups',
+              menu_key: TOKEN_MENU_KEYS.SUBJECT_GROUP,
               value: subjectGroups,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('subject_groups', value);
+                onChange?.('subject_groups', Array.isArray(value) ? value : []);
               }
             }}
           />

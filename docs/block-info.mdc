@@ -35,7 +35,7 @@ alwaysApply: false
 - header properties
     - include_option: string {Token=menu_key:include_option}
 - body properties
-    - terms: Array<boolean> {InputField=type:string}
+    - terms: string {InputField=type:string}
     - top_count: number {InputField=type:number}
 
 ## 3. 상위 과목 선정 블록 (TopSubject)

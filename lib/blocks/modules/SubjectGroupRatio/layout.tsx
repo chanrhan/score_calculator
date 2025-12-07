@@ -6,8 +6,10 @@ import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
-import { createTokenElement } from '../common/elementHelpers';
-import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { createListElement, createInputFieldElement } from '../common/elementHelpers';
+import { List } from '@/components/builder/block_builder/CellElement/List';
+import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import subjectGroupRatioStyles from './SubjectGroupRatio.module.css';
 
@@ -20,39 +22,38 @@ export const SubjectGroupRatioLayout: {
   body: LayoutComponent;
 } = {
   header: ({ properties, readOnly, onChange }) => {
-    const subjectGroup = properties.subject_group || null;
+    const subjectGroups = properties.subject_groups || [];
     
     return (
-      <Token
-        element={createTokenElement({
-          menu_key: 'subject_groups',
-          value: subjectGroup,
+      <List
+        element={createListElement({
+          item_type: 'Token',
+          menu_key: TOKEN_MENU_KEYS.SUBJECT_GROUP,
+          value: subjectGroups,
           optional: false,
           visible: true,
         })}
         onChange={(value) => {
           if (!readOnly) {
-            onChange?.('subject_group', value);
+            onChange?.('subject_groups', Array.isArray(value) ? value : []);
           }
         }}
-        autoFit={true}
       />
     );
   },
   body: ({ properties, readOnly, onChange }) => {
-    const ratio = properties.ratio || '100';
+    const ratio = properties.ratio !== undefined ? String(properties.ratio) : '100';
     
     return (
-      <Token
-        element={createTokenElement({
-          menu_key: 'percentage_ratio',
+      <InputField
+        element={createInputFieldElement({
           value: ratio,
           optional: false,
           visible: true,
         })}
         onChange={(value) => {
           if (!readOnly) {
-            onChange?.('ratio', value);
+            onChange?.('ratio', Number(value) || 100);
           }
         }}
         autoFit={true}

@@ -6,8 +6,9 @@ import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
-import { createTokenElement } from '../common/elementHelpers';
+import { createTokenElement, createInputFieldElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
 import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import decimalStyles from './Decimal.module.css';
@@ -20,61 +21,38 @@ export const DecimalLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: ({ properties, readOnly, onChange }) => {
-      const variableScope = properties.variable_scope || '0';
-      
-      return (
-        <div className={decimalStyles.header}>
-          <span className={decimalStyles.label}>소수점 처리</span>
-          <Token
-            element={createTokenElement({
-              menu_key: 'variable_scope',
-              value: variableScope,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('variable_scope', value);
-              }
-            }}
-            autoFit={true}
-          />
-        </div>
-      );
-    },
+  header: () => <span className={decimalStyles.label}>소수점 처리</span>,
   body: ({ properties, readOnly, onChange }) => {
-      const scoreType = properties.score_type || 'finalScore';
-      const decimalPlaces = properties.decimal_places || '2';
-      const decimalOption = properties.decimal_option || '0';
+      const inputProp = properties.input_prop || 'finalScore';
+      const decimalPlace = properties.decimal_place !== undefined ? String(properties.decimal_place) : '2';
+      const decimalFunc = properties.decimal_func || '0';
       
       return (
         <div className={decimalStyles.body}>
           <Token
             element={createTokenElement({
               menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: scoreType,
+              value: inputProp,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('score_type', value);
+                onChange?.('input_prop', value);
               }
             }}
             autoFit={true}
           />
           <span>소수점</span>
-          <Token
-            element={createTokenElement({
-              menu_key: 'decimal_places',
-              value: decimalPlaces,
+          <InputField
+            element={createInputFieldElement({
+              value: decimalPlace,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('decimal_places', value);
+                onChange?.('decimal_place', Number(value) || 2);
               }
             }}
             autoFit={true}
@@ -82,14 +60,14 @@ export const DecimalLayout: {
           <span>자리</span>
           <Token
             element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.DECIMAL_OPTION,
-              value: decimalOption,
+              menu_key: TOKEN_MENU_KEYS.DECIMAL_FUNC,
+              value: decimalFunc,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('decimal_option', value);
+                onChange?.('decimal_func', value);
               }
             }}
             autoFit={true}
@@ -108,11 +86,6 @@ export class DecimalLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, onBlockChange } = context;
-    
-    // 속성 값 직접 가져오기
-    const properties = block.getHeaderProperties(colIndex);
-
     const LayoutComponent = getLayoutComponent(DecimalLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
@@ -121,15 +94,7 @@ export class DecimalLayoutRenderer extends GenericBlockLayoutRenderer {
     return (
       <td key={colIndex} className={styles.tableCell}>
         <div className={styles.headerCell}>
-          <LayoutComponent
-            properties={properties}
-            readOnly={readOnly || false}
-            onChange={(propertyName, value) => {
-              if (readOnly) return;
-              block.updateProperty(propertyName, value, undefined, colIndex);
-              onBlockChange?.(block.block_id, block);
-            }}
-          />
+          <LayoutComponent properties={{}} readOnly={false} />
         </div>
       </td>
     );

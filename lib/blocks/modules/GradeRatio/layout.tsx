@@ -6,8 +6,10 @@ import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
-import { createTokenElement } from '../common/elementHelpers';
+import { createTokenElement, createInputFieldElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import gradeRatioStyles from './GradeRatio.module.css';
 
@@ -15,33 +17,43 @@ import gradeRatioStyles from './GradeRatio.module.css';
  * GradeRatio 블록의 레이아웃 정의
  * 각 열별로 직접 HTML/CSS를 작성하고, 공통 컴포넌트만 사용
  */
-// colIndex에 따라 학년 라벨 생성 (1학년, 2학년, 3학년, ...)
-const getGradeLabel = (colIndex: number): string => {
-  return `${colIndex + 1}학년`;
-};
-
 export const GradeRatioLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: ({ colIndex }) => {
-    const label = colIndex !== undefined ? getGradeLabel(colIndex) : '학년';
-    return <span className={gradeRatioStyles.label}>{label}</span>;
-  },
-  body: ({ properties, readOnly, onChange }) => {
-    const ratio = properties.ratio || '100';
+  header: ({ properties, readOnly, onChange, colIndex }) => {
+    const grade = properties.grade || (colIndex !== undefined ? String(colIndex + 1) : '1');
     
     return (
       <Token
         element={createTokenElement({
-          menu_key: 'percentage_ratio',
+          menu_key: TOKEN_MENU_KEYS.GRADE,
+          value: grade,
+          optional: false,
+          visible: true,
+        })}
+        onChange={(value) => {
+          if (!readOnly) {
+            onChange?.('grade', value);
+          }
+        }}
+        autoFit={true}
+      />
+    );
+  },
+  body: ({ properties, readOnly, onChange }) => {
+    const ratio = properties.ratio !== undefined ? String(properties.ratio) : '100';
+    
+    return (
+      <InputField
+        element={createInputFieldElement({
           value: ratio,
           optional: false,
           visible: true,
         })}
         onChange={(value) => {
           if (!readOnly) {
-            onChange?.('ratio', value);
+            onChange?.('ratio', Number(value) || 100);
           }
         }}
         autoFit={true}
@@ -59,6 +71,9 @@ export class GradeRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
+    const { readOnly, onBlockChange } = context;
+    const properties = block.getHeaderProperties(colIndex);
+    
     const LayoutComponent = GradeRatioLayout.header;
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
@@ -67,7 +82,16 @@ export class GradeRatioLayoutRenderer extends GenericBlockLayoutRenderer {
     return (
       <td key={colIndex} className={styles.tableCell}>
         <div className={styles.headerCell}>
-          <LayoutComponent properties={{}} readOnly={false} colIndex={colIndex} />
+          <LayoutComponent
+            properties={properties}
+            readOnly={readOnly || false}
+            colIndex={colIndex}
+            onChange={(propertyName, value) => {
+              if (readOnly) return;
+              block.updateProperty(propertyName, value, undefined, colIndex);
+              onBlockChange?.(block.block_id, block);
+            }}
+          />
         </div>
       </td>
     );
@@ -103,7 +127,6 @@ export class GradeRatioLayoutRenderer extends GenericBlockLayoutRenderer {
           <LayoutComponent
             properties={properties}
             readOnly={readOnly || false}
-            colIndex={colIndex}
             onChange={(propertyName: string, value: any) => {
               if (readOnly) return;
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);

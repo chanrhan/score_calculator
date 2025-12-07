@@ -6,56 +6,41 @@ import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
 
 export class AggregationBlockInstance extends BlockInstance {
-  private headerCell: {
-    variable_scope: string;
-  };
-  
   private bodyCells: Array<{
-    input_score_type: string;
-    aggregation_function: string;
-    output_score_type: string;
+    input_prop: string;
+    func: string;
+    output_prop: string;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.AGGREGATION, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.AGGREGATION);
-    
-    // header_cells 처리
-    if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
-      const headerObj = data.header_cells[0];
-      if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
-        this.headerCell = {
-          variable_scope: headerObj.variable_scope || defaults.variable_scope || '0',
-        };
-      } else {
-        this.headerCell = { variable_scope: defaults.variable_scope || '0' };
-      }
-    } else {
-      this.headerCell = { variable_scope: defaults.variable_scope || '0' };
-    }
+    // 기본값 정의
+    const defaultInputProp = 'finalScore';
+    const defaultFunc = '0';
+    const defaultOutputProp = 'finalScore';
     
     // body_cells 처리
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            input_score_type: row.input_type || row.input_score_type || defaults.input_score_type || 'finalScore',
-            aggregation_function: row.func || row.aggregation_function || defaults.aggregation_function || '0',
-            output_score_type: row.output_type || row.output_score_type || defaults.output_score_type || 'finalScore',
+            input_prop: row.input_prop || defaultInputProp,
+            func: row.func || defaultFunc,
+            output_prop: row.output_prop || defaultOutputProp,
           };
         }
         return {
-          input_score_type: defaults.input_score_type || 'finalScore',
-          aggregation_function: defaults.aggregation_function || '0',
-          output_score_type: defaults.output_score_type || 'finalScore',
+          input_prop: defaultInputProp,
+          func: defaultFunc,
+          output_prop: defaultOutputProp,
         };
       });
     } else {
       this.bodyCells = [{
-        input_score_type: defaults.input_score_type || 'finalScore',
-        aggregation_function: defaults.aggregation_function || '0',
-        output_score_type: defaults.output_score_type || 'finalScore',
+        input_prop: defaultInputProp,
+        func: defaultFunc,
+        output_prop: defaultOutputProp,
       }];
     }
   }
@@ -65,29 +50,22 @@ export class AggregationBlockInstance extends BlockInstance {
   }
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
-    if (rowIndex === -1) {
-      if (elementIndex === 1) {
-        this.headerCell.variable_scope = value;
-      }
-    } else {
-      if (this.bodyCells[rowIndex]) {
-        if (elementIndex === 0) {
-          this.bodyCells[rowIndex].input_score_type = value;
-        } else if (elementIndex === 1) {
-          this.bodyCells[rowIndex].aggregation_function = value;
-        } else if (elementIndex === 3) {
-          this.bodyCells[rowIndex].output_score_type = value;
-        }
+    if (this.bodyCells[rowIndex]) {
+      if (elementIndex === 0) {
+        this.bodyCells[rowIndex].input_prop = value;
+      } else if (elementIndex === 1) {
+        this.bodyCells[rowIndex].func = value;
+      } else if (elementIndex === 2) {
+        this.bodyCells[rowIndex].output_prop = value;
       }
     }
   }
 
   addRow(rowIndex?: number): void {
-    const defaults = getBlockDefaults(BLOCK_TYPE.AGGREGATION);
     const newRow = {
-      input_score_type: defaults.input_score_type || 'finalScore',
-      aggregation_function: defaults.aggregation_function || '0',
-      output_score_type: defaults.output_score_type || 'finalScore',
+      input_prop: 'finalScore',
+      func: '0',
+      output_prop: 'finalScore',
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -125,64 +103,49 @@ export class AggregationBlockInstance extends BlockInstance {
 
   toDbFormat(): { header_cells: any; body_cells: any } {
     return {
-      header_cells: [this.headerCell],
-      body_cells: this.bodyCells.map(row => ({
-        input_type: row.input_score_type,
-        func: row.aggregation_function,
-        output_type: row.output_score_type,
-      }))
+      header_cells: [],
+      body_cells: this.bodyCells
     };
   }
 
   getHeaderCellValues(colIndex: number): any[] {
-    if (colIndex === 0) {
-      return [null, this.headerCell.variable_scope];
-    }
     return [];
   }
 
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return [
-        this.bodyCells[rowIndex].input_score_type,
-        this.bodyCells[rowIndex].aggregation_function,
-        null,
-        this.bodyCells[rowIndex].output_score_type
+        this.bodyCells[rowIndex].input_prop,
+        this.bodyCells[rowIndex].func,
+        this.bodyCells[rowIndex].output_prop
       ];
     }
     return [];
   }
 
   getHeaderProperties(colIndex: number): Record<string, any> {
-    if (colIndex === 0) {
-      return {
-        variable_scope: this.headerCell.variable_scope,
-      };
-    }
     return {};
   }
 
   getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return {
-        input_score_type: this.bodyCells[rowIndex].input_score_type,
-        aggregation_function: this.bodyCells[rowIndex].aggregation_function,
-        output_score_type: this.bodyCells[rowIndex].output_score_type,
+        input_prop: this.bodyCells[rowIndex].input_prop,
+        func: this.bodyCells[rowIndex].func,
+        output_prop: this.bodyCells[rowIndex].output_prop,
       };
     }
     return {};
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (propertyName === 'variable_scope') {
-      this.headerCell.variable_scope = value;
-    } else if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      if (propertyName === 'input_score_type') {
-        this.bodyCells[rowIndex].input_score_type = value;
-      } else if (propertyName === 'aggregation_function') {
-        this.bodyCells[rowIndex].aggregation_function = value;
-      } else if (propertyName === 'output_score_type') {
-        this.bodyCells[rowIndex].output_score_type = value;
+    if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
+      if (propertyName === 'input_prop') {
+        this.bodyCells[rowIndex].input_prop = value;
+      } else if (propertyName === 'func') {
+        this.bodyCells[rowIndex].func = value;
+      } else if (propertyName === 'output_prop') {
+        this.bodyCells[rowIndex].output_prop = value;
       }
     }
   }

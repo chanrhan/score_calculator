@@ -22,21 +22,21 @@ export const ConditionLayout: {
   body: LayoutComponent;
 } = {
   header: ({ properties, readOnly, onChange }) => {
-      const variableScope = properties.variable_scope || '0';
+      const varScope = properties.var_scope || '0';
       
       return (
         <div className={conditionStyles.header}>
           <span className={conditionStyles.label}>조건</span>
           <Token
             element={createTokenElement({
-              menu_key: 'variable_scope',
-              value: variableScope,
+              menu_key: TOKEN_MENU_KEYS.VAR_SCOPE,
+              value: varScope,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('variable_scope', value);
+                onChange?.('var_scope', value);
               }
             }}
             autoFit={true}
@@ -45,24 +45,24 @@ export const ConditionLayout: {
       );
     },
   body: ({ properties, readOnly, onChange }) => {
-      const conditions = properties.conditions || [];
+      const exprs = properties.exprs || [];
       
       return (
         <div className={conditionStyles.body}>
           <ConditionChain
             element={createConditionChainElement({
               item_type: [
-                { type: 'Token', menu_key: TOKEN_MENU_KEYS.SCORE_TYPE },
+                { type: 'Token', menu_key: TOKEN_MENU_KEYS.VARIABLE },
                 { type: 'Token', menu_key: TOKEN_MENU_KEYS.OPERATOR },
-                { type: 'InputField' },
+                { type: 'Formula' },
               ],
-              value: conditions,
+              value: exprs,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('conditions', value);
+                onChange?.('exprs', Array.isArray(value) ? value : []);
               }
             }}
           />

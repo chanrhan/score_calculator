@@ -6,9 +6,8 @@ import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
-import { createTokenElement } from '../common/elementHelpers';
-import { Token } from '@/components/builder/block_builder/CellElement/Token';
-import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
+import { createInputFieldElement } from '../common/elementHelpers';
+import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import ratioStyles from './Ratio.module.css';
 
@@ -22,40 +21,22 @@ export const RatioLayout: {
 } = {
   header: () => <span className={ratioStyles.label}>반영비율</span>,
   body: ({ properties, readOnly, onChange }) => {
-      const ratio = properties.ratio || '100';
-      const scoreType = properties.score_type || 'finalScore';
+      const ratio = properties.ratio !== undefined ? String(properties.ratio) : '100';
       
       return (
-        <div className={ratioStyles.body}>
-          <Token
-            element={createTokenElement({
-              menu_key: 'percentage_ratio',
-              value: ratio,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('ratio', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: scoreType,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('score_type', value);
-              }
-            }}
-            autoFit={true}
-          />
-        </div>
+        <InputField
+          element={createInputFieldElement({
+            value: ratio,
+            optional: false,
+            visible: true,
+          })}
+          onChange={(value) => {
+            if (!readOnly) {
+              onChange?.('ratio', Number(value) || 100);
+            }
+          }}
+          autoFit={true}
+        />
       );
     },
 };

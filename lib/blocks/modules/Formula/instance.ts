@@ -7,35 +7,34 @@ import { FlowBlockType } from '@/types/block-structure';
 
 export class FormulaBlockInstance extends BlockInstance {
   private headerCell: {
-    variable_scope: string;
+    var_scope: string;
   };
   
   private bodyCells: Array<{
-    score_type: string;
     expr: string;
+    output_prop: string;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.FORMULA, data);
     
-    // BlockStructure에서 기본값 가져오기
-    const defaults = getBlockDefaults(BLOCK_TYPE.FORMULA);
-    const defaultVariableScope = defaults.variable_scope || '0';
-    const defaultScoreType = defaults.score_type || 'finalScore';
-    const defaultExpr = defaults.expr || '';
+    // 기본값 정의
+    const defaultVarScope = '0';
+    const defaultExpr = '';
+    const defaultOutputProp = 'finalScore';
     
     // header_cells 처리
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       const headerObj = data.header_cells[0];
       if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
         this.headerCell = {
-          variable_scope: headerObj.variable_scope || defaultVariableScope,
+          var_scope: headerObj.var_scope || defaultVarScope,
         };
       } else {
-        this.headerCell = { variable_scope: defaultVariableScope };
+        this.headerCell = { var_scope: defaultVarScope };
       }
     } else {
-      this.headerCell = { variable_scope: defaultVariableScope };
+      this.headerCell = { var_scope: defaultVarScope };
     }
     
     // body_cells 처리
@@ -43,20 +42,19 @@ export class FormulaBlockInstance extends BlockInstance {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            score_type: row.score_type || defaultScoreType,
-            expr: row.expr || defaultExpr,
+            expr: row.expr !== undefined ? String(row.expr) : defaultExpr,
+            output_prop: row.output_prop || defaultOutputProp,
           };
         }
-        // 배열 형식이면 기본값 사용
         return {
-          score_type: defaultScoreType,
           expr: defaultExpr,
+          output_prop: defaultOutputProp,
         };
       });
     } else {
       this.bodyCells = [{
-        score_type: defaultScoreType,
         expr: defaultExpr,
+        output_prop: defaultOutputProp,
       }];
     }
   }
@@ -67,25 +65,24 @@ export class FormulaBlockInstance extends BlockInstance {
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
-      if (elementIndex === 1) {
-        this.headerCell.variable_scope = value;
+      if (elementIndex === 0) {
+        this.headerCell.var_scope = value;
       }
     } else {
       if (this.bodyCells[rowIndex]) {
         if (elementIndex === 0) {
-          this.bodyCells[rowIndex].score_type = value;
-        } else if (elementIndex === 2) {
-          this.bodyCells[rowIndex].expr = value;
+          this.bodyCells[rowIndex].expr = String(value);
+        } else if (elementIndex === 1) {
+          this.bodyCells[rowIndex].output_prop = value;
         }
       }
     }
   }
 
   addRow(rowIndex?: number): void {
-    const defaults = getBlockDefaults(BLOCK_TYPE.FORMULA);
     const newRow = {
-      score_type: defaults.score_type || 'finalScore',
-      expr: defaults.expr || '',
+      expr: '',
+      output_prop: 'finalScore',
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -128,14 +125,14 @@ export class FormulaBlockInstance extends BlockInstance {
 
   getHeaderCellValues(colIndex: number): any[] {
     if (colIndex === 0) {
-      return [null, this.headerCell.variable_scope];
+      return [this.headerCell.var_scope];
     }
     return [];
   }
 
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
-      return [this.bodyCells[rowIndex].score_type, ' = ', this.bodyCells[rowIndex].expr];
+      return [this.bodyCells[rowIndex].expr, this.bodyCells[rowIndex].output_prop];
     }
     return [];
   }
@@ -143,7 +140,7 @@ export class FormulaBlockInstance extends BlockInstance {
   getHeaderProperties(colIndex: number): Record<string, any> {
     if (colIndex === 0) {
       return {
-        variable_scope: this.headerCell.variable_scope,
+        var_scope: this.headerCell.var_scope,
       };
     }
     return {};
@@ -152,20 +149,22 @@ export class FormulaBlockInstance extends BlockInstance {
   getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return {
-        score_type: this.bodyCells[rowIndex].score_type,
         expr: this.bodyCells[rowIndex].expr,
+        output_prop: this.bodyCells[rowIndex].output_prop,
       };
     }
     return {};
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (propertyName === 'variable_scope') {
-      this.headerCell.variable_scope = value;
-    } else if (propertyName === 'score_type' && rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      this.bodyCells[rowIndex].score_type = value;
-    } else if (propertyName === 'expr' && rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      this.bodyCells[rowIndex].expr = value;
+    if (propertyName === 'var_scope') {
+      this.headerCell.var_scope = value;
+    } else if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
+      if (propertyName === 'expr') {
+        this.bodyCells[rowIndex].expr = String(value);
+      } else if (propertyName === 'output_prop') {
+        this.bodyCells[rowIndex].output_prop = value;
+      }
     }
   }
 }

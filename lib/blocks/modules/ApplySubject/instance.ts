@@ -7,7 +7,7 @@ import { FlowBlockType } from '@/types/block-structure';
 
 export class ApplySubjectBlockInstance extends BlockInstance {
   private headerCell: {
-    include_option: 'include' | 'exclude';
+    include_option: string;
   };
   
   private bodyCells: Array<{
@@ -17,28 +17,25 @@ export class ApplySubjectBlockInstance extends BlockInstance {
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.APPLY_SUBJECT, data);
     
-    // 기본값 정의 (structure.ts 제거)
-    const defaultIncludeOption = 'include';
+    // 기본값 정의
+    const defaultIncludeOption = '0';
     const defaultSubjectGroups: string[] = [];
     
-    // header_cells 처리: 새로운 형식만 지원
+    // header_cells 처리
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       const headerObj = data.header_cells[0];
       if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
-        // 객체 형식: { include_option } (text_content는 제거됨)
         this.headerCell = {
-          include_option: (headerObj.include_option || defaultIncludeOption) as 'include' | 'exclude',
+          include_option: headerObj.include_option || defaultIncludeOption,
         };
       } else {
-        // 데이터가 없거나 형식이 맞지 않으면 기본값 사용
         this.headerCell = {
-          include_option: defaultIncludeOption as 'include' | 'exclude',
+          include_option: defaultIncludeOption,
         };
       }
     } else {
-      // 데이터가 없으면 기본값 사용
       this.headerCell = {
-        include_option: defaultIncludeOption as 'include' | 'exclude',
+        include_option: defaultIncludeOption,
       };
     }
     
@@ -69,14 +66,12 @@ export class ApplySubjectBlockInstance extends BlockInstance {
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
-      // Header 셀 수정 (text_content는 제거됨)
       if (elementIndex === 0) {
-        this.headerCell.include_option = value as 'include' | 'exclude';
+        this.headerCell.include_option = value;
       }
     } else {
-      // Body 셀 수정
       if (this.bodyCells[rowIndex] && elementIndex === 0) {
-        this.bodyCells[rowIndex].subject_groups = Array.isArray(value) ? value : [value];
+        this.bodyCells[rowIndex].subject_groups = Array.isArray(value) ? value : [];
       }
     }
   }
@@ -129,7 +124,7 @@ export class ApplySubjectBlockInstance extends BlockInstance {
   // 렌더링용 헬퍼 메서드
   getHeaderCellValues(colIndex: number): any[] {
     if (colIndex === 0) {
-      return [null, this.headerCell.include_option]; // text_content는 제거됨
+      return [this.headerCell.include_option];
     }
     return [];
   }
@@ -162,9 +157,9 @@ export class ApplySubjectBlockInstance extends BlockInstance {
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
     if (propertyName === 'include_option') {
-      this.headerCell.include_option = value as 'include' | 'exclude';
+      this.headerCell.include_option = value;
     } else if (propertyName === 'subject_groups' && rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      this.bodyCells[rowIndex].subject_groups = Array.isArray(value) ? value : [value];
+      this.bodyCells[rowIndex].subject_groups = Array.isArray(value) ? value : [];
     }
   }
 }

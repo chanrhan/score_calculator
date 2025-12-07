@@ -7,36 +7,32 @@ import { FlowBlockType } from '@/types/block-structure';
 
 export class RatioBlockInstance extends BlockInstance {
   private bodyCells: Array<{
-    ratio: string;
-    score_type: string;
+    ratio: number;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.RATIO, data);
     
-    // 기본값 정의 (structure.ts 제거)
-    const defaultRatio = '100';
-    const defaultScoreType = 'finalScore';
+    // 기본값 정의
+    const defaultRatio = 100;
     
     // body_cells 처리: 기본 1*1
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
+          const ratio = row.ratio !== undefined ? Number(row.ratio) : defaultRatio;
           return {
-            ratio: row.ratio?.toString() || defaultRatio,
-            score_type: row.score_type || defaultScoreType,
+            ratio: isNaN(ratio) ? defaultRatio : ratio,
           };
         }
         return {
           ratio: defaultRatio,
-          score_type: defaultScoreType,
         };
       });
     } else {
       // 기본 1*1 구조
       this.bodyCells = [{
         ratio: defaultRatio,
-        score_type: defaultScoreType,
       }];
     }
   }
@@ -46,20 +42,14 @@ export class RatioBlockInstance extends BlockInstance {
   }
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
-    if (this.bodyCells[rowIndex]) {
-      if (elementIndex === 0) {
-        this.bodyCells[rowIndex].ratio = value?.toString() || '100';
-      } else if (elementIndex === 1) {
-        this.bodyCells[rowIndex].score_type = value;
-      }
+    if (this.bodyCells[rowIndex] && elementIndex === 0) {
+      this.bodyCells[rowIndex].ratio = Number(value) || 100;
     }
   }
 
   addRow(rowIndex?: number): void {
-    const defaults = getBlockDefaults(BLOCK_TYPE.RATIO);
     const newRow = {
-      ratio: defaults.ratio || '100',
-      score_type: defaults.score_type || 'finalScore',
+      ratio: 100,
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -108,10 +98,7 @@ export class RatioBlockInstance extends BlockInstance {
 
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
-      return [
-        this.bodyCells[rowIndex].ratio,
-        this.bodyCells[rowIndex].score_type
-      ];
+      return [this.bodyCells[rowIndex].ratio];
     }
     return [];
   }
@@ -124,7 +111,6 @@ export class RatioBlockInstance extends BlockInstance {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return {
         ratio: this.bodyCells[rowIndex].ratio,
-        score_type: this.bodyCells[rowIndex].score_type,
       };
     }
     return {};
@@ -133,9 +119,7 @@ export class RatioBlockInstance extends BlockInstance {
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
     if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
       if (propertyName === 'ratio') {
-        this.bodyCells[rowIndex].ratio = value?.toString() || '100';
-      } else if (propertyName === 'score_type') {
-        this.bodyCells[rowIndex].score_type = value;
+        this.bodyCells[rowIndex].ratio = Number(value) || 100;
       }
     }
   }

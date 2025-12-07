@@ -22,21 +22,21 @@ export const FormulaLayout: {
   body: LayoutComponent;
 } = {
   header: ({ properties, readOnly, onChange }) => {
-      const variableScope = properties.variable_scope || '0';
+      const varScope = properties.var_scope || '0';
       
       return (
         <div className={formulaStyles.header}>
           <span className={formulaStyles.label}>수식</span>
           <Token
             element={createTokenElement({
-              menu_key: 'variable_scope',
-              value: variableScope,
+              menu_key: TOKEN_MENU_KEYS.VAR_SCOPE,
+              value: varScope,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('variable_scope', value);
+                onChange?.('var_scope', value);
               }
             }}
             autoFit={true}
@@ -45,26 +45,11 @@ export const FormulaLayout: {
       );
     },
   body: ({ properties, readOnly, onChange }) => {
-      const scoreType = properties.score_type || 'finalScore';
       const expr = properties.expr || '';
+      const outputProp = properties.output_prop || 'finalScore';
       
       return (
         <div className={formulaStyles.body}>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: scoreType,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('score_type', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <span> = </span>
           <Formula
             element={createFormulaElement({
               menu_key: 'expr',
@@ -77,6 +62,21 @@ export const FormulaLayout: {
                 onChange?.('expr', value);
               }
             }}
+          />
+          <span> = </span>
+          <Token
+            element={createTokenElement({
+              menu_key: TOKEN_MENU_KEYS.VARIABLE,
+              value: outputProp,
+              optional: false,
+              visible: true,
+            })}
+            onChange={(value) => {
+              if (!readOnly) {
+                onChange?.('output_prop', value);
+              }
+            }}
+            autoFit={true}
           />
         </div>
       );

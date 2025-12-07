@@ -6,30 +6,33 @@ import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
 
 export class SeparationRatioBlockInstance extends BlockInstance {
-  // 각 열마다 하나의 ratio 속성만 가짐
+  // 각 열마다 header에 subject_separations, body에 ratio
   private headerCells: Array<{
-    ratio: string;
+    subject_separations: string[];
   }>;
   
   private bodyCells: Array<{
-    ratio: string;
+    ratio: number;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.SEPARATION_RATIO, data);
     
-    const defaultRatio = '100';
+    const defaultSubjectSeparations: string[] = [];
+    const defaultRatio = 100;
     
     // header_cells 처리: 기본 1*1, 데이터가 있으면 그대로 사용
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       this.headerCells = data.header_cells.map((cell: any) => {
-        // 기존 형식 호환성: general_ratio, career_ratio, arts_ratio 또는 ratio
-        const ratio = cell?.ratio || cell?.general_ratio || cell?.career_ratio || cell?.arts_ratio || defaultRatio;
-        return { ratio: ratio.toString() };
+        return { 
+          subject_separations: Array.isArray(cell?.subject_separations) 
+            ? cell.subject_separations 
+            : defaultSubjectSeparations 
+        };
       });
     } else {
       // 기본 1*1 구조
-      this.headerCells = [{ ratio: defaultRatio }];
+      this.headerCells = [{ subject_separations: defaultSubjectSeparations }];
     }
     
     // body_cells 처리: 기본 1*1, 데이터가 있으면 그대로 사용
@@ -37,9 +40,8 @@ export class SeparationRatioBlockInstance extends BlockInstance {
       const row = data.body_cells[0];
       if (Array.isArray(row) && row.length > 0) {
         this.bodyCells = row.map((cell: any) => {
-          // 기존 형식 호환성: career_ratio, arts_ratio 또는 ratio
-          const ratio = cell?.ratio || cell?.career_ratio || cell?.arts_ratio || defaultRatio;
-          return { ratio: ratio.toString() };
+          const ratio = cell?.ratio !== undefined ? Number(cell.ratio) : defaultRatio;
+          return { ratio: isNaN(ratio) ? defaultRatio : ratio };
         });
       } else {
         // 기본 1*1 구조
@@ -53,7 +55,7 @@ export class SeparationRatioBlockInstance extends BlockInstance {
     // header와 body의 열 개수가 일치하도록 보정
     const maxCols = Math.max(this.headerCells.length, this.bodyCells.length);
     while (this.headerCells.length < maxCols) {
-      this.headerCells.push({ ratio: defaultRatio });
+      this.headerCells.push({ subject_separations: defaultSubjectSeparations });
     }
     while (this.bodyCells.length < maxCols) {
       this.bodyCells.push({ ratio: defaultRatio });
@@ -67,13 +69,13 @@ export class SeparationRatioBlockInstance extends BlockInstance {
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
       // Header 셀 업데이트
-      if (this.headerCells[colIndex]) {
-        this.headerCells[colIndex].ratio = value?.toString() || '100';
+      if (this.headerCells[colIndex] && elementIndex === 0) {
+        this.headerCells[colIndex].subject_separations = Array.isArray(value) ? value : [];
       }
     } else {
       // Body 셀 업데이트
-      if (this.bodyCells[colIndex]) {
-        this.bodyCells[colIndex].ratio = value?.toString() || '100';
+      if (this.bodyCells[colIndex] && elementIndex === 0) {
+        this.bodyCells[colIndex].ratio = Number(value) || 100;
       }
     }
   }
@@ -84,17 +86,17 @@ export class SeparationRatioBlockInstance extends BlockInstance {
   }
 
   addColumn(colIndex?: number): void {
-    const defaultRatio = '100';
-    const newColumn = { ratio: defaultRatio };
+    const newHeaderCell = { subject_separations: [] as string[] };
+    const newBodyCell = { ratio: 100 };
     
     if (colIndex === undefined || colIndex >= this.headerCells.length) {
       // 끝에 추가
-      this.headerCells.push(newColumn);
-      this.bodyCells.push({ ...newColumn });
+      this.headerCells.push(newHeaderCell);
+      this.bodyCells.push(newBodyCell);
     } else {
       // 지정된 위치에 추가
-      this.headerCells.splice(colIndex, 0, newColumn);
-      this.bodyCells.splice(colIndex, 0, { ...newColumn });
+      this.headerCells.splice(colIndex, 0, newHeaderCell);
+      this.bodyCells.splice(colIndex, 0, newBodyCell);
     }
   }
 
@@ -135,7 +137,7 @@ export class SeparationRatioBlockInstance extends BlockInstance {
 
   getHeaderCellValues(colIndex: number): any[] {
     if (this.headerCells[colIndex]) {
-      return [this.headerCells[colIndex].ratio];
+      return [this.headerCells[colIndex].subject_separations];
     }
     return [];
   }
@@ -150,7 +152,7 @@ export class SeparationRatioBlockInstance extends BlockInstance {
   getHeaderProperties(colIndex: number): Record<string, any> {
     if (this.headerCells[colIndex]) {
       return {
-        ratio: this.headerCells[colIndex].ratio,
+        subject_separations: this.headerCells[colIndex].subject_separations,
       };
     }
     return {};
@@ -166,16 +168,16 @@ export class SeparationRatioBlockInstance extends BlockInstance {
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (propertyName === 'ratio' && colIndex !== undefined) {
-      if (rowIndex === undefined || rowIndex === -1) {
+    if (colIndex !== undefined) {
+      if (propertyName === 'subject_separations' && (rowIndex === undefined || rowIndex === -1)) {
         // Header 셀 업데이트
         if (this.headerCells[colIndex]) {
-          this.headerCells[colIndex].ratio = value?.toString() || '100';
+          this.headerCells[colIndex].subject_separations = Array.isArray(value) ? value : [];
         }
-      } else if (rowIndex === 0) {
+      } else if (propertyName === 'ratio' && rowIndex === 0) {
         // Body 셀 업데이트
         if (this.bodyCells[colIndex]) {
-          this.bodyCells[colIndex].ratio = value?.toString() || '100';
+          this.bodyCells[colIndex].ratio = Number(value) || 100;
         }
       }
     }

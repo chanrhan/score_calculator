@@ -7,41 +7,39 @@ import { FlowBlockType } from '@/types/block-structure';
 
 export class ScoreMapBlockInstance extends BlockInstance {
   private headerCell: {
-    variable_scope: string;
-    filter_option: string;
+    var_scope: string;
   };
   
   private bodyCells: Array<{
-    input_type: string;
-    input_range: number;
-    output_type: string;
-    table: any[];
+    input_prop: string;
+    output_prop: string;
+    table: any[][];
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.SCORE_MAP, data);
     
-    // BlockStructure에서 기본값 가져오기
-    const defaults = getBlockDefaults(BLOCK_TYPE.SCORE_MAP);
+    // 기본값 정의
+    const defaultVarScope = '0';
+    const defaultInputProp = 'originalScore';
+    const defaultOutputProp = 'score';
+    const defaultTable: any[][] = [];
     
     // header_cells 처리
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       const headerObj = data.header_cells[0];
       if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
         this.headerCell = {
-          variable_scope: headerObj.variable_scope || defaults.variable_scope || '0',
-          filter_option: headerObj.filter_option || defaults.filter_option || '0',
+          var_scope: headerObj.var_scope || defaultVarScope,
         };
       } else {
         this.headerCell = {
-          variable_scope: defaults.variable_scope || '0',
-          filter_option: defaults.filter_option || '0',
+          var_scope: defaultVarScope,
         };
       }
     } else {
       this.headerCell = {
-        variable_scope: defaults.variable_scope || '0',
-        filter_option: defaults.filter_option || '0',
+        var_scope: defaultVarScope,
       };
     }
     
@@ -50,25 +48,22 @@ export class ScoreMapBlockInstance extends BlockInstance {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            input_type: row.input_type || defaults.input_type || 'originalScore',
-            input_range: row.input_range !== undefined ? row.input_range : (defaults.input_range ?? 1),
-            output_type: row.output_type || defaults.output_type || 'score',
-            table: Array.isArray(row.table) ? row.table : (defaults.table || []),
+            input_prop: row.input_prop || defaultInputProp,
+            output_prop: row.output_prop || defaultOutputProp,
+            table: Array.isArray(row.table) ? row.table : defaultTable,
           };
         }
         return {
-          input_type: defaults.input_type || 'originalScore',
-          input_range: defaults.input_range ?? 1,
-          output_type: defaults.output_type || 'score',
-          table: defaults.table || [],
+          input_prop: defaultInputProp,
+          output_prop: defaultOutputProp,
+          table: defaultTable,
         };
       });
     } else {
       this.bodyCells = [{
-        input_type: defaults.input_type || 'originalScore',
-        input_range: defaults.input_range ?? 1,
-        output_type: defaults.output_type || 'score',
-        table: defaults.table || [],
+        input_prop: defaultInputProp,
+        output_prop: defaultOutputProp,
+        table: defaultTable,
       }];
     }
   }
@@ -79,33 +74,27 @@ export class ScoreMapBlockInstance extends BlockInstance {
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
-      if (elementIndex === 1) {
-        this.headerCell.variable_scope = value;
-      } else if (elementIndex === 2) {
-        this.headerCell.filter_option = value;
+      if (elementIndex === 0) {
+        this.headerCell.var_scope = value;
       }
     } else {
       if (this.bodyCells[rowIndex]) {
         if (elementIndex === 0) {
-          this.bodyCells[rowIndex].input_type = value;
+          this.bodyCells[rowIndex].input_prop = value;
         } else if (elementIndex === 1) {
-          this.bodyCells[rowIndex].input_range = value === 'range' ? 1 : 0;
-        } else if (elementIndex === 3) {
-          this.bodyCells[rowIndex].output_type = value;
-        } else if (elementIndex === 5) {
-          this.bodyCells[rowIndex].table = value;
+          this.bodyCells[rowIndex].output_prop = value;
+        } else if (elementIndex === 2) {
+          this.bodyCells[rowIndex].table = Array.isArray(value) ? value : [];
         }
       }
     }
   }
 
   addRow(rowIndex?: number): void {
-    const defaults = getBlockDefaults(BLOCK_TYPE.SCORE_MAP);
     const newRow = {
-      input_type: defaults.input_type || 'originalScore',
-      input_range: defaults.input_range ?? 1,
-      output_type: defaults.output_type || 'score',
-      table: defaults.table || [],
+      input_prop: 'originalScore',
+      output_prop: 'score',
+      table: [] as any[][],
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -148,20 +137,16 @@ export class ScoreMapBlockInstance extends BlockInstance {
 
   getHeaderCellValues(colIndex: number): any[] {
     if (colIndex === 0) {
-      return [null, this.headerCell.variable_scope, this.headerCell.filter_option];
+      return [this.headerCell.var_scope];
     }
     return [];
   }
 
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
-      const inputRange = this.bodyCells[rowIndex].input_range === 1 ? 'range' : 'exact';
       return [
-        this.bodyCells[rowIndex].input_type,
-        inputRange,
-        '→',
-        this.bodyCells[rowIndex].output_type,
-        'exact',
+        this.bodyCells[rowIndex].input_prop,
+        this.bodyCells[rowIndex].output_prop,
         this.bodyCells[rowIndex].table
       ];
     }
@@ -171,8 +156,7 @@ export class ScoreMapBlockInstance extends BlockInstance {
   getHeaderProperties(colIndex: number): Record<string, any> {
     if (colIndex === 0) {
       return {
-        variable_scope: this.headerCell.variable_scope,
-        filter_option: this.headerCell.filter_option,
+        var_scope: this.headerCell.var_scope,
       };
     }
     return {};
@@ -181,9 +165,8 @@ export class ScoreMapBlockInstance extends BlockInstance {
   getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return {
-        input_type: this.bodyCells[rowIndex].input_type,
-        input_range: this.bodyCells[rowIndex].input_range,
-        output_type: this.bodyCells[rowIndex].output_type,
+        input_prop: this.bodyCells[rowIndex].input_prop,
+        output_prop: this.bodyCells[rowIndex].output_prop,
         table: this.bodyCells[rowIndex].table,
       };
     }
@@ -191,19 +174,15 @@ export class ScoreMapBlockInstance extends BlockInstance {
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (propertyName === 'variable_scope') {
-      this.headerCell.variable_scope = value;
-    } else if (propertyName === 'filter_option') {
-      this.headerCell.filter_option = value;
+    if (propertyName === 'var_scope') {
+      this.headerCell.var_scope = value;
     } else if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      if (propertyName === 'input_type') {
-        this.bodyCells[rowIndex].input_type = value;
-      } else if (propertyName === 'input_range') {
-        this.bodyCells[rowIndex].input_range = value === 'range' ? 1 : 0;
-      } else if (propertyName === 'output_type') {
-        this.bodyCells[rowIndex].output_type = value;
+      if (propertyName === 'input_prop') {
+        this.bodyCells[rowIndex].input_prop = value;
+      } else if (propertyName === 'output_prop') {
+        this.bodyCells[rowIndex].output_prop = value;
       } else if (propertyName === 'table') {
-        this.bodyCells[rowIndex].table = value;
+        this.bodyCells[rowIndex].table = Array.isArray(value) ? value : [];
       }
     }
   }

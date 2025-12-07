@@ -6,8 +6,9 @@ import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
-import { createTokenElement } from '../common/elementHelpers';
+import { createTokenElement, createInputFieldElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
 import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import applyTermStyles from './ApplyTerm.module.css';
@@ -21,7 +22,7 @@ export const ApplyTermLayout: {
   body: LayoutComponent;
 } = {
   header: ({ properties, readOnly, onChange }) => {
-      const includeOption = properties.include_option || 'include';
+      const includeOption = properties.include_option || '0';
       
       return (
         <div className={applyTermStyles.header}>
@@ -44,118 +45,37 @@ export const ApplyTermLayout: {
       );
     },
   body: ({ properties, readOnly, onChange }) => {
-      const term1_1 = properties.term_1_1 || '1-1:on';
-      const term1_2 = properties.term_1_2 || '1-2:on';
-      const term2_1 = properties.term_2_1 || '2-1:on';
-      const term2_2 = properties.term_2_2 || '2-2:on';
-      const term3_1 = properties.term_3_1 || '3-1:on';
-      const term3_2 = properties.term_3_2 || '3-2:on';
-      const topTerms = properties.top_terms || null;
+      const terms = properties.terms || '';
+      const topCount = properties.top_count !== undefined ? String(properties.top_count) : '0';
       
       return (
         <div className={applyTermStyles.body}>
-          <span className={applyTermStyles.label}>학기 선택</span>
-          <Token
-            element={createTokenElement({
-              menu_key: 'term_1_1',
-              value: term1_1,
+          <InputField
+            element={createInputFieldElement({
+              value: terms,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('term_1_1', value);
+                onChange?.('terms', value);
               }
             }}
             autoFit={true}
           />
-          <Token
-            element={createTokenElement({
-              menu_key: 'term_1_2',
-              value: term1_2,
+          <InputField
+            element={createInputFieldElement({
+              value: topCount,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('term_1_2', value);
+                onChange?.('top_count', Number(value) || 0);
               }
             }}
             autoFit={true}
           />
-          <Token
-            element={createTokenElement({
-              menu_key: 'term_2_1',
-              value: term2_1,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('term_2_1', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Token
-            element={createTokenElement({
-              menu_key: 'term_2_2',
-              value: term2_2,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('term_2_2', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Token
-            element={createTokenElement({
-              menu_key: 'term_3_1',
-              value: term3_1,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('term_3_1', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Token
-            element={createTokenElement({
-              menu_key: 'term_3_2',
-              value: term3_2,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('term_3_2', value);
-              }
-            }}
-            autoFit={true}
-          />
-          {topTerms !== null && (
-            <Token
-              element={{
-                type: 'Token',
-                menu_key: 'top_terms',
-                value: topTerms,
-                optional: true,
-                visible: true,
-              }}
-              onChange={(value) => {
-                if (!readOnly) {
-                  onChange?.('top_terms', value);
-                }
-              }}
-              autoFit={true}
-            />
-          )}
         </div>
       );
     },

@@ -22,36 +22,21 @@ export const ScoreMapLayout: {
   body: LayoutComponent;
 } = {
   header: ({ properties, readOnly, onChange }) => {
-      const variableScope = properties.variable_scope || '0';
-      const filterOption = properties.filter_option || '0';
+      const varScope = properties.var_scope || '0';
       
       return (
         <div className={scoreMapStyles.header}>
           <span className={scoreMapStyles.label}>배점표</span>
           <Token
             element={createTokenElement({
-              menu_key: 'variable_scope',
-              value: variableScope,
+              menu_key: TOKEN_MENU_KEYS.VAR_SCOPE,
+              value: varScope,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('variable_scope', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Token
-            element={createTokenElement({
-              menu_key: 'filter_option',
-              value: filterOption,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('filter_option', value);
+                onChange?.('var_scope', value);
               }
             }}
             autoFit={true}
@@ -60,68 +45,39 @@ export const ScoreMapLayout: {
       );
     },
   body: ({ properties, readOnly, onChange }) => {
-      const inputType = properties.input_type || 'originalScore';
-      const inputRange = properties.input_range === 1 ? 'range' : 'exact';
-      const outputType = properties.output_type || 'score';
+      const inputProp = properties.input_prop || 'originalScore';
+      const outputProp = properties.output_prop || 'score';
       const table = properties.table || [];
       
       return (
         <div className={scoreMapStyles.body}>
           <Token
-            element={{
-              type: 'Token',
+            element={createTokenElement({
               menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: inputType,
+              value: inputProp,
               optional: false,
               visible: true,
-            }}
+            })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('input_type', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Token
-            element={{
-              type: 'Token',
-              menu_key: TOKEN_MENU_KEYS.MATCH_OPTION,
-              value: inputRange,
-              optional: false,
-              visible: true,
-            }}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('input_range', value === 'range' ? 1 : 0);
+                onChange?.('input_prop', value);
               }
             }}
             autoFit={true}
           />
           <span>→</span>
           <Token
-            element={{
-              type: 'Token',
+            element={createTokenElement({
               menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: outputType,
+              value: outputProp,
               optional: false,
               visible: true,
-            }}
+            })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('output_type', value);
+                onChange?.('output_prop', value);
               }
             }}
-            autoFit={true}
-          />
-          <Token
-            element={{
-              type: 'Token',
-              menu_key: TOKEN_MENU_KEYS.MATCH_OPTION,
-              value: 'exact',
-              optional: false,
-              visible: true,
-            }}
-            onChange={() => {}}
             autoFit={true}
           />
           <Table
@@ -137,7 +93,7 @@ export const ScoreMapLayout: {
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('table', value);
+                onChange?.('table', Array.isArray(value) ? value : []);
               }
             }}
           />

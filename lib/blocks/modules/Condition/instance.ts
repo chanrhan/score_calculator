@@ -7,30 +7,32 @@ import { FlowBlockType } from '@/types/block-structure';
 
 export class ConditionBlockInstance extends BlockInstance {
   private headerCell: {
-    variable_scope: string;
+    var_scope: string;
   };
   
   private bodyCells: Array<{
-    conditions: any[];
+    exprs: any[];
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.CONDITION, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.CONDITION);
+    // 기본값 정의
+    const defaultVarScope = '0';
+    const defaultExprs: any[] = [];
     
     // header_cells 처리
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       const headerObj = data.header_cells[0];
       if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
         this.headerCell = {
-          variable_scope: headerObj.variable_scope || defaults.variable_scope || '0',
+          var_scope: headerObj.var_scope || defaultVarScope,
         };
       } else {
-        this.headerCell = { variable_scope: defaults.variable_scope || '0' };
+        this.headerCell = { var_scope: defaultVarScope };
       }
     } else {
-      this.headerCell = { variable_scope: defaults.variable_scope || '0' };
+      this.headerCell = { var_scope: defaultVarScope };
     }
     
     // body_cells 처리
@@ -38,13 +40,13 @@ export class ConditionBlockInstance extends BlockInstance {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
           return {
-            conditions: Array.isArray(row.conditions) ? row.conditions : (defaults.conditions || []),
+            exprs: Array.isArray(row.exprs) ? row.exprs : defaultExprs,
           };
         }
-        return { conditions: defaults.conditions || [] };
+        return { exprs: defaultExprs };
       });
     } else {
-      this.bodyCells = [{ conditions: defaults.conditions || [] }];
+      this.bodyCells = [{ exprs: defaultExprs }];
     }
   }
 
@@ -54,19 +56,18 @@ export class ConditionBlockInstance extends BlockInstance {
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
-      if (elementIndex === 1) {
-        this.headerCell.variable_scope = value;
+      if (elementIndex === 0) {
+        this.headerCell.var_scope = value;
       }
     } else {
       if (this.bodyCells[rowIndex] && elementIndex === 0) {
-        this.bodyCells[rowIndex].conditions = Array.isArray(value) ? value : [];
+        this.bodyCells[rowIndex].exprs = Array.isArray(value) ? value : [];
       }
     }
   }
 
   addRow(rowIndex?: number): void {
-    const defaults = getBlockDefaults(BLOCK_TYPE.CONDITION);
-    const newRow = { conditions: defaults.conditions || [] };
+    const newRow = { exprs: [] as any[] };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
     } else {
@@ -110,14 +111,14 @@ export class ConditionBlockInstance extends BlockInstance {
 
   getHeaderCellValues(colIndex: number): any[] {
     if (colIndex === 0) {
-      return [null, this.headerCell.variable_scope];
+      return [this.headerCell.var_scope];
     }
     return [];
   }
 
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
-      return [this.bodyCells[rowIndex].conditions];
+      return [this.bodyCells[rowIndex].exprs];
     }
     return [];
   }
@@ -125,7 +126,7 @@ export class ConditionBlockInstance extends BlockInstance {
   getHeaderProperties(colIndex: number): Record<string, any> {
     if (colIndex === 0) {
       return {
-        variable_scope: this.headerCell.variable_scope,
+        var_scope: this.headerCell.var_scope,
       };
     }
     return {};
@@ -134,17 +135,17 @@ export class ConditionBlockInstance extends BlockInstance {
   getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return {
-        conditions: this.bodyCells[rowIndex].conditions,
+        exprs: this.bodyCells[rowIndex].exprs,
       };
     }
     return {};
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (propertyName === 'variable_scope') {
-      this.headerCell.variable_scope = value;
-    } else if (propertyName === 'conditions' && rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      this.bodyCells[rowIndex].conditions = Array.isArray(value) ? value : [];
+    if (propertyName === 'var_scope') {
+      this.headerCell.var_scope = value;
+    } else if (propertyName === 'exprs' && rowIndex !== undefined && this.bodyCells[rowIndex]) {
+      this.bodyCells[rowIndex].exprs = Array.isArray(value) ? value : [];
     }
   }
 }

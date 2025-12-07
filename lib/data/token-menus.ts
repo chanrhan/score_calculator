@@ -106,7 +106,7 @@ export const GRADE_MENU: TokenMenu = {
 } as const
 
 export const INCLUDE_EXCLUDE_MENU: TokenMenu = {
-  key: 'include_exclude',
+  key: 'include_option',
   name: '포함 여부',
   items: [
     { label: '포함', value: '0' },
@@ -222,6 +222,51 @@ export const VARIABLE_MENU: TokenMenu = {
   ]
 } as const
 
+export const VAR_SCOPE_MENU: TokenMenu = {
+  key: 'var_scope',
+  name: '변수 범위',
+  items: [
+    { label: '학생', value: '0' },
+    { label: '과목별', value: '1' },
+  ]
+} as const
+
+export const DECIMAL_FUNC_MENU: TokenMenu = {
+  key: 'decimal_func',
+  name: '소수점 처리 함수',
+  items: [
+    { label: '반올림', value: '0' },
+    { label: '올림', value: '1' },
+    { label: '내림', value: '2' },
+    { label: '절사', value: '3' },
+  ]
+} as const
+
+export const SUBJECT_GROUP_MENU: TokenMenu = {
+  key: 'subject_group',
+  name: '교과군',
+  items: [
+    { label: '국어', value: '국어' },
+    { label: '수학', value: '수학' },
+    { label: '영어', value: '영어' },
+    { label: '사회', value: '사회' },
+    { label: '과학', value: '과학' },
+    { label: '한국사', value: '한국사' },
+    { label: '체육', value: '체육' },
+  ]
+} as const
+
+export const AGGREGATION_FUNC_MENU: TokenMenu = {
+  key: 'aggregation_func',
+  name: '집계 함수',
+  items: [
+    { label: '이수단위 가중평균', value: '0' },
+    { label: '평균', value: '1' },
+    { label: '과목 개수', value: '2' },
+    { label: '합', value: '3' },
+  ]
+} as const
+
 // 모든 메뉴를 키로 접근할 수 있는 객체
 export const TOKEN_MENUS = {
   aggregation_type: AGGREGATION_TYPE_MENU,
@@ -243,6 +288,10 @@ export const TOKEN_MENUS = {
   topsubject_option: TOPSUBJECT_OPTION_MENU,
   topsubject_order: TOPSUBJECT_ORDER_MENU,
   variable: VARIABLE_MENU,
+  var_scope: VAR_SCOPE_MENU,
+  decimal_func: DECIMAL_FUNC_MENU,
+  subject_group: SUBJECT_GROUP_MENU,
+  aggregation_func: AGGREGATION_FUNC_MENU,
 } as const
 
 // 키로 메뉴를 찾는 헬퍼 함수
@@ -271,6 +320,10 @@ export const TOKEN_MENU_KEYS = {
   TOPSUBJECT_OPTION: TOPSUBJECT_OPTION_MENU.key,
   TOPSUBJECT_ORDER: TOPSUBJECT_ORDER_MENU.key,
   VARIABLE: VARIABLE_MENU.key,
+  VAR_SCOPE: VAR_SCOPE_MENU.key,
+  DECIMAL_FUNC: DECIMAL_FUNC_MENU.key,
+  SUBJECT_GROUP: SUBJECT_GROUP_MENU.key,
+  AGGREGATION_FUNC: AGGREGATION_FUNC_MENU.key,
 } as const
 
 // 모든 메뉴 배열
@@ -294,4 +347,8 @@ export const ALL_TOKEN_MENUS: readonly TokenMenu[] = [
   TOPSUBJECT_OPTION_MENU,
   TOPSUBJECT_ORDER_MENU,
   VARIABLE_MENU,
+  VAR_SCOPE_MENU,
+  DECIMAL_FUNC_MENU,
+  SUBJECT_GROUP_MENU,
+  AGGREGATION_FUNC_MENU,
 ] as const

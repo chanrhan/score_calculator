@@ -6,8 +6,11 @@ import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
-import { createTokenElement } from '../common/elementHelpers';
+import { createTokenElement, createListElement, createInputFieldElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { List } from '@/components/builder/block_builder/CellElement/List';
+import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import topSubjectStyles from './TopSubject.module.css';
 
@@ -19,40 +22,70 @@ export const TopSubjectLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: () => <span className={topSubjectStyles.label}>우수 N 과목</span>,
+  header: () => <span className={topSubjectStyles.label}>상위 과목 선정</span>,
   body: ({ properties, readOnly, onChange }) => {
-      const scope = properties.top_subject_scope || 'overall';
-      const count = properties.top_subject_count || '3';
+      const topsubjectOption = properties.topsubject_option || '1';
+      const target = properties.target || 'finalScore';
+      const topCount = properties.top_count !== undefined ? String(properties.top_count) : '3';
+      const topsubjectOrder = properties.topsubject_order || [];
       
       return (
         <div className={topSubjectStyles.body}>
           <Token
             element={createTokenElement({
-              menu_key: 'top_subject_scope',
-              value: scope,
-              optional: true,
+              menu_key: TOKEN_MENU_KEYS.TOPSUBJECT_OPTION,
+              value: topsubjectOption,
+              optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('top_subject_scope', value);
+                onChange?.('topsubject_option', value);
               }
             }}
             autoFit={true}
           />
           <Token
             element={createTokenElement({
-              menu_key: 'top_subject_count',
-              value: count,
+              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
+              value: target,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('top_subject_count', value);
+                onChange?.('target', value);
               }
             }}
             autoFit={true}
+          />
+          <InputField
+            element={createInputFieldElement({
+              value: topCount,
+              optional: false,
+              visible: true,
+            })}
+            onChange={(value) => {
+              if (!readOnly) {
+                onChange?.('top_count', Number(value) || 3);
+              }
+            }}
+            autoFit={true}
+          />
+          <List
+            element={createListElement({
+              item_type: 'OrderToken',
+              menu_key: TOKEN_MENU_KEYS.TOPSUBJECT_ORDER,
+              menu_key2: TOKEN_MENU_KEYS.ORDER,
+              value: topsubjectOrder,
+              optional: false,
+              visible: true,
+            })}
+            onChange={(value) => {
+              if (!readOnly) {
+                onChange?.('topsubject_order', Array.isArray(value) ? value : []);
+              }
+            }}
           />
         </div>
       );

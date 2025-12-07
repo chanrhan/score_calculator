@@ -6,56 +6,42 @@ import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
 
 export class DecimalBlockInstance extends BlockInstance {
-  private headerCell: {
-    variable_scope: string;
-  };
-  
   private bodyCells: Array<{
-    score_type: string;
-    decimal_places: string;
-    decimal_option: string;
+    input_prop: string;
+    decimal_place: number;
+    decimal_func: string;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.DECIMAL, data);
     
-    const defaults = getBlockDefaults(BLOCK_TYPE.DECIMAL);
-    
-    // header_cells 처리
-    if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
-      const headerObj = data.header_cells[0];
-      if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
-        this.headerCell = {
-          variable_scope: headerObj.variable_scope || defaults.variable_scope || '0',
-        };
-      } else {
-        this.headerCell = { variable_scope: defaults.variable_scope || '0' };
-      }
-    } else {
-      this.headerCell = { variable_scope: defaults.variable_scope || '0' };
-    }
+    // 기본값 정의
+    const defaultInputProp = 'finalScore';
+    const defaultDecimalPlace = 2;
+    const defaultDecimalFunc = '0';
     
     // body_cells 처리
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
+          const decimalPlace = row.decimal_place !== undefined ? Number(row.decimal_place) : defaultDecimalPlace;
           return {
-            score_type: row.score_type || defaults.score_type || 'finalScore',
-            decimal_places: row.decimal_places?.toString() || defaults.decimal_places || '2',
-            decimal_option: row.option?.toString() || row.decimal_option || defaults.decimal_option || '0',
+            input_prop: row.input_prop || defaultInputProp,
+            decimal_place: isNaN(decimalPlace) ? defaultDecimalPlace : decimalPlace,
+            decimal_func: row.decimal_func || defaultDecimalFunc,
           };
         }
         return {
-          score_type: defaults.score_type || 'finalScore',
-          decimal_places: defaults.decimal_places || '2',
-          decimal_option: defaults.decimal_option || '0',
+          input_prop: defaultInputProp,
+          decimal_place: defaultDecimalPlace,
+          decimal_func: defaultDecimalFunc,
         };
       });
     } else {
       this.bodyCells = [{
-        score_type: defaults.score_type || 'finalScore',
-        decimal_places: defaults.decimal_places || '2',
-        decimal_option: defaults.decimal_option || '0',
+        input_prop: defaultInputProp,
+        decimal_place: defaultDecimalPlace,
+        decimal_func: defaultDecimalFunc,
       }];
     }
   }
@@ -65,29 +51,22 @@ export class DecimalBlockInstance extends BlockInstance {
   }
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
-    if (rowIndex === -1) {
-      if (elementIndex === 1) {
-        this.headerCell.variable_scope = value;
-      }
-    } else {
-      if (this.bodyCells[rowIndex]) {
-        if (elementIndex === 0) {
-          this.bodyCells[rowIndex].score_type = value;
-        } else if (elementIndex === 2) {
-          this.bodyCells[rowIndex].decimal_places = value?.toString() || '2';
-        } else if (elementIndex === 4) {
-          this.bodyCells[rowIndex].decimal_option = value?.toString() || '0';
-        }
+    if (this.bodyCells[rowIndex]) {
+      if (elementIndex === 0) {
+        this.bodyCells[rowIndex].input_prop = value;
+      } else if (elementIndex === 1) {
+        this.bodyCells[rowIndex].decimal_place = Number(value) || 2;
+      } else if (elementIndex === 2) {
+        this.bodyCells[rowIndex].decimal_func = value;
       }
     }
   }
 
   addRow(rowIndex?: number): void {
-    const defaults = getBlockDefaults(BLOCK_TYPE.DECIMAL);
     const newRow = {
-      score_type: defaults.score_type || 'finalScore',
-      decimal_places: defaults.decimal_places || '2',
-      decimal_option: defaults.decimal_option || '0',
+      input_prop: 'finalScore',
+      decimal_place: 2,
+      decimal_func: '0',
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -125,65 +104,49 @@ export class DecimalBlockInstance extends BlockInstance {
 
   toDbFormat(): { header_cells: any; body_cells: any } {
     return {
-      header_cells: [this.headerCell],
-      body_cells: this.bodyCells.map(row => ({
-        score_type: row.score_type,
-        decimal_places: parseInt(row.decimal_places) || 2,
-        option: parseInt(row.decimal_option) || 0,
-      }))
+      header_cells: [],
+      body_cells: this.bodyCells
     };
   }
 
   getHeaderCellValues(colIndex: number): any[] {
-    if (colIndex === 0) {
-      return [null, this.headerCell.variable_scope];
-    }
     return [];
   }
 
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return [
-        this.bodyCells[rowIndex].score_type,
-        null,
-        parseInt(this.bodyCells[rowIndex].decimal_places) || 2,
-        null,
-        parseInt(this.bodyCells[rowIndex].decimal_option) || 0
+        this.bodyCells[rowIndex].input_prop,
+        this.bodyCells[rowIndex].decimal_place,
+        this.bodyCells[rowIndex].decimal_func
       ];
     }
     return [];
   }
 
   getHeaderProperties(colIndex: number): Record<string, any> {
-    if (colIndex === 0) {
-      return {
-        variable_scope: this.headerCell.variable_scope,
-      };
-    }
     return {};
   }
 
   getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return {
-        score_type: this.bodyCells[rowIndex].score_type,
-        decimal_places: this.bodyCells[rowIndex].decimal_places,
-        decimal_option: this.bodyCells[rowIndex].decimal_option,
+        input_prop: this.bodyCells[rowIndex].input_prop,
+        decimal_place: this.bodyCells[rowIndex].decimal_place,
+        decimal_func: this.bodyCells[rowIndex].decimal_func,
       };
     }
     return {};
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (propertyName === 'variable_scope') {
-      this.headerCell.variable_scope = value;
-    } else if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      if (propertyName === 'score_type') {
-        this.bodyCells[rowIndex].score_type = value;
-      } else if (propertyName === 'decimal_places') {
-        this.bodyCells[rowIndex].decimal_places = value?.toString() || '2';
-      } else if (propertyName === 'decimal_option') {
-        this.bodyCells[rowIndex].decimal_option = value?.toString() || '0';
+    if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
+      if (propertyName === 'input_prop') {
+        this.bodyCells[rowIndex].input_prop = value;
+      } else if (propertyName === 'decimal_place') {
+        this.bodyCells[rowIndex].decimal_place = Number(value) || 2;
+      } else if (propertyName === 'decimal_func') {
+        this.bodyCells[rowIndex].decimal_func = value;
       }
     }
   }

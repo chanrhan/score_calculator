@@ -8,30 +8,33 @@ import { FlowBlockType } from '@/types/block-structure';
 export class SubjectGroupRatioBlockInstance extends BlockInstance {
   // 동적 열 구조: 각 열마다 header와 body 셀
   private headerCells: Array<{
-    subject_group: string | null;
+    subject_groups: string[];
   }>;
   
   private bodyCells: Array<{
-    ratio: string;
+    ratio: number;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
     super(blockId, BLOCK_TYPE.SUBJECT_GROUP_RATIO, data);
     
-    // 기본값 정의 (structure.ts 제거)
+    // 기본값 정의
+    const defaultSubjectGroups: string[] = [];
+    const defaultRatio = 100;
+    
     // header_cells 처리: 기본 1*1
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       this.headerCells = data.header_cells.map((cell: any) => {
         if (typeof cell === 'object' && cell !== null && !Array.isArray(cell)) {
           return {
-            subject_group: cell.subject_group !== undefined ? cell.subject_group : null,
+            subject_groups: Array.isArray(cell.subject_groups) ? cell.subject_groups : defaultSubjectGroups,
           };
         }
-        return { subject_group: null };
+        return { subject_groups: defaultSubjectGroups };
       });
     } else {
       // 기본 1*1 구조
-      this.headerCells = [{ subject_group: null }];
+      this.headerCells = [{ subject_groups: defaultSubjectGroups }];
     }
     
     // body_cells 처리 (동적 열)
@@ -40,26 +43,27 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
       if (Array.isArray(row)) {
         this.bodyCells = row.map((cell: any) => {
           if (typeof cell === 'object' && cell !== null && !Array.isArray(cell)) {
+            const ratio = cell.ratio !== undefined ? Number(cell.ratio) : defaultRatio;
             return {
-              ratio: cell.ratio?.toString() || '100',
+              ratio: isNaN(ratio) ? defaultRatio : ratio,
             };
           }
-          return { ratio: '100' };
+          return { ratio: defaultRatio };
         });
       } else {
-        this.bodyCells = [{ ratio: '100' }];
+        this.bodyCells = [{ ratio: defaultRatio }];
       }
     } else {
       // header_cells 개수에 맞춰 body_cells 생성
-      this.bodyCells = this.headerCells.map(() => ({ ratio: '100' }));
+      this.bodyCells = this.headerCells.map(() => ({ ratio: defaultRatio }));
     }
     
     // header와 body 열 개수 맞추기
     while (this.bodyCells.length < this.headerCells.length) {
-      this.bodyCells.push({ ratio: '100' });
+      this.bodyCells.push({ ratio: defaultRatio });
     }
     while (this.headerCells.length < this.bodyCells.length) {
-      this.headerCells.push({ subject_group: null });
+      this.headerCells.push({ subject_groups: defaultSubjectGroups });
     }
   }
 
@@ -69,12 +73,12 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
     if (rowIndex === -1) {
-      if (this.headerCells[colIndex]) {
-        this.headerCells[colIndex].subject_group = value;
+      if (this.headerCells[colIndex] && elementIndex === 0) {
+        this.headerCells[colIndex].subject_groups = Array.isArray(value) ? value : [];
       }
     } else {
-      if (this.bodyCells[colIndex]) {
-        this.bodyCells[colIndex].ratio = value?.toString() || '100';
+      if (this.bodyCells[colIndex] && elementIndex === 0) {
+        this.bodyCells[colIndex].ratio = Number(value) || 100;
       }
     }
   }
@@ -84,8 +88,8 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
   }
 
   addColumn(colIndex?: number): void {
-    const newHeaderCell = { subject_group: null };
-    const newBodyCell = { ratio: '100' };
+    const newHeaderCell = { subject_groups: [] as string[] };
+    const newBodyCell = { ratio: 100 };
     
     if (colIndex !== undefined && colIndex >= 0) {
       this.headerCells.splice(colIndex + 1, 0, newHeaderCell);
@@ -129,7 +133,7 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
 
   getHeaderCellValues(colIndex: number): any[] {
     if (this.headerCells[colIndex]) {
-      return [this.headerCells[colIndex].subject_group];
+      return [this.headerCells[colIndex].subject_groups];
     }
     return [];
   }
@@ -144,7 +148,7 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
   getHeaderProperties(colIndex: number): Record<string, any> {
     if (this.headerCells[colIndex]) {
       return {
-        subject_group: this.headerCells[colIndex].subject_group,
+        subject_groups: this.headerCells[colIndex].subject_groups,
       };
     }
     return {};
@@ -160,10 +164,10 @@ export class SubjectGroupRatioBlockInstance extends BlockInstance {
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (propertyName === 'subject_group' && colIndex !== undefined && this.headerCells[colIndex]) {
-      this.headerCells[colIndex].subject_group = value;
+    if (propertyName === 'subject_groups' && colIndex !== undefined && this.headerCells[colIndex]) {
+      this.headerCells[colIndex].subject_groups = Array.isArray(value) ? value : [];
     } else if (propertyName === 'ratio' && rowIndex === 0 && colIndex !== undefined && this.bodyCells[colIndex]) {
-      this.bodyCells[colIndex].ratio = value?.toString() || '100';
+      this.bodyCells[colIndex].ratio = Number(value) || 100;
     }
   }
 }

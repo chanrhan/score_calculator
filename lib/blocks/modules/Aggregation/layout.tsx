@@ -20,60 +20,38 @@ export const AggregationLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: ({ properties, readOnly, onChange }) => {
-      const variableScope = properties.variable_scope || '0';
-      
-      return (
-        <div className={aggregationStyles.header}>
-          <span className={aggregationStyles.label}>집계</span>
-          <Token
-            element={createTokenElement({
-              menu_key: 'variable_scope',
-              value: variableScope,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('variable_scope', value);
-              }
-            }}
-            autoFit={true}
-          />
-        </div>
-      );
-    },
+  header: () => <span className={aggregationStyles.label}>집계</span>,
   body: ({ properties, readOnly, onChange }) => {
-      const inputScoreType = properties.input_score_type || 'finalScore';
-      const aggregationFunction = properties.aggregation_function || '0';
-      const outputScoreType = properties.output_score_type || 'finalScore';
+      const inputProp = properties.input_prop || 'finalScore';
+      const func = properties.func || '0';
+      const outputProp = properties.output_prop || 'finalScore';
       
       return (
         <div className={aggregationStyles.body}>
           <Token
             element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: inputScoreType,
+              menu_key: TOKEN_MENU_KEYS.VARIABLE,
+              value: inputProp,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('input_score_type', value);
+                onChange?.('input_prop', value);
               }
             }}
             autoFit={true}
           />
           <Token
             element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.AGGREGATION_TYPE,
-              value: aggregationFunction,
+              menu_key: TOKEN_MENU_KEYS.AGGREGATION_FUNC,
+              value: func,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('aggregation_function', value);
+                onChange?.('func', value);
               }
             }}
             autoFit={true}
@@ -81,14 +59,14 @@ export const AggregationLayout: {
           <span>→</span>
           <Token
             element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: outputScoreType,
+              menu_key: TOKEN_MENU_KEYS.VARIABLE,
+              value: outputProp,
               optional: false,
               visible: true,
             })}
             onChange={(value) => {
               if (!readOnly) {
-                onChange?.('output_score_type', value);
+                onChange?.('output_prop', value);
               }
             }}
             autoFit={true}
@@ -107,11 +85,6 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
     colIndex: number,
     context: RenderCellContext
   ): React.ReactNode {
-    const { readOnly, onBlockChange } = context;
-    
-    // 속성 값 직접 가져오기
-    const properties = block.getHeaderProperties(colIndex);
-
     const LayoutComponent = getLayoutComponent(AggregationLayout.header, colIndex);
     if (!LayoutComponent) {
       return <td key={colIndex} className={styles.tableCell}><div className={styles.headerCell} /></td>;
@@ -120,15 +93,7 @@ export class AggregationLayoutRenderer extends GenericBlockLayoutRenderer {
     return (
       <td key={colIndex} className={styles.tableCell}>
         <div className={styles.headerCell}>
-          <LayoutComponent
-            properties={properties}
-            readOnly={readOnly || false}
-            onChange={(propertyName, value) => {
-              if (readOnly) return;
-              block.updateProperty(propertyName, value, undefined, colIndex);
-              onBlockChange?.(block.block_id, block);
-            }}
-          />
+          <LayoutComponent properties={{}} readOnly={false} />
         </div>
       </td>
     );
