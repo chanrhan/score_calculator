@@ -53,10 +53,12 @@ export const FormulaLayout: {
           <div className={formulaStyles.row}>
             <Formula
               element={createFormulaElement({
-                menu_key: 'expr',
+                menu_key: 'variable',
                 value: expr,
                 optional: false,
                 visible: true,
+                var_use: true,
+                var_store: true,
               })}
               onChange={(value) => {
                 if (!readOnly) {

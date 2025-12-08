@@ -40,6 +40,9 @@ export interface FormulaElement extends CellElementBase {
   type: 'Formula'
   menu_key: string
   value: string // DSL 수식
+  // 파이프라인 변수 사용/저장 기능 플래그
+  var_use?: boolean
+  var_store?: boolean
 }
 
 // InputField Element

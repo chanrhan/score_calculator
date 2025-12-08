@@ -66,12 +66,16 @@ export function createFormulaElement(props: {
   value: string;
   optional?: boolean;
   visible?: boolean;
+  var_use?: boolean;
+  var_store?: boolean;
 }) {
   return {
     menu_key: props.menu_key,
     value: props.value,
     optional: props.optional ?? false,
     visible: props.visible ?? true,
+    var_use: props.var_use,
+    var_store: props.var_store,
   } as any;
 }
 

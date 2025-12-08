@@ -1,22 +1,180 @@
 .container {
   display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.textareaWrapper {
+  flex: 1;
+  position: relative;
 }
 
 .input {
   width: 100%;
-  height: 60px;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
+  min-height: 40px;
+  max-height: 120px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background-color: transparent;
+  color: transparent;
+  caret-color: #111827;
+  transition: all 0.15s ease;
+  resize: vertical;
+  font-family: inherit;
+  tab-size: 4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
-.select {
-  padding: 0.25rem;
-  border: 1px solid #d1d5db;
+.textareaOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: hidden;
+  color: #111827;
+  font-family: inherit;
+  tab-size: 4;
+}
+
+.placeholder {
+  color: #9ca3af;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.variableButton {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.variableButton:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.variableButton:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.variableButton[data-state="open"] {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.variableButtonText {
+  line-height: 1;
+}
+
+.variableButtonIcon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+}
+
+.variableButton[data-state="open"] .variableButtonIcon {
+  transform: rotate(180deg);
+}
+
+.dropdownContent {
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdownItem {
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background-color: #f3f4f6;
+}
+
+.variableToken {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  background-color: #eff6ff;
+  color: #1e40af;
   border-radius: 0.25rem;
-  background-color: white;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.dropdownItemAdd {
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.dropdownItemAdd:hover {
+  background-color: #eff6ff;
+}
+
+.addIcon {
+  width: 14px;
+  height: 14px;
+  margin-right: 0.5rem;
+}
+
+.dialogContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.errorText {
+  font-size: 0.875rem;
+  color: #ef4444;
+  margin: 0;
+}
+
+.variableInText {
+  display: inline;
+  background-color: #eff6ff;
+  color: #1e40af;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
 }
 
 
