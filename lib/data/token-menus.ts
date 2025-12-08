@@ -265,7 +265,7 @@ export const TOKEN_MENUS = {
   division_type: DIVISION_TYPE_MENU,
   extended_score_type: EXTENDED_SCORE_TYPE_MENU,
   grade: GRADE_MENU,
-  include_exclude: INCLUDE_EXCLUDE_MENU,
+  include_option: INCLUDE_EXCLUDE_MENU,
   logical_operator: LOGICAL_OPERATOR_MENU,
   match_option: MATCH_OPTION_MENU,
   operator: OPERATOR_MENU,
