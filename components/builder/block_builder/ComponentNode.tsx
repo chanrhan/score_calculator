@@ -152,6 +152,19 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
         <ComponentGrid
           key={`component-grid-${componentId}`}
           blocks={blocks}
+          name={comp?.name}
+          onNameChange={(newName) => {
+            // usePipelines 스토어 업데이트
+            const pipeline = getById(actualPipelineId);
+            if (pipeline) {
+              const updatedComponents = pipeline.components.map(c => 
+                c.id === componentId 
+                  ? { ...c, name: newName }
+                  : c
+              );
+              update(actualPipelineId, { components: updatedComponents });
+            }
+          }}
           divisionHead={divisionHead}
           onDivisionHeadChange={(data) => {
             setDivisionHead(data);

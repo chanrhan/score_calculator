@@ -12,6 +12,7 @@ const SaveComponentRequestSchema = z.object({
   pipelineId: z.number().int().positive(),
   componentId: z.number().int().positive(), 
   order: z.number().int().min(0),
+  name: z.string().optional(),
   blocks: z.array(z.any()), // FlowBlock 배열 - 실제 구조는 복잡하므로 any 사용
   hierarchicalDataMap: z.record(z.string(), z.array(z.any())).optional() // HierarchicalCell 맵 (JSON 키는 문자열)
 });
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
       pipelineId: validatedData.pipelineId,
       componentId: validatedData.componentId,
       order: validatedData.order,
+      name: validatedData.name,
       blocks: validatedData.blocks,
       hierarchicalDataMap: validatedData.hierarchicalDataMap
     });
@@ -77,6 +79,7 @@ export async function PUT(request: NextRequest) {
     const ComponentSchema = z.object({
       id: z.number().int().positive().optional(),
       order: z.number().int().min(0),
+      name: z.string().optional(),
       x: z.number().int().optional(),
       y: z.number().int().optional(),
       blocks: z.array(FlowBlockSchema),
@@ -107,6 +110,7 @@ export async function PUT(request: NextRequest) {
     const componentsPayload = (validated.components as unknown) as Array<{
       id?: number;
       order: number;
+      name?: string;
       x?: number;
       y?: number;
       blocks: FlowBlock[];

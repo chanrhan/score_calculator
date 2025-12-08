@@ -227,6 +227,7 @@ export default function PipelineEditPage() {
           id: Number.isFinite(component.id) ? component.id : undefined,
           order: component.position,
           x: Math.round(component.ui?.x ?? 0),
+          name: component.name,
           y: Math.round(component.ui?.y ?? 0),
           blocks: flowBlocks,
           ...(hierarchicalDataMap ? { hierarchicalDataMap } : {}),

@@ -36,6 +36,8 @@ import { DivisionHead } from '../DivisionHead/DivisionHead'
 
 interface ComponentGridProps {
   blocks: BlockInstance[]
+  name?: string
+  onNameChange?: (name: string) => void
   divisionHead?: DivisionHeadData
   onDivisionHeadChange?: (data: DivisionHeadData) => void
   onBlockChange?: (blockId: number, updatedBlock: BlockInstance) => void
@@ -53,6 +55,8 @@ interface ComponentGridProps {
 // refactoring_0911.md에 따른 셀 렌더링 구현
 export const ComponentGrid: React.FC<ComponentGridProps> = ({
   blocks,
+  name,
+  onNameChange,
   divisionHead,
   onDivisionHeadChange,
   onBlockChange,
@@ -88,6 +92,34 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   
   // 호버 상태 관리
   const [hoveredBlockId, setHoveredBlockId] = React.useState<number | null>(null);
+  
+  // 이름 편집 상태 관리
+  const [isEditingName, setIsEditingName] = React.useState(false);
+  const [editedName, setEditedName] = React.useState(name || '');
+  
+  // name prop 변경 시 editedName 업데이트
+  React.useEffect(() => {
+    setEditedName(name || '');
+  }, [name]);
+  
+  // 이름 편집 완료 핸들러
+  const handleNameBlur = () => {
+    setIsEditingName(false);
+    if (onNameChange && editedName !== name) {
+      onNameChange(editedName);
+    }
+  };
+  
+  // Enter 키로 편집 완료
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleNameBlur();
+    } else if (e.key === 'Escape') {
+      setEditedName(name || '');
+      setIsEditingName(false);
+    }
+  };
 
   // 1단계: 전체 행×열 크기 계산
   const calculateTotalRows = (blocks: BlockInstance[]) => {
@@ -226,8 +258,55 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
     )
   }
 
+  // 컴포넌트 이름 렌더링 (좌상단)
+  const renderComponentName = (): React.ReactNode => {
+    if (isEditingName) {
+      return (
+        <input
+          type="text"
+          value={editedName}
+          onChange={(e) => setEditedName(e.target.value)}
+          onBlur={handleNameBlur}
+          onKeyDown={handleNameKeyDown}
+          className={styles.componentNameInput}
+          autoFocus
+          onClick={(e) => e.stopPropagation()}
+        />
+      );
+    }
+    
+    return (
+      <div
+        className={styles.componentName}
+        onClick={() => !readOnly && setIsEditingName(true)}
+        title={readOnly ? undefined : '클릭하여 이름 편집'}
+      >
+        {name || 'Component'}
+      </div>
+    );
+  };
+
   // 각 위치(r,c)에 맞는 셀 렌더링 함수
   const renderCellAtPosition = (rowIndex: number, colIndex: number): React.ReactNode => {
+    // 좌상단 (첫 번째 행, 첫 번째 열)에 컴포넌트 이름 표시
+    if (rowIndex === 0 && colIndex === 0) {
+      return (
+        <td
+          key={`component-name-${rowIndex}-${colIndex}`}
+          className={styles.tableCell}
+          style={{ minHeight: '40px', height: 'auto', verticalAlign: 'top' }}
+          colSpan={divisionHeadCols}
+        >
+          {renderComponentName()}
+        </td>
+      );
+    }
+    
+    // 첫 번째 행이고 이름 셀 이후의 열인 경우 스킵 (colSpan으로 처리됨)
+    if (rowIndex === 0 && colIndex < divisionHeadCols) {
+      return null;
+    }
+    
     // 구분 헤드 열인지 확인
     const isDivisionHeadCol = colIndex < divisionHeadCols;
     
@@ -294,7 +373,10 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
             blocks, 
             readOnly, 
             onDivisionHeadChange, 
-            onInsertRow
+            onInsertRow,
+            name,
+            isEditingName,
+            editedName
           ])}
         </tbody>
       </table>

@@ -43,7 +43,7 @@ function convertComponentGridToComponent(grid: ComponentGridLoadData): Component
 
   const component: Component = {
     id: grid.componentId,
-    name: `Component ${grid.componentId}`,
+    name: grid.name || `Component ${grid.componentId}`,
     predecessorId: null, // DB에는 컴포넌트 간 연결 정보가 없으므로 null로 설정
     position: grid.order,
     ui: { 

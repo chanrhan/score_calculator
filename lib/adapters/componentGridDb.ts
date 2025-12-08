@@ -14,6 +14,7 @@ export interface ComponentGridSaveData {
   pipelineId: number;
   componentId: number;
   order: number;
+  name?: string;
   x?: number;
   y?: number;
   blocks: FlowBlock[];
@@ -24,6 +25,7 @@ export interface ComponentGridSaveData {
 export interface ComponentGridLoadData {
   componentId: number;
   order: number;
+  name?: string;
   x: number;
   y: number;
   blocks: FlowBlock[];
@@ -35,7 +37,7 @@ export interface ComponentGridLoadData {
  * 단일 ComponentGrid를 DB에 저장
  */
 export async function saveComponentGridToDb(data: ComponentGridSaveData): Promise<void> {
-  const { pipelineId, componentId, order, x = 0, y = 0, blocks, hierarchicalDataMap, divisionHead } = data;
+  const { pipelineId, componentId, order, name, x = 0, y = 0, blocks, hierarchicalDataMap, divisionHead } = data;
  console.table(blocks)
   // 트랜잭션으로 ComponentGrid와 Block들을 함께 저장
   await prisma.$transaction(async (tx: any) => {
@@ -54,6 +56,7 @@ export async function saveComponentGridToDb(data: ComponentGridSaveData): Promis
       },
       update: {
         order,
+        name,
         x,
         y,
         division_head_header: divisionHeadHeader,
@@ -64,6 +67,7 @@ export async function saveComponentGridToDb(data: ComponentGridSaveData): Promis
         pipeline_id: BigInt(pipelineId),
         component_id: componentId,
         order,
+        name,
         x,
         y,
         division_head_header: divisionHeadHeader,
@@ -167,6 +171,7 @@ export async function loadComponentGridFromDb(
   return {
     componentId: componentGrid.component_id,
     order: componentGrid.order,
+    name: componentGrid.name,
     x: componentGrid.x,
     y: componentGrid.y,
     blocks,
@@ -237,6 +242,7 @@ export async function loadAllComponentGridsFromDb(pipelineId: number): Promise<C
     return {
       componentId: componentGrid.component_id,
       order: componentGrid.order,
+      name: componentGrid.name,
       x: componentGrid.x,
       y: componentGrid.y,
       blocks,
@@ -541,6 +547,7 @@ export async function upsertAllComponentGrids(
   components: Array<{
     id?: number;
     order: number;
+    name?: string;
     x?: number;
     y?: number;
     blocks: FlowBlock[];
@@ -632,6 +639,7 @@ export async function upsertAllComponentGrids(
           },
           data: {
             order: component.order,
+            name: component.name,
             x: component.x || 0,
             y: component.y || 0,
             division_head_header: divisionHeadHeader,
@@ -674,6 +682,7 @@ export async function upsertAllComponentGrids(
             pipeline_id: BigInt(pipelineId),
             component_id: finalComponentId,
             order: finalOrder,
+            name: component.name,
             x: component.x || 0,
             y: component.y || 0,
             division_head_header: divisionHeadHeader,
