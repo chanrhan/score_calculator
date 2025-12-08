@@ -6,6 +6,7 @@
   min-width: 18.75rem;
   min-height: 12.5rem;
   position: relative;
+  overflow: visible;
 }
 
 .nodeSelected {
@@ -19,7 +20,7 @@
 .dragHandle {
   position: absolute;
   top: 0.5rem;
-  left: 0.5rem;
+  left: -2rem;
   width: 1.5rem;
   height: 1.5rem;
   background-color: #9ca3af;
@@ -32,8 +33,15 @@
   font-size: 0.75rem;
   font-weight: bold;
   user-select: none;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
   z-index: 10;
+  opacity: 0;
+  pointer-events: auto;
+}
+
+.node:hover .dragHandle,
+.dragHandle:hover {
+  opacity: 1;
 }
 
 .dragHandle:hover {

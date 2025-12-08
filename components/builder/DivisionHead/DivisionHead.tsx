@@ -32,6 +32,12 @@ function renderTableCell({
   totalRows,
   onInsertRow,
   blocks = [],
+  componentName,
+  onComponentNameChange,
+  isEditingName,
+  setIsEditingName,
+  editedName,
+  setEditedName,
 }: {
   data: DivisionHeadData
   onChange: (data: DivisionHeadData) => void
@@ -41,6 +47,12 @@ function renderTableCell({
   totalRows?: number
   onInsertRow?: (blocks: any[]) => void
   blocks?: any[]
+  componentName?: string
+  onComponentNameChange?: (name: string) => void
+  isEditingName?: boolean
+  setIsEditingName?: (value: boolean) => void
+  editedName?: string
+  setEditedName?: (value: string) => void
 }) {
   const { header, body, isActive } = data
 
@@ -70,16 +82,55 @@ function renderTableCell({
   }
 
   if (rowIndex === 0) {
-    // 1행: 옵션 부분 (점 3개 아이콘)
+    // 1행: 컴포넌트명 + 옵션 부분
     const divisionHeadCols = header.length
     if (colIndex === 0 && divisionHeadCols > 0) {
+      const handleNameBlur = () => {
+        if (setIsEditingName) setIsEditingName(false)
+        if (onComponentNameChange && editedName !== componentName) {
+          onComponentNameChange(editedName || 'Component')
+        } else if (setEditedName) {
+          setEditedName(componentName || 'Component')
+        }
+      }
+      
+      const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          handleNameBlur()
+        } else if (e.key === 'Escape') {
+          if (setEditedName) setEditedName(componentName || 'Component')
+          if (setIsEditingName) setIsEditingName(false)
+        }
+      }
+      
       return (
         <td 
           key="dh-options"
           className="border border-gray-300 p-2 bg-gray-50"
           colSpan={divisionHeadCols}
         >
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-between">
+            {isEditingName ? (
+              <input
+                type="text"
+                value={editedName || componentName || 'Component'}
+                onChange={(e) => setEditedName && setEditedName(e.target.value)}
+                onBlur={handleNameBlur}
+                onKeyDown={handleNameKeyDown}
+                className="font-semibold text-sm border-2 border-blue-500 rounded px-2 py-1 outline-none"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <div 
+                className="font-semibold text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                onClick={() => !readOnly && setIsEditingName && setIsEditingName(true)}
+                title={readOnly ? undefined : '클릭하여 이름 편집'}
+              >
+                {componentName || 'Component'}
+              </div>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="p-1 hover:bg-gray-200 rounded" disabled={readOnly}>
@@ -370,6 +421,8 @@ interface DivisionHeadProps {
   totalRows?: number
   onInsertRow?: (blocks: any[]) => void
   blocks?: any[]
+  componentName?: string
+  onComponentNameChange?: (name: string) => void
 }
 
 export const DivisionHead: React.FC<DivisionHeadProps> = ({
@@ -382,13 +435,37 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
   totalRows,
   onInsertRow,
   blocks = [],
+  componentName,
+  onComponentNameChange,
 }) => {
   const { header, body, isActive } = data
-
+  
+  // 컴포넌트명 편집 상태 관리
+  const [isEditingName, setIsEditingName] = React.useState(false)
+  const [editedName, setEditedName] = React.useState(componentName || 'Component')
+  
+  React.useEffect(() => {
+    setEditedName(componentName || 'Component')
+  }, [componentName])
 
   // 테이블 셀 형태로 렌더링하는 경우
   if (renderAsTableCell && rowIndex !== undefined && colIndex !== undefined) {
-    return renderTableCell({ data, onChange, readOnly, rowIndex, colIndex, totalRows, onInsertRow, blocks })
+    return renderTableCell({ 
+      data, 
+      onChange, 
+      readOnly, 
+      rowIndex, 
+      colIndex, 
+      totalRows, 
+      onInsertRow, 
+      blocks, 
+      componentName, 
+      onComponentNameChange,
+      isEditingName,
+      setIsEditingName,
+      editedName,
+      setEditedName,
+    })
   }
 
   // 비활성화 시 아코디언 형태로 접힘

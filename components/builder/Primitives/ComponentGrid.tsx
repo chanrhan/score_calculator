@@ -254,6 +254,8 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
         totalRows={totalRowsWithDivisionHead}
         onInsertRow={onInsertRow}
         blocks={blocks}
+        componentName={name}
+        onComponentNameChange={onNameChange}
       />
     )
   }
@@ -288,25 +290,6 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
 
   // 각 위치(r,c)에 맞는 셀 렌더링 함수
   const renderCellAtPosition = (rowIndex: number, colIndex: number): React.ReactNode => {
-    // 좌상단 (첫 번째 행, 첫 번째 열)에 컴포넌트 이름 표시
-    if (rowIndex === 0 && colIndex === 0) {
-      return (
-        <td
-          key={`component-name-${rowIndex}-${colIndex}`}
-          className={styles.tableCell}
-          style={{ minHeight: '40px', height: 'auto', verticalAlign: 'top' }}
-          colSpan={divisionHeadCols}
-        >
-          {renderComponentName()}
-        </td>
-      );
-    }
-    
-    // 첫 번째 행이고 이름 셀 이후의 열인 경우 스킵 (colSpan으로 처리됨)
-    if (rowIndex === 0 && colIndex < divisionHeadCols) {
-      return null;
-    }
-    
     // 구분 헤드 열인지 확인
     const isDivisionHeadCol = colIndex < divisionHeadCols;
     
@@ -314,6 +297,7 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
       // 구분 헤드 열 (0 ~ divisionHeadCols - 1)
       // colIndex는 전체 그리드의 열 인덱스이므로, 구분 헤드 내부 열 인덱스로 변환
       // 구분 헤드가 항상 첫 번째 열부터 시작하므로, colIndex가 구분 헤드 내부 열 인덱스와 동일
+      // 첫 번째 행(rowIndex === 0)도 구분 헤드에 포함되므로 rowIndex를 그대로 전달
       const divisionHeadInternalColIndex = divisionHeadData.isActive ? colIndex : 0;
       const divisionHeadCell = renderDivisionHeadCell(rowIndex, divisionHeadInternalColIndex, divisionHeadData);
       
