@@ -4,9 +4,9 @@ import * as React from 'react'
 import type { FormulaElement } from '@/types/block-structure'
 import type { TokenMenuItem } from '@/types/block-data'
 import styles from './Formula.module.css'
-import { Textarea } from '@/components/ui/textarea'
 import { VARIABLE_MENU } from '@/lib/data/token-menus'
 import { usePipelineVariables } from '@/store/usePipelineVariables'
+import { FormulaInput, type FormulaInputRef } from './FormulaInput'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -41,6 +41,7 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const { variablesByName, currentKey, create } = usePipelineVariables()
+  const formulaInputRef = React.useRef<FormulaInputRef>(null)
 
   // 상수 파일에서 token_menu 데이터 가져오기
   React.useEffect(() => {
@@ -93,8 +94,8 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
       setDialogOpen(true)
       return
     }
-    // 토큰 메뉴에서 선택 시, #{메뉴명} 형식으로 입력
-    onChange?.(`${value || ''}#{${selectedValue}}`)
+    // FormulaInput에 변수 삽입
+    formulaInputRef.current?.insertVariable(selectedValue)
     setOpen(false)
   }
 
@@ -138,87 +139,18 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
     return varValue
   }
 
-  // 텍스트에서 #{변수} 형식을 label로 변환
-  const renderFormattedText = (text: string): React.ReactNode => {
-    if (!text) return ''
-    
-    const parts: React.ReactNode[] = []
-    const regex = /#\{([^}]+)\}/g
-    let lastIndex = 0
-    let match
-    let keyCounter = 0
-    
-    while ((match = regex.exec(text)) !== null) {
-      // 변수 이전의 일반 텍스트
-      if (match.index > lastIndex) {
-        parts.push(<span key={`text-${keyCounter++}`}>{text.substring(lastIndex, match.index)}</span>)
-      }
-      
-      // 변수 부분 - 라벨명만 표시
-      const varValue = match[1]
-      const varLabel = getVariableLabel(varValue)
-      // 원본 #{value} 길이만큼 공백을 추가하여 커서 위치 맞춤
-      const originalLength = match[0].length // #{value} 길이
-      const labelLength = varLabel.length
-      const paddingLength = Math.max(0, originalLength - labelLength)
-      const padding = paddingLength > 0 ? '\u00A0'.repeat(paddingLength) : ''
-      
-      parts.push(
-        <span key={`var-${keyCounter++}`} className={styles.variableInText}>
-          {varLabel}{padding}
-        </span>
-      )
-      
-      lastIndex = regex.lastIndex
-    }
-    
-    // 마지막 남은 텍스트
-    if (lastIndex < text.length) {
-      parts.push(<span key={`text-${keyCounter++}`}>{text.substring(lastIndex)}</span>)
-    }
-    
-    return parts.length > 0 ? parts : text
-  }
-
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null)
-  const overlayRef = React.useRef<HTMLDivElement>(null)
-
-  // Textarea와 오버레이의 스크롤 동기화
-  React.useEffect(() => {
-    const textarea = textareaRef.current
-    const overlay = overlayRef.current
-    if (!textarea || !overlay) return
-
-    const syncScroll = () => {
-      overlay.scrollTop = textarea.scrollTop
-      overlay.scrollLeft = textarea.scrollLeft
-    }
-
-    textarea.addEventListener('scroll', syncScroll)
-    // 초기 스크롤 위치 동기화
-    syncScroll()
-    
-    return () => textarea.removeEventListener('scroll', syncScroll)
-  }, [value])
 
   return (
     <>
       <div className={`${styles.container} ${className}`}>
-        <div className={styles.textareaWrapper}>
-          <Textarea
-            ref={textareaRef}
-            value={value || ''}
-            onChange={(e) => onChange?.(e.target.value)}
-            className={styles.input}
-            placeholder="수식을 입력하세요..."
-          />
-          <div 
-            ref={overlayRef}
-            className={styles.textareaOverlay}
-          >
-            {value ? renderFormattedText(value) : <span className={styles.placeholder}>수식을 입력하세요...</span>}
-          </div>
-        </div>
+        <FormulaInput
+          ref={formulaInputRef}
+          value={value || ''}
+          onChange={onChange}
+          placeholder="수식을 입력하세요..."
+          className={styles.formulaInputWrapper}
+          getVariableLabel={getVariableLabel}
+        />
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
             <button className={styles.variableButton} type="button">
