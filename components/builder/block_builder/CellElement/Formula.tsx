@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ChevronDown, Plus } from 'lucide-react'
+import { ChevronDown, Plus, Hash, RotateCcw } from 'lucide-react'
 
 interface FormulaProps {
   element: FormulaElement
@@ -32,7 +32,9 @@ interface FormulaProps {
 }
 
 export const Formula: React.FC<FormulaProps> = ({ element, onChange, className = '' }) => {
-  const { menu_key, value, optional, visible, var_use = true, var_store = true } = element
+  const { menu_key, value, optional, visible } = element
+  const var_use = (element as any).var_use ?? true
+  const var_store = (element as any).var_store ?? true
   const [baseItems, setBaseItems] = React.useState<TokenMenuItem[]>([])
   const [variableItems, setVariableItems] = React.useState<TokenMenuItem[]>([])
   const [open, setOpen] = React.useState(false)
@@ -139,10 +141,75 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
     return varValue
   }
 
+  // 수식 초기화 핸들러
+  const handleReset = () => {
+    if (onChange) {
+      onChange('')
+    }
+  }
+
 
   return (
     <>
       <div className={`${styles.container} ${className}`}>
+        {/* 툴바 */}
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarGroup}>
+            <DropdownMenu open={open} onOpenChange={setOpen}>
+              <DropdownMenuTrigger asChild>
+                <button className={styles.toolbarButton} type="button" title="변수 선택">
+                  <Hash className={styles.toolbarButtonIcon} />
+                </button>
+              </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className={styles.dropdownContent}>
+              {baseItems.length > 0 && (
+                <>
+                  {baseItems.map((item, idx) => (
+                    <DropdownMenuItem
+                      key={`base-${idx}`}
+                      onClick={() => handleSelect(item.value)}
+                      className={styles.dropdownItem}
+                    >
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                  {var_use && variablesByName.size > 0 && <DropdownMenuSeparator />}
+                </>
+              )}
+              {var_use && Array.from(variablesByName.values()).map((v, idx) => (
+                <DropdownMenuItem
+                  key={`var-${idx}`}
+                  onClick={() => handleSelect(v.variable_name)}
+                  className={styles.dropdownItem}
+                >
+                  <span className={styles.variableToken}>{v.variable_name}</span>
+                </DropdownMenuItem>
+              ))}
+              {var_store && (
+                <>
+                  {(baseItems.length > 0 || (var_use && variablesByName.size > 0)) && <DropdownMenuSeparator />}
+                  <DropdownMenuItem
+                    onClick={() => handleSelect('__add_variable__')}
+                    className={styles.dropdownItemAdd}
+                  >
+                    <Plus className={styles.addIcon} />
+                    새 변수 추가
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+            </DropdownMenu>
+            <button
+              className={styles.toolbarButton}
+              type="button"
+              onClick={handleReset}
+              title="수식 초기화"
+            >
+              <RotateCcw className={styles.toolbarButtonIcon} />
+            </button>
+          </div>
+        </div>
+        {/* 입력 영역 */}
         <FormulaInput
           ref={formulaInputRef}
           value={value || ''}
@@ -151,51 +218,6 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
           className={styles.formulaInputWrapper}
           getVariableLabel={getVariableLabel}
         />
-        <DropdownMenu open={open} onOpenChange={setOpen}>
-          <DropdownMenuTrigger asChild>
-            <button className={styles.variableButton} type="button">
-              <span className={styles.variableButtonText}>변수</span>
-              <ChevronDown className={styles.variableButtonIcon} />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className={styles.dropdownContent}>
-            {baseItems.length > 0 && (
-              <>
-                {baseItems.map((item, idx) => (
-                  <DropdownMenuItem
-                    key={`base-${idx}`}
-                    onClick={() => handleSelect(item.value)}
-                    className={styles.dropdownItem}
-                  >
-                    {item.label}
-                  </DropdownMenuItem>
-                ))}
-                {var_use && variablesByName.size > 0 && <DropdownMenuSeparator />}
-              </>
-            )}
-            {var_use && Array.from(variablesByName.values()).map((v, idx) => (
-              <DropdownMenuItem
-                key={`var-${idx}`}
-                onClick={() => handleSelect(v.variable_name)}
-                className={styles.dropdownItem}
-              >
-                <span className={styles.variableToken}>{v.variable_name}</span>
-              </DropdownMenuItem>
-            ))}
-            {var_store && (
-              <>
-                {(baseItems.length > 0 || (var_use && variablesByName.size > 0)) && <DropdownMenuSeparator />}
-                <DropdownMenuItem
-                  onClick={() => handleSelect('__add_variable__')}
-                  className={styles.dropdownItemAdd}
-                >
-                  <Plus className={styles.addIcon} />
-                  새 변수 추가
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -13,6 +13,7 @@ export class ApplyTermBlockInstance extends BlockInstance {
   private bodyCells: Array<{
     terms: string;
     top_count: number;
+    use_top_count?: boolean;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
@@ -22,6 +23,7 @@ export class ApplyTermBlockInstance extends BlockInstance {
     const defaultIncludeOption = '0';
     const defaultTerms = '';
     const defaultTopCount = 0;
+    const defaultUseTopCount = false;
     
     // header_cells 처리
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
@@ -44,11 +46,13 @@ export class ApplyTermBlockInstance extends BlockInstance {
           return {
             terms: row.terms !== undefined ? String(row.terms) : defaultTerms,
             top_count: row.top_count !== undefined ? Number(row.top_count) : defaultTopCount,
+            use_top_count: row.use_top_count !== undefined ? Boolean(row.use_top_count) : defaultUseTopCount,
           };
         }
         return {
           terms: defaultTerms,
           top_count: defaultTopCount,
+          use_top_count: defaultUseTopCount,
         };
       });
     } else {
@@ -56,6 +60,7 @@ export class ApplyTermBlockInstance extends BlockInstance {
       this.bodyCells = [{
         terms: defaultTerms,
         top_count: defaultTopCount,
+        use_top_count: defaultUseTopCount,
       }];
     }
   }
@@ -84,6 +89,7 @@ export class ApplyTermBlockInstance extends BlockInstance {
     const newRow = {
       terms: '',
       top_count: 0,
+      use_top_count: false,
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -157,6 +163,7 @@ export class ApplyTermBlockInstance extends BlockInstance {
       return {
         terms: this.bodyCells[rowIndex].terms,
         top_count: this.bodyCells[rowIndex].top_count,
+        use_top_count: this.bodyCells[rowIndex].use_top_count || false,
       };
     }
     return {};
@@ -170,6 +177,8 @@ export class ApplyTermBlockInstance extends BlockInstance {
         this.bodyCells[rowIndex].terms = String(value);
       } else if (propertyName === 'top_count') {
         this.bodyCells[rowIndex].top_count = Number(value) || 0;
+      } else if (propertyName === 'use_top_count') {
+        this.bodyCells[rowIndex].use_top_count = Boolean(value);
       }
     }
   }

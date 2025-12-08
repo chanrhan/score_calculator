@@ -11,6 +11,7 @@ export class TopSubjectBlockInstance extends BlockInstance {
     target: string;
     top_count: number;
     topsubject_order: Array<string>;
+    use_order?: boolean;
   }>;
 
   constructor(blockId: number, data: BlockInstanceData) {
@@ -21,6 +22,7 @@ export class TopSubjectBlockInstance extends BlockInstance {
     const defaultTarget = 'finalScore';
     const defaultTopCount = 3;
     const defaultTopsubjectOrder: string[] = [];
+    const defaultUseOrder = false;
     
     // body_cells 처리: 기본 1*1
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
@@ -31,6 +33,7 @@ export class TopSubjectBlockInstance extends BlockInstance {
             target: row.target || defaultTarget,
             top_count: row.top_count !== undefined ? Number(row.top_count) : defaultTopCount,
             topsubject_order: Array.isArray(row.topsubject_order) ? row.topsubject_order : defaultTopsubjectOrder,
+            use_order: row.use_order !== undefined ? Boolean(row.use_order) : defaultUseOrder,
           };
         }
         return {
@@ -38,6 +41,7 @@ export class TopSubjectBlockInstance extends BlockInstance {
           target: defaultTarget,
           top_count: defaultTopCount,
           topsubject_order: defaultTopsubjectOrder,
+          use_order: defaultUseOrder,
         };
       });
     } else {
@@ -47,6 +51,7 @@ export class TopSubjectBlockInstance extends BlockInstance {
         target: defaultTarget,
         top_count: defaultTopCount,
         topsubject_order: defaultTopsubjectOrder,
+        use_order: defaultUseOrder,
       }];
     }
   }
@@ -75,6 +80,7 @@ export class TopSubjectBlockInstance extends BlockInstance {
       target: 'finalScore',
       top_count: 3,
       topsubject_order: [] as string[],
+      use_order: false,
     };
     if (rowIndex !== undefined && rowIndex >= 0) {
       this.bodyCells.splice(rowIndex + 1, 0, newRow);
@@ -144,6 +150,7 @@ export class TopSubjectBlockInstance extends BlockInstance {
         target: this.bodyCells[rowIndex].target,
         top_count: this.bodyCells[rowIndex].top_count,
         topsubject_order: this.bodyCells[rowIndex].topsubject_order,
+        use_order: this.bodyCells[rowIndex].use_order || false,
       };
     }
     return {};
@@ -159,6 +166,8 @@ export class TopSubjectBlockInstance extends BlockInstance {
         this.bodyCells[rowIndex].top_count = Number(value) || 3;
       } else if (propertyName === 'topsubject_order') {
         this.bodyCells[rowIndex].topsubject_order = Array.isArray(value) ? value : [];
+      } else if (propertyName === 'use_order') {
+        this.bodyCells[rowIndex].use_order = Boolean(value);
       }
     }
   }

@@ -47,38 +47,87 @@ export const ApplyTermLayout: {
   body: ({ properties, readOnly, onChange }) => {
       const terms = properties.terms || '';
       const topCount = properties.top_count !== undefined ? String(properties.top_count) : '0';
+      const useTopCount = properties.use_top_count || false;
+      
+      const handleCheckboxClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!readOnly && onChange) {
+          const newValue = !useTopCount;
+          onChange('use_top_count', newValue);
+        }
+      };
       
       return (
         <div className={applyTermStyles.body}>
-          <span className={applyTermStyles.label}>학기:</span>
-          <InputField
-            element={createInputFieldElement({
-              value: terms,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('terms', value);
-              }
+          <div className={applyTermStyles.row}>
+            <span className={applyTermStyles.label}>학기:</span>
+            <InputField
+              element={createInputFieldElement({
+                value: terms,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('terms', value);
+                }
+              }}
+              autoFit={true}
+            />
+          </div>
+          <div 
+            className={applyTermStyles.checkboxRow}
+            onClick={handleCheckboxClick}
+            onMouseDown={(e) => {
+              e.stopPropagation();
             }}
-            autoFit={true}
-          />
-          <span className={applyTermStyles.label}>상위</span>
-          <InputField
-            element={createInputFieldElement({
-              value: topCount,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('top_count', Number(value) || 0);
-              }
-            }}
-            autoFit={true}
-          />
-          <span className={applyTermStyles.label}>개</span>
+            style={{ cursor: readOnly ? 'not-allowed' : 'pointer' }}
+          >
+            <div 
+              className={`${applyTermStyles.checkbox} ${useTopCount ? applyTermStyles.checkboxChecked : ''}`}
+              onClick={handleCheckboxClick}
+            >
+              {useTopCount && (
+                <svg 
+                  width="10" 
+                  height="10" 
+                  viewBox="0 0 10 10" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={applyTermStyles.checkIcon}
+                >
+                  <path 
+                    d="M8.33334 2.5L3.75001 7.08333L1.66667 5" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </div>
+            <span className={applyTermStyles.checkboxText}>상위 사용</span>
+          </div>
+          {useTopCount && (
+            <div className={applyTermStyles.row}>
+              <span className={applyTermStyles.label}>상위</span>
+              <InputField
+                element={createInputFieldElement({
+                  value: topCount,
+                  optional: false,
+                  visible: true,
+                })}
+                onChange={(value) => {
+                  if (!readOnly) {
+                    onChange?.('top_count', Number(value) || 0);
+                  }
+                }}
+                autoFit={true}
+              />
+              <span className={applyTermStyles.label}>개</span>
+            </div>
+          )}
         </div>
       );
     },

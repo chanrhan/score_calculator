@@ -28,6 +28,16 @@ export const TopSubjectLayout: {
       const target = properties.target || 'finalScore';
       const topCount = properties.top_count !== undefined ? String(properties.top_count) : '3';
       const topsubjectOrder = properties.topsubject_order || [];
+      const useOrder = properties.use_order || false;
+      
+      const handleCheckboxClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!readOnly && onChange) {
+          const newValue = !useOrder;
+          onChange('use_order', newValue);
+        }
+      };
       
       return (
         <div className={topSubjectStyles.body}>
@@ -77,24 +87,59 @@ export const TopSubjectLayout: {
             />
             <span className={topSubjectStyles.label}>개</span>
           </div>
-          <div className={topSubjectStyles.row}>
-            <span className={topSubjectStyles.label}>정렬:</span>
-            <List
-              element={createListElement({
-                item_type: 'OrderToken',
-                menu_key: TOKEN_MENU_KEYS.TOPSUBJECT_ORDER,
-                menu_key2: TOKEN_MENU_KEYS.ORDER,
-                value: topsubjectOrder,
-                optional: false,
-                visible: true,
-              })}
-              onChange={(value) => {
-                if (!readOnly) {
-                  onChange?.('topsubject_order', Array.isArray(value) ? value : []);
-                }
-              }}
-            />
+          <div 
+            className={topSubjectStyles.checkboxRow}
+            onClick={handleCheckboxClick}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+            }}
+            style={{ cursor: readOnly ? 'not-allowed' : 'pointer' }}
+          >
+            <div 
+              className={`${topSubjectStyles.checkbox} ${useOrder ? topSubjectStyles.checkboxChecked : ''}`}
+              onClick={handleCheckboxClick}
+            >
+              {useOrder && (
+                <svg 
+                  width="10" 
+                  height="10" 
+                  viewBox="0 0 10 10" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                  className={topSubjectStyles.checkIcon}
+                >
+                  <path 
+                    d="M8.33334 2.5L3.75001 7.08333L1.66667 5" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </div>
+            <span className={topSubjectStyles.checkboxText}>추가 정렬</span>
           </div>
+          {useOrder && (
+            <div className={topSubjectStyles.row}>
+              <span className={topSubjectStyles.label}>정렬:</span>
+              <List
+                element={createListElement({
+                  item_type: 'OrderToken',
+                  menu_key: TOKEN_MENU_KEYS.TOPSUBJECT_ORDER,
+                  menu_key2: TOKEN_MENU_KEYS.ORDER,
+                  value: topsubjectOrder,
+                  optional: false,
+                  visible: true,
+                })}
+                onChange={(value) => {
+                  if (!readOnly) {
+                    onChange?.('topsubject_order', Array.isArray(value) ? value : []);
+                  }
+                }}
+              />
+            </div>
+          )}
         </div>
       );
     },
