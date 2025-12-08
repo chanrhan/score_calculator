@@ -34,17 +34,19 @@ function defaultRowByItemType(itemType: ConditionChainItemType[]): any[] {
 }
 
 function getRowSchema(base: ConditionChainItemType[], rowIndex: number): ConditionChainItemType[] {
-  const schema = Array.isArray(base) ? base : []
-  if (rowIndex >= 1) {
-    // 둘째 요소부터는 맨 앞에 논리연산자 토큰을 추가
-    return [{ type: 'Token', menu_key: TOKEN_MENU_KEYS.LOGICAL_OPERATOR } as const, ...schema]
-  }
-  return schema
+  // 카드 내부의 스키마만 반환 (논리 연산자는 별도 처리)
+  return Array.isArray(base) ? base : []
 }
+
 
 function defaultRowForRowIndex(base: ConditionChainItemType[], rowIndex: number): any[] {
   const rowSchema = getRowSchema(base, rowIndex)
-  return rowSchema.map((f) => defaultFieldValue(f.type))
+  const cardValues = rowSchema.map((f) => defaultFieldValue(f.type))
+  // 두 번째 행부터는 논리 연산자를 맨 앞에 추가
+  if (rowIndex >= 1) {
+    return ['&&', ...cardValues]
+  }
+  return cardValues
 }
 
 export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChange, className = '' }) => {
@@ -60,15 +62,41 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
 
   const updateItemAt = (rowIndex: number, colIndex: number, newValue: any) => {
     const next = Array.isArray(arrayValue) ? [...arrayValue] : []
-    const current = Array.isArray(next[rowIndex]) ? [...next[rowIndex]] : defaultRowForRowIndex(schema, rowIndex)
+    let current = Array.isArray(next[rowIndex]) ? [...next[rowIndex]] : defaultRowForRowIndex(schema, rowIndex)
+    
+    // colIndex는 이미 조정된 인덱스 (논리 연산자가 있으면 +1된 상태)
+    // 하지만 첫 번째 행의 경우 논리 연산자가 없으므로 그대로 사용
+    // 두 번째 행부터는 colIndex가 이미 +1된 상태로 전달됨
     current[colIndex] = newValue
+    
     next[rowIndex] = current
     onChange?.(next)
   }
 
+  const updateLogicalOperator = (rowIndex: number, newValue: string) => {
+    const next = Array.isArray(arrayValue) ? [...arrayValue] : []
+    let current = Array.isArray(next[rowIndex]) ? [...next[rowIndex]] : defaultRowForRowIndex(schema, rowIndex)
+    
+    // 논리 연산자가 없으면 추가, 있으면 업데이트
+    if (rowIndex >= 1) {
+      current[0] = newValue
+      next[rowIndex] = current
+      onChange?.(next)
+    }
+  }
+
   const addItem = () => {
-    const next = [...arrayValue, defaultRowForRowIndex(schema, arrayValue.length)]
-    onChange?.(next)
+    const newRowIndex = arrayValue.length
+    const newRow = defaultRowForRowIndex(schema, newRowIndex)
+    // 두 번째 행부터는 논리 연산자를 맨 앞에 추가
+    if (newRowIndex >= 1) {
+      const logicalOperatorRow = ['&&', ...newRow]
+      const next = [...arrayValue, logicalOperatorRow]
+      onChange?.(next)
+    } else {
+      const next = [...arrayValue, newRow]
+      onChange?.(next)
+    }
   }
 
   const removeItem = () => {
@@ -77,9 +105,12 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
     onChange?.(next)
   }
 
-  const renderField = (field: ConditionChainItemType, rowIndex: number, row: any[], colIndex: number) => {
+  const renderField = (field: ConditionChainItemType, rowIndex: number, row: any[], colIndex: number, hasLogicalOperator: boolean) => {
     const base = { optional: false, visible: true } as const
     const fieldValue = row?.[colIndex]
+    // updateItemAt에 전달할 실제 인덱스 (논리 연산자가 있으면 +1)
+    const actualColIndex = hasLogicalOperator ? colIndex + 1 : colIndex
+    
     switch (field.type) {
       case 'Token':
         return (
@@ -89,21 +120,21 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
                 value: fieldValue, 
               }
             }
-            onChange={(v) => updateItemAt(rowIndex, colIndex, v)}
+            onChange={(v) => updateItemAt(rowIndex, actualColIndex, v)}
           />
         )
       case 'InputField':
         return (
           <InputField
             element={{ ...(field as any), value: fieldValue }}
-            onChange={(v) => updateItemAt(rowIndex, colIndex, v)}
+            onChange={(v) => updateItemAt(rowIndex, actualColIndex, v)}
           />
         )
       case 'SelectionInput':
         return (
           <SelectionInput
             element={{ ...(field as any), value: fieldValue }}
-            onChange={(v: string) => updateItemAt(rowIndex, colIndex, v)}
+            onChange={(v: string) => updateItemAt(rowIndex, actualColIndex, v)}
           />
         )
       case 'Text':
@@ -112,7 +143,7 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
         return (
           <Formula
             element={{ ...(field as any), value: fieldValue }}
-            onChange={(v) => updateItemAt(rowIndex, colIndex, v)}
+            onChange={(v) => updateItemAt(rowIndex, actualColIndex, v)}
           />
         )
       default:
@@ -125,17 +156,48 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
       {itemsToRender && itemsToRender.map((row, rowIndex) => {
         const rowSchema = getRowSchema(schema, rowIndex)
         const normalizedRow = Array.isArray(row)
-          ? [...row, ...Array(Math.max(0, rowSchema.length - row.length)).fill('')]
+          ? [...row, ...Array(Math.max(0, (rowIndex >= 1 ? rowSchema.length + 1 : rowSchema.length) - row.length)).fill('')]
           : defaultRowForRowIndex(schema, rowIndex)
+        
+        // 논리 연산자 추출 (두 번째 행부터)
+        const logicalOperator = rowIndex >= 1 ? normalizedRow[0] : null
+        // 카드 내부의 데이터만 추출 (논리 연산자 제외)
+        const cardData = rowIndex >= 1 ? normalizedRow.slice(1) : normalizedRow
+        
         return (
-        <div key={rowIndex} className={styles.itemContainer}>
-          {rowSchema.map((field, colIndex) => (
-            <div key={colIndex} className={styles.itemField}>
-              {renderField(field, rowIndex, normalizedRow, colIndex)}
+          <div key={rowIndex} className={styles.conditionRow}>
+            <div className={styles.logicalOperatorContainer}>
+              {logicalOperator ? (
+                <Token
+                  element={{
+                    type: 'Token',
+                    menu_key: TOKEN_MENU_KEYS.LOGICAL_OPERATOR,
+                    value: logicalOperator,
+                    optional: false,
+                    visible: true,
+                  }}
+                  onChange={(v) => updateLogicalOperator(rowIndex, v)}
+                  autoFit={true}
+                />
+              ) : (
+                <span className={styles.logicalOperatorPlaceholder}></span>
+              )}
             </div>
-          ))}
-        </div>
-      )})}
+            <div className={styles.conditionCard}>
+              {rowSchema.map((field, colIndex) => {
+                // 논리 연산자가 있는 경우 카드 데이터 사용, 없으면 전체 데이터 사용
+                const adjustedRow = rowIndex >= 1 ? cardData : normalizedRow
+                const hasLogicalOperator = rowIndex >= 1
+                return (
+                  <div key={colIndex} className={styles.itemField}>
+                    {renderField(field, rowIndex, adjustedRow, colIndex, hasLogicalOperator)}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
       <div className={styles.actions}>
         <button type="button" onClick={addItem} className={styles.addButton}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={styles.icon}>

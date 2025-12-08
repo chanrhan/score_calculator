@@ -16,6 +16,7 @@
   border-right: 1px solid #f3f4f6;
   border-bottom: 1px solid #f3f4f6;
   padding: 0;
+  overflow: visible;
 }
 
 .tableCell:last-child {
@@ -98,6 +99,7 @@ tbody tr:last-child .tableCell {
   padding: 0.5rem;
   min-height: 2.5rem;
   position: relative;
+  overflow: visible;
 }
 
 .bodyCellHighlighted {

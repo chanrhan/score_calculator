@@ -45,7 +45,8 @@ export const SubjectGroupRatioLayout: {
     const ratio = properties.ratio !== undefined ? String(properties.ratio) : '100';
     
     return (
-      <InputField
+      <>
+        <InputField
         element={createInputFieldElement({
           value: ratio,
           optional: false,
@@ -58,6 +59,8 @@ export const SubjectGroupRatioLayout: {
         }}
         autoFit={true}
       />
+      <span>%</span>
+      </>
     );
   },
 };
