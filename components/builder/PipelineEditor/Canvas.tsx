@@ -17,6 +17,8 @@ import type { AnyBlock } from '@/types/blocks';
 import ComponentNode from '../block_builder/ComponentNode';
 import BlockPalette from './BlockPalette';
 import BlockInspector from './BlockInspector';
+import TimelineBar from './TimelineBar';
+import CustomEdge from './CustomEdge';
 import { BlockCombineProvider } from '@/hooks/blocks/useBlockCombineContext';
 import { BlockGridSyncProvider } from '@/hooks/blocks/useBlockGridSync';
 import { createFlowBlockFromKind, getBlockTypeNameById, getBlockTypeId } from '@/lib/blockManager';
@@ -25,6 +27,11 @@ import { useResultsHighlight } from '@/components/results/ResultsHighlightContex
 // nodeTypes를 컴포넌트 외부에서 정의하여 매번 새로 생성되지 않도록 함
 const nodeTypes = { 
   flowComponent: ComponentNode as any,
+};
+
+// edgeTypes를 컴포넌트 외부에서 정의
+const edgeTypes = {
+  default: CustomEdge,
 };
 
 // FlowBlock 생성 헬퍼 (BLOCK_TYPES 직접 사용)
@@ -129,6 +136,7 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
   const rf = useReactFlow();
   const { focusedBlockId, focusBlockById } = useResultsHighlight();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [selectedComponentId, setSelectedComponentId] = React.useState<number | undefined>(undefined);
 
 
   // Pipeline의 components를 사용하여 연결선 자동 생성
@@ -153,6 +161,7 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
         target: `comp-${nextComponent.id}`,
         sourceHandle: 'output',
         targetHandle: 'input',
+        type: 'default',
         animated: false,
       });
     }
@@ -240,9 +249,22 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
     requestAnimationFrame(() => {
       // try { console.log('[Canvas] fitView to', nodeId); } catch {}
       rf.fitView({ nodes: [node], padding: 0.25, duration: 600, maxZoom: 1.2 });
+      setSelectedComponentId(comp.id);
       focusBlockById(null);
     });
   }, [focusedBlockId, pipeline, rf, focusBlockById]);
+
+  // 타임라인 바에서 컴포넌트 클릭 시 해당 컴포넌트로 스크롤/포커스
+  const handleComponentClick = React.useCallback((componentId: number) => {
+    setSelectedComponentId(componentId);
+    const nodeId = `comp-${componentId}`;
+    const node = rf.getNode(nodeId as any);
+    if (!node) return;
+    
+    requestAnimationFrame(() => {
+      rf.fitView({ nodes: [node], padding: 0.25, duration: 600, maxZoom: 1.2 });
+    });
+  }, [rf]);
 
   const onDrop: React.DragEventHandler = async (e) => {
     // 블록 이동 처리
@@ -391,13 +413,22 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
   return (
     <div className={styles.canvas}>
         <div className={styles.flowContainer} ref={flowWrapperRef}>
+          {/* 타임라인 바 */}
+          {pipeline && pipeline.components.length > 0 && (
+            <TimelineBar
+              components={pipeline.components}
+              selectedComponentId={selectedComponentId}
+              onComponentClick={handleComponentClick}
+            />
+          )}
           {!readOnly && (
-            <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, display: 'flex', gap: 8 }}>
+            <div style={{ position: 'absolute', top: 72, right: 8, zIndex: 10, display: 'flex', gap: 8 }}>
               <button className="btn" onClick={() => setSettingsOpen(true)} disabled={!dbPipelineId}>계산 설정</button>
             </div>
           )}
           <ReactFlow
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           nodes={reactFlowNodes}
           edges={reactFlowEdges}
           onNodesChange={onNodesChange}

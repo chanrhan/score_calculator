@@ -243,7 +243,7 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
         return (
           <td 
             key={`dh-empty-${rowIndex}-${colIndex}`}
-            className="border border-gray-300 p-2"
+            className={styles.tableCell}
             style={{ minHeight: '40px', height: 'auto', verticalAlign: 'top' }}
           >
             {/* 빈 셀 (rowspan=0 또는 병합된 셀) */}
@@ -260,15 +260,15 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
     const blockColIndex = colIndex - divisionHeadCols;
     
     return (
-      <td key={`block-${rowIndex}-${colIndex}`} className="border border-gray-300 p-0" style={{ minHeight: '40px' }}>
+      <td key={`block-${rowIndex}-${colIndex}`} className={styles.tableCell} style={{ minHeight: '40px' }}>
         {fillCellContent(rowIndex, blockColIndex, blocks)}
       </td>
     );
   };
 
   return (
-    <div className="component-grid overflow-auto">
-      <table className="w-full border-collapse border border-gray-300">
+    <div className={styles.grid}>
+      <table className={styles.table}>
         <tbody>
           {React.useMemo(() => {
             // 전체 행을 순회하면서 각 행 렌더링

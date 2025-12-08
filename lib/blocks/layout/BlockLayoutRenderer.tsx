@@ -4,7 +4,14 @@
 import React from 'react';
 import { BlockInstance } from '../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
-import { Link2, ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { Link2, ArrowLeft, ArrowRight, X, MoreVertical, Trash2, Plus } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export interface RenderCellContext {
   readOnly: boolean;
@@ -100,7 +107,6 @@ export abstract class BlockLayoutRenderer {
     const blockTypeName = this.getBlockTypeName(block.block_type);
     const isColEditable = block.getStructure()?.col_editable || false;
     const isHovered = hoveredBlockId === block.block_id;
-    const shouldShowActions = isHovered || combineState?.isCombineMode;
 
     return (
       <td
@@ -123,92 +129,109 @@ export abstract class BlockLayoutRenderer {
         }}
       >
         <span title={tooltip || undefined}>{blockTypeName} 블록</span>
-        <div 
-          className={`${styles.blockActions} ${combineState?.isCombineMode ? styles.combineMode : ''}`}
-          style={{ opacity: shouldShowActions ? 1 : 0 }}
-        >
-          {/* 삭제 버튼 */}
-          {onBlockDelete && !readOnly && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onBlockDelete(block.block_id);
-              }}
-              className={styles.deleteButton}
-              title="삭제"
-            >
-              🗑️
-            </button>
-          )}
-          {/* 열 추가 버튼 */}
-          {isColEditable && !readOnly && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                block.addColumn();
-                onBlockChange?.(block.block_id, block);
-              }}
-              className={styles.addColumnButton}
-              title="열 추가"
-            >
-              +열
-            </button>
-          )}
-          {/* 결합 버튼 */}
-          {onBlockCombine && !readOnly && (
-            <>
-              {!combineState?.isCombineMode ? (
-                // 결합 모드가 아닌 경우: 일반 결합 버튼 표시
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onBlockCombine(block.block_id);
-                  }}
-                  className={styles.combineButton}
-                  title="결합"
-                >
-                  <Link2 className="w-4 h-4" />
-                </button>
-              ) : combineState.sourceBlockId === block.block_id ? (
-                // 결합 모드에서 소스 블록인 경우: 취소 버튼 표시
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onBlockCombine(block.block_id);
-                  }}
-                  className={`${styles.combineButton} ${styles.combineButtonSource}`}
-                  title="결합 취소"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              ) : (
-                // 결합 모드에서 다른 블록인 경우: 방향 버튼들 표시
-                <div className={styles.combineButtons}>
+        {!readOnly && (
+          <>
+            {/* 결합 모드일 때 직접 버튼들 표시 */}
+            {combineState?.isCombineMode && onBlockCombine && (
+              <div className={styles.blockActions}>
+                {combineState.sourceBlockId === block.block_id ? (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onBlockCombine(block.block_id, 'left');
+                      onBlockCombine(block.block_id);
                     }}
-                    className={styles.combineDirectionButton}
-                    title="왼쪽에 결합"
+                    className={`${styles.combineButton} ${styles.combineButtonSource}`}
+                    title="결합 취소"
                   >
-                    <ArrowLeft className="w-4 h-4" />
+                    <X className="w-4 h-4" />
                   </button>
+                ) : (
+                  <div className={styles.combineButtons}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onBlockCombine(block.block_id, 'left');
+                      }}
+                      className={styles.combineDirectionButton}
+                      title="왼쪽에 결합"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onBlockCombine(block.block_id, 'right');
+                      }}
+                      className={styles.combineDirectionButton}
+                      title="오른쪽에 결합"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {/* 일반 모드일 때 메뉴 버튼 표시 */}
+            {!combineState?.isCombineMode && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <button
+                    className={styles.menuButton}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onBlockCombine(block.block_id, 'right');
                     }}
-                    className={styles.combineDirectionButton}
-                    title="오른쪽에 결합"
+                    title="메뉴"
                   >
-                    <ArrowRight className="w-4 h-4" />
+                    <MoreVertical className="w-4 h-4" />
                   </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  {/* 삭제 메뉴 항목 */}
+                  {onBlockDelete && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onBlockDelete(block.block_id);
+                      }}
+                      className={styles.deleteMenuItem}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      삭제
+                    </DropdownMenuItem>
+                  )}
+                  {/* 결합 메뉴 항목 */}
+                  {onBlockCombine && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onBlockCombine(block.block_id);
+                      }}
+                    >
+                      <Link2 className="w-4 h-4 mr-2" />
+                      결합
+                    </DropdownMenuItem>
+                  )}
+                  {/* 열 추가 메뉴 항목 */}
+                  {isColEditable && (
+                    <>
+                      {(onBlockDelete || onBlockCombine) && <DropdownMenuSeparator />}
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          block.addColumn();
+                          onBlockChange?.(block.block_id, block);
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        열 추가
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </>
+        )}
       </td>
     );
   }

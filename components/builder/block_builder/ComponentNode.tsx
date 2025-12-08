@@ -122,12 +122,13 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
       >
         <span className={styles.dragHandleIcon}>⋮⋮</span>
       </div>
-      {/* 입력 핸들 */}
+      {/* 입력 핸들 - 중앙 위치 */}
       <Handle
         type="target"
         position={Position.Left}
         id="input"
-        className="w-3 h-3 bg-blue-500"
+        style={{ top: '50%', transform: 'translateY(-50%)' }}
+        className={styles.handle}
       />
 
       {/* 컴포넌트 헤더 */}
@@ -213,12 +214,13 @@ export default function ComponentNode({ pipelineId, data, selected }: Props) {
         />
       </div>
 
-      {/* 출력 핸들 */}
+      {/* 출력 핸들 - 중앙 위치 */}
       <Handle
         type="source"
         position={Position.Right}
         id="output"
-        className="w-3 h-3 bg-green-500"
+        style={{ top: '50%', transform: 'translateY(-50%)' }}
+        className={styles.handle}
       />
     </div>
   );

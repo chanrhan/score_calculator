@@ -52,7 +52,7 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
         
         // 캐시에 없으면 API에서 로드 (스토어에 캐싱됨)
         if (!dynamicMenu) {
-          dynamicMenu = await loadDynamicTokenMenu(selectedUnivId, menu_key)
+          dynamicMenu = await loadDynamicTokenMenu(selectedUnivId, menu_key) || undefined
         }
         
         if (dynamicMenu) {
