@@ -26,7 +26,7 @@ export const ApplySubjectLayout: {
       
       return (
         <div className={applySubjectStyles.header}>
-          <span className={applySubjectStyles.label}>반영교과</span>
+          <span className={applySubjectStyles.label}>옵션 : </span>
           <Token
             element={createTokenElement({
               menu_key: TOKEN_MENU_KEYS.INCLUDE_EXCLUDE,

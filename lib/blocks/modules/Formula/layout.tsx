@@ -50,34 +50,36 @@ export const FormulaLayout: {
       
       return (
         <div className={formulaStyles.body}>
-          <Formula
-            element={createFormulaElement({
-              menu_key: 'expr',
-              value: expr,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('expr', value);
-              }
-            }}
-          />
-          <span> = </span>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.VARIABLE,
-              value: outputProp,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('output_prop', value);
-              }
-            }}
-            autoFit={true}
-          />
+          <div className={formulaStyles.row}>
+            <Formula
+              element={createFormulaElement({
+                menu_key: 'expr',
+                value: expr,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('expr', value);
+                }
+              }}
+            />
+            <span className={formulaStyles.equals}> = </span>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.VARIABLE,
+                value: outputProp,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('output_prop', value);
+                }
+              }}
+              autoFit={true}
+            />
+          </div>
         </div>
       );
     },

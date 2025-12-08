@@ -19,3 +19,7 @@
   flex-wrap: wrap;
 }
 
+.body .label {
+  white-space: nowrap;
+}
+

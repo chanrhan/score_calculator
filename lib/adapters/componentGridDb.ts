@@ -639,7 +639,7 @@ export async function upsertAllComponentGrids(
           },
           data: {
             order: component.order,
-            name: component.name,
+            ...(component.name !== undefined && { name: component.name }),
             x: component.x || 0,
             y: component.y || 0,
             division_head_header: divisionHeadHeader,
@@ -682,7 +682,7 @@ export async function upsertAllComponentGrids(
             pipeline_id: BigInt(pipelineId),
             component_id: finalComponentId,
             order: finalOrder,
-            name: component.name,
+            ...(component.name !== undefined && { name: component.name }),
             x: component.x || 0,
             y: component.y || 0,
             division_head_header: divisionHeadHeader,

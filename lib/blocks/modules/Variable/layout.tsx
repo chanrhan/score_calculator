@@ -27,32 +27,38 @@ export const VariableLayout: {
       
       return (
         <div className={variableStyles.body}>
-          <InputField
-            element={createInputFieldElement({
-              value: varName,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('var_name', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Formula
-            element={createFormulaElement({
-              menu_key: 'expr',
-              value: expr,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('expr', value);
-              }
-            }}
-          />
+          <div className={variableStyles.row}>
+            <span className={variableStyles.label}>변수명:</span>
+            <InputField
+              element={createInputFieldElement({
+                value: varName,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('var_name', value);
+                }
+              }}
+              autoFit={true}
+            />
+          </div>
+          <div className={variableStyles.row}>
+            <span className={variableStyles.label}>수식:</span>
+            <Formula
+              element={createFormulaElement({
+                menu_key: 'expr',
+                value: expr,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('expr', value);
+                }
+              }}
+            />
+          </div>
         </div>
       );
     },

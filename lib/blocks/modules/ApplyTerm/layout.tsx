@@ -50,6 +50,7 @@ export const ApplyTermLayout: {
       
       return (
         <div className={applyTermStyles.body}>
+          <span className={applyTermStyles.label}>학기:</span>
           <InputField
             element={createInputFieldElement({
               value: terms,
@@ -63,6 +64,7 @@ export const ApplyTermLayout: {
             }}
             autoFit={true}
           />
+          <span className={applyTermStyles.label}>상위</span>
           <InputField
             element={createInputFieldElement({
               value: topCount,
@@ -76,6 +78,7 @@ export const ApplyTermLayout: {
             }}
             autoFit={true}
           />
+          <span className={applyTermStyles.label}>개</span>
         </div>
       );
     },

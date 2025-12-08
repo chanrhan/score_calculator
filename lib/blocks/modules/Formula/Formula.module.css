@@ -14,7 +14,21 @@
 
 .body {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.row {
+  display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
+}
+
+.equals {
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
 }
 

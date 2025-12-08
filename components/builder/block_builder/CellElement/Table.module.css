@@ -1,5 +1,7 @@
 .tableContainer {
-  /* 기본 컨테이너 스타일 */
+  position: relative;
+  width: 100%;
+  display: block;
 }
 
 .tableInfo {
@@ -8,11 +10,125 @@
   color: #4b5563;
 }
 
-.tableWrapper {
+/* 표 위쪽 버튼 바 */
+.actionBar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  align-items: center;
+}
+
+.actionBarGroup {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.actionButton {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  background-color: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 0.25rem;
-  overflow-x: auto;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionButtonIcon {
+  padding: 0.25rem;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.actionButtonIcon span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.actionButtonWithLabel {
+  padding: 0.25rem 0.5rem;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-width: auto;
+}
+
+.buttonLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  color: #374151;
+}
+
+.iconAdd {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #6b7280;
+}
+
+.iconDelete {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #ef4444;
+  line-height: 1;
+}
+
+.actionButton:hover:not(:disabled) .iconAdd {
+  color: #ffffff;
+}
+
+.actionButton:hover:not(:disabled) .iconDelete {
+  color: #ffffff;
+}
+
+.actionButton:hover:not(:disabled) .buttonLabel {
+  color: #ffffff;
+}
+
+.actionButton:hover:not(:disabled) {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.actionButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.actionButtonDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.actionButtonDisabled:hover {
+  background-color: #ffffff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.tableWrapper {
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
   max-width: 100%;
+  background-color: #ffffff;
+  position: relative;
 }
 
 .table {
@@ -23,23 +139,360 @@
   border-collapse: collapse;
 }
 
-.tableRow {
-  /* 기본 행 스타일 */
+/* 헤더 행 */
+.tableHeaderRow {
+  background-color: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
 }
 
-.tableRowHeader {
+.tableHeaderCell {
+  border-right: 1px solid #e5e7eb;
+  padding: 0.5rem 0.375rem;
+  font-weight: 500;
+  color: #374151;
+  text-align: left;
+  position: relative;
+  vertical-align: middle;
+}
+
+.headerCellContent {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  position: relative;
+}
+
+.headerLabel {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 행 핸들 영역 */
+.rowHandle {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
   background-color: #f9fafb;
+  position: relative;
+  vertical-align: middle;
+}
+
+.tableHeaderRow .rowHandle {
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* 행 액션 셀 */
+.rowActionCell {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+  vertical-align: middle;
+}
+
+.addRowArea {
+  height: 24px;
+}
+
+.addRowArea .rowHandle {
+  border-bottom: none;
+}
+
+.addRowArea .tableCell {
+  border-bottom: none;
+}
+
+.addRowArea .rowActionCell {
+  border-bottom: none;
+}
+
+.addColButtonArea {
+  width: 28px;
+  min-width: 28px;
+  padding: 0.25rem;
+  border-bottom: 2px solid #e5e7eb;
+  position: relative;
+  vertical-align: middle;
+}
+
+.tableRow {
+  transition: background-color 0.1s ease;
+}
+
+.tableRowEven {
+  background-color: #ffffff;
+}
+
+.tableRowOdd {
+  background-color: #f9fafb;
+}
+
+.tableRow:hover {
+  background-color: #f3f4f6 !important;
 }
 
 .tableCell {
   border-right: 1px solid #e5e7eb;
   border-bottom: 1px solid #e5e7eb;
-  padding: 0.25rem;
+  padding: 0.375rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 60px;
   max-width: 200px;
+  cursor: context-menu;
+  position: relative;
+}
+
+/* 추가/삭제 버튼 스타일 */
+.addRowButton,
+.addColButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+}
+
+.addRowButton:hover,
+.addColButton:hover {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.addRowButton:active,
+.addColButton:active {
+  transform: scale(0.95);
+}
+
+.deleteRowButton,
+.deleteColButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  background-color: #ffffff;
+  border: 1px solid #ef4444;
+  border-radius: 0.25rem;
+  color: #ef4444;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+}
+
+.deleteRowButton:hover,
+.deleteColButton:hover {
+  background-color: #ef4444;
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.deleteRowButton:active,
+.deleteColButton:active {
+  transform: scale(0.95);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 행 추가 버튼 위치 */
+.rowHandle .addRowButton {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.addRowArea .addRowButton {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.5;
+}
+
+.addRowArea:hover .addRowButton {
+  opacity: 1;
+}
+
+/* 열 추가 버튼 위치 */
+.headerCellContent .addColButton {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.addColButtonArea .addColButton {
+  opacity: 0.5;
+}
+
+.addColButtonArea:hover .addColButton {
+  opacity: 1;
+}
+
+/* 행 삭제 버튼 위치 */
+.rowActionCell .deleteRowButton {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
+/* 열 삭제 버튼 위치 */
+.headerCellContent .deleteColButton {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* 행 추가 버튼 (행 위쪽 외부) */
+.addRowButtonAbove {
+  position: absolute;
+  left: -28px;
+  top: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+  pointer-events: auto;
+}
+
+.addRowButtonAbove:hover {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.addRowButtonAbove:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* 열 추가 버튼 (열 왼쪽 외부) */
+.addColButtonLeft {
+  position: absolute;
+  top: -28px;
+  left: 0;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  margin: 0;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+  pointer-events: auto;
+}
+
+.addColButtonLeft:hover {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+  transform: translateX(-50%) scale(1.1);
+}
+
+.addColButtonLeft:active {
+  transform: translateX(-50%) scale(0.95);
+}
+
+/* 열 삭제 버튼 (열 왼쪽 외부) */
+.deleteColButtonLeft {
+  position: absolute;
+  top: -28px;
+  left: 0;
+  transform: translateX(-50%) translateY(-24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  background-color: #ffffff;
+  border: 1px solid #ef4444;
+  border-radius: 0.25rem;
+  color: #ef4444;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  animation: fadeIn 0.15s ease forwards;
+  pointer-events: auto;
+}
+
+.deleteColButtonLeft:hover {
+  background-color: #ef4444;
+  color: #ffffff;
+  transform: translateX(-50%) translateY(-24px) scale(1.1);
+}
+
+.deleteColButtonLeft:active {
+  transform: translateX(-50%) translateY(-24px) scale(0.95);
 }
 
 .tableInput {
@@ -48,34 +501,58 @@
   outline: none;
   font-size: 0.75rem;
   border: none;
-  padding: 0;
+  padding: 0.125rem 0.25rem;
   min-width: 0;
+  color: #111827;
 }
 
-.removeButton {
-  color: #ef4444;
-  font-size: 0.75rem;
+.tableInput:focus {
+  background-color: #ffffff;
+  border-radius: 0.25rem;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-.removeButton:hover {
-  color: #dc2626;
+/* 컨텍스트 메뉴 */
+.contextMenuOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background-color: transparent;
 }
 
-.removeButtonDisabled {
+.contextMenu {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 0.25rem;
+  min-width: 120px;
+}
+
+.contextMenuItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #374151;
+  background-color: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.contextMenuItem:hover:not(.contextMenuItemDisabled) {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.contextMenuItemDisabled {
   color: #9ca3af;
   cursor: not-allowed;
-}
-
-.addButton {
-  color: #3b82f6;
-  font-size: 0.75rem;
-}
-
-.addButton:hover {
-  color: #1d4ed8;
-}
-
-.tableActions {
-  padding: 0.5rem;
-  border-top: 1px solid #e5e7eb;
+  opacity: 0.5;
 }

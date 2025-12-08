@@ -28,49 +28,51 @@ export const AggregationLayout: {
       
       return (
         <div className={aggregationStyles.body}>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.VARIABLE,
-              value: inputProp,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('input_prop', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.AGGREGATION_FUNC,
-              value: func,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('func', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <span>→</span>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.VARIABLE,
-              value: outputProp,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('output_prop', value);
-              }
-            }}
-            autoFit={true}
-          />
+          <div className={aggregationStyles.row}>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.VARIABLE,
+                value: inputProp,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('input_prop', value);
+                }
+              }}
+              autoFit={true}
+            />
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.AGGREGATION_FUNC,
+                value: func,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('func', value);
+                }
+              }}
+              autoFit={true}
+            />
+            <span className={aggregationStyles.arrow}>→</span>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.VARIABLE,
+                value: outputProp,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('output_prop', value);
+                }
+              }}
+              autoFit={true}
+            />
+          </div>
         </div>
       );
     },

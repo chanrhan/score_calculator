@@ -31,62 +31,70 @@ export const TopSubjectLayout: {
       
       return (
         <div className={topSubjectStyles.body}>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.TOPSUBJECT_OPTION,
-              value: topsubjectOption,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('topsubject_option', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: target,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('target', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <InputField
-            element={createInputFieldElement({
-              value: topCount,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('top_count', Number(value) || 3);
-              }
-            }}
-            autoFit={true}
-          />
-          <List
-            element={createListElement({
-              item_type: 'OrderToken',
-              menu_key: TOKEN_MENU_KEYS.TOPSUBJECT_ORDER,
-              menu_key2: TOKEN_MENU_KEYS.ORDER,
-              value: topsubjectOrder,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('topsubject_order', Array.isArray(value) ? value : []);
-              }
-            }}
-          />
+          <div className={topSubjectStyles.row}>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.TOPSUBJECT_OPTION,
+                value: topsubjectOption,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('topsubject_option', value);
+                }
+              }}
+              autoFit={true}
+            />
+            <span className={topSubjectStyles.label}>기준</span>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
+                value: target,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('target', value);
+                }
+              }}
+              autoFit={true}
+            />
+            <span className={topSubjectStyles.label}>상위</span>
+            <InputField
+              element={createInputFieldElement({
+                value: topCount,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('top_count', Number(value) || 3);
+                }
+              }}
+              autoFit={true}
+            />
+            <span className={topSubjectStyles.label}>개</span>
+          </div>
+          <div className={topSubjectStyles.row}>
+            <span className={topSubjectStyles.label}>정렬:</span>
+            <List
+              element={createListElement({
+                item_type: 'OrderToken',
+                menu_key: TOKEN_MENU_KEYS.TOPSUBJECT_ORDER,
+                menu_key2: TOKEN_MENU_KEYS.ORDER,
+                value: topsubjectOrder,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('topsubject_order', Array.isArray(value) ? value : []);
+                }
+              }}
+            />
+          </div>
         </div>
       );
     },

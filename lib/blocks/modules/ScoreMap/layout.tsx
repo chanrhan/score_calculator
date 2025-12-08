@@ -51,52 +51,56 @@ export const ScoreMapLayout: {
       
       return (
         <div className={scoreMapStyles.body}>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: inputProp,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('input_prop', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <span>→</span>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: outputProp,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('output_prop', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <Table
-            element={createTableElement({
-              init_rows: 2,
-              init_cols: 3,
-              input_type: '원점수',
-              input_option: 'range',
-              output_type: '배점',
-              value: table,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('table', Array.isArray(value) ? value : []);
-              }
-            }}
-          />
+          <div className={scoreMapStyles.row}>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
+                value: inputProp,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('input_prop', value);
+                }
+              }}
+              autoFit={true}
+            />
+            <span className={scoreMapStyles.arrow}>→</span>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
+                value: outputProp,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('output_prop', value);
+                }
+              }}
+              autoFit={true}
+            />
+          </div>
+          <div className={scoreMapStyles.row}>
+            <Table
+              element={createTableElement({
+                init_rows: 2,
+                init_cols: 3,
+                input_type: '원점수',
+                input_option: 'range',
+                output_type: '배점',
+                value: table,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('table', Array.isArray(value) ? value : []);
+                }
+              }}
+            />
+          </div>
         </div>
       );
     },

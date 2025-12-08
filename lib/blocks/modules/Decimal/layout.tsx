@@ -29,49 +29,51 @@ export const DecimalLayout: {
       
       return (
         <div className={decimalStyles.body}>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
-              value: inputProp,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('input_prop', value);
-              }
-            }}
-            autoFit={true}
-          />
-          <span>소수점</span>
-          <InputField
-            element={createInputFieldElement({
-              value: decimalPlace,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('decimal_place', Number(value) || 2);
-              }
-            }}
-            autoFit={true}
-          />
-          <span>자리</span>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.DECIMAL_FUNC,
-              value: decimalFunc,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('decimal_func', value);
-              }
-            }}
-            autoFit={true}
-          />
+          <div className={decimalStyles.row}>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
+                value: inputProp,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('input_prop', value);
+                }
+              }}
+              autoFit={true}
+            />
+            <span className={decimalStyles.label}>소수점</span>
+            <InputField
+              element={createInputFieldElement({
+                value: decimalPlace,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('decimal_place', Number(value) || 2);
+                }
+              }}
+              autoFit={true}
+            />
+            <span className={decimalStyles.label}>자리</span>
+            <Token
+              element={createTokenElement({
+                menu_key: TOKEN_MENU_KEYS.DECIMAL_FUNC,
+                value: decimalFunc,
+                optional: false,
+                visible: true,
+              })}
+              onChange={(value) => {
+                if (!readOnly) {
+                  onChange?.('decimal_func', value);
+                }
+              }}
+              autoFit={true}
+            />
+          </div>
         </div>
       );
     },
