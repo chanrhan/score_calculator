@@ -235,21 +235,17 @@ export class GradeCalculationDataService {
         throw new Error(`Pipeline ID ${pipelineId}를 찾을 수 없습니다.`);
       }
 
+      // 각 component에 divisionHead 데이터 추가
       for (const component of pipeline.components ?? []) {
-        for (const block of component.blocks ?? []) {
-          if (block.block_type === BLOCK_TYPE.DIVISION && Array.isArray(block.body_cells)) {
-            // grid 형태 여부 확인: 2차원 배열이고, 첫 셀에 rowspan 속성이 존재하면 grid로 판단
-            const maybeRow = block.body_cells[0];
-            const maybeCell = Array.isArray(maybeRow) ? maybeRow[0] : undefined;
-            const isGrid = !!(maybeCell && typeof maybeCell === 'object' && 'rowspan' in maybeCell);
-            if (isGrid) {
-              const hierarchical = convertGridToHierarchical(block.body_cells as any);
-              const p2 = JSON.stringify(hierarchical)
-              const p1 = JSON.stringify(block.body_cells)
-              // Prisma JsonValue 호환을 위해 plain JSON으로 정규화
-              block.body_cells = JSON.parse(JSON.stringify(hierarchical)) as any;
-            }
-          }
+        // division_head_header, division_head_body, division_head_active를 component 객체에 포함
+        if (component.division_head_header !== null || component.division_head_body !== null) {
+          (component as any).divisionHead = {
+            header: (component.division_head_header as any) || [],
+            body: (component.division_head_body as any) || [],
+            isActive: component.division_head_active ?? true,
+          };
+        } else {
+          (component as any).divisionHead = null;
         }
       }
 

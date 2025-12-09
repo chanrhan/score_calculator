@@ -5,7 +5,7 @@ import type { Context, ComponentGridResult, TokenMenuStore } from '@/types/domai
 import { runCaseExecution } from './runCaseExecution';
 import { calcLog } from '@/lib/utils/calcLogger';
 import { BLOCK_TYPE } from '@/types/block-types';
-import { convertGridToHierarchical } from '../adapters/componentGridDb';
+import type { DivisionHeadData } from '@/types/division-head';
 
 export class ComponentGridExecutor {
   private tokenMenuStore: TokenMenuStore;
@@ -49,27 +49,24 @@ export class ComponentGridExecutor {
   private async executeComponentGrid(ctx: Context, component: any): Promise<Context> {
     calcLog(`📋 ComponentGrid ${component.component_id} 실행 시작...`);
     
-    // Division 블록 찾기 (ComponentGrid에는 하나의 Division 블록이 있어야 함)
-    const divisionBlock = component.blocks.find((block: any) => block.block_type === BLOCK_TYPE.DIVISION); // Division 블록 타입
+    // DivisionHead 데이터 가져오기
+    const divisionHead: DivisionHeadData | null = component.divisionHead && component.divisionHead.isActive === true
+      ? component.divisionHead
+      : null;
     
-    // if (!divisionBlock) {
-    //   throw new Error(`Component ${component.component_id}에 Division 블록이 없습니다.`);
-    // }
-    // Option B 적용: 로딩 단계에서 이미 변환 완료. 엔진에서는 입력 불변성을 유지한다.
-    // console.log('ctx.subjects.length', ctx.subjects.length);
-    
-    // Division 블록의 RightChain들 (다른 블록들) 찾기
+    // 모든 블록들을 RightChain으로 사용 (Division 블록은 더 이상 block 테이블에 없음)
     const rightChainBlocks = component.blocks
-      .filter((block: any) => block.block_type !== BLOCK_TYPE.DIVISION) // Division 블록 제외
+      .filter((block: any) => block.block_type !== BLOCK_TYPE.DIVISION) // Division 블록 제외 (혹시 남아있을 수 있음)
       .sort((a: any, b: any) => a.order - b.order);
 
-    calcLog(`  🔗 컴포넌트 내 블록 개수 : ${rightChainBlocks.length + 1}개`);
+    const blockCount = rightChainBlocks.length + (divisionHead ? 1 : 0);
+    calcLog(`  🔗 컴포넌트 내 블록 개수 : ${blockCount}개`);
 
     // Case 실행 엔진으로 DFS 탐색 및 케이스 실행
     const caseExecutor = new runCaseExecution(this.tokenMenuStore);
     const result = await caseExecutor.executeCases(
       ctx,
-      divisionBlock,
+      divisionHead,
       rightChainBlocks
     );
 

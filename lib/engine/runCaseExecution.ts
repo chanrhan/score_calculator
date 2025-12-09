@@ -7,6 +7,8 @@ import { BlockExecutorFactory } from './BlockExecutorFactory';
 import { BLOCK_TYPE_MAP } from '@/types/block-types';
 import { calcLog } from '@/lib/utils/calcLogger';
 import { ca } from 'date-fns/locale';
+import type { DivisionHeadData } from '@/types/division-head';
+import { convertGridToHierarchical } from '@/lib/adapters/componentGridDb';
 
 export class runCaseExecution {
   private tokenMenuStore: TokenMenuStore;
@@ -20,7 +22,7 @@ export class runCaseExecution {
    */
   async executeCases(
     ctx: Context,
-    divisionBlock: any,
+    divisionHead: DivisionHeadData | null,
     rightChainBlocks: any[]
   ): Promise<Context> {
 
@@ -28,7 +30,7 @@ export class runCaseExecution {
     let currentCtx = { ...context };
     let currentSubjects = [...ctx.subjects];
 
-    if (!divisionBlock) {
+    if (!divisionHead || !divisionHead.isActive) {
       calcLog(`  🌳 구분 블록 없는 케이스 실행`);
       const filteredSubjectsCount = currentSubjects.filter(subject => subject.filtered_block_id > 0).length;
       const result = await this.executeCaseBlocks(ctx, currentSubjects, rightChainBlocks, 0);
@@ -49,17 +51,79 @@ export class runCaseExecution {
       return currentCtx;
     }
 
-    const hierarchicalCells = divisionBlock.body_cells as HierarchicalCell[];
+    // division_head_body를 HierarchicalCell[]로 변환
+    // division_head_body는 Array<Array<Record<string, any>>> 형태
+    // 각 셀은 { rowspan: number, ...기타 속성들 } 형태
+    // convertGridToHierarchical는 { values: Record<string, any> | null; rowspan?: number }[][] 형태를 기대
+    // division_type에 따라 적절한 배열 형태로 변환하여 기존 filterSubjectsByCell과 호환되도록 함
+    const grid = divisionHead.body.map((row, rowIndex) => 
+      row.map((cell, colIndex) => {
+        const { rowspan, ...otherProps } = cell;
+        const divisionType = divisionHead.header[colIndex]?.division_type;
+        
+        // division_type에 따라 적절한 배열 형태로 변환
+        let values: Record<string, any> | null = null;
+        if (Object.keys(otherProps).length > 0) {
+          values = {};
+          
+          // division_type에 따라 적절한 속성을 배열로 변환
+          switch (divisionType) {
+            case 'graduateYear':
+              values[0] = otherProps.year ?? null;
+              values[1] = otherProps.compare_option ?? null;
+              values[2] = otherProps.compare_option ?? null; // compare_option을 인덱스 2에도 저장
+              break;
+            case 'graduateGrade':
+              values[0] = otherProps.grade ?? null;
+              break;
+            case 'subjectGroup':
+              values[0] = otherProps.subject_groups ?? [];
+              break;
+            case 'admissionCode':
+              values[0] = otherProps.codes ?? [];
+              values[2] = otherProps.exclude_codes ?? []; // exclude_codes가 있다면
+              break;
+            case 'majorCode':
+              values[0] = otherProps.codes ?? [];
+              values[2] = otherProps.exclude_codes ?? []; // exclude_codes가 있다면
+              break;
+            case 'applicantScCode':
+              values[0] = otherProps.type ?? null;
+              break;
+            case 'subjectSeparationCode':
+              values[0] = otherProps.codes ?? [];
+              break;
+            case 'subjectGroupUnitSum':
+              values[0] = otherProps.value ?? null;
+              values[1] = otherProps.compare_option ?? null;
+              break;
+            case 'filtered_block_id':
+              values[0] = otherProps.value ?? null;
+              break;
+            default:
+              // 기본적으로 모든 속성을 그대로 유지
+              values = otherProps;
+          }
+        }
+        
+        return {
+          values,
+          rowspan: rowspan ?? 1
+        };
+      })
+    );
+    
+    const hierarchicalCells = convertGridToHierarchical(grid);
 
 
     // hierarchicalCells가 유효한지 확인
     if (!hierarchicalCells || !Array.isArray(hierarchicalCells)) {
-      calcLog(`  ⚠️ Division 블록 ${divisionBlock.block_id}에 유효한 body_cells가 없습니다.`);
+      calcLog(`  ⚠️ Division Head에 유효한 body가 없습니다.`);
       return context;
     }
 
     // DFS 탐색을 통해 리프 셀들을 찾아서 케이스 실행
-    const leafCases = this.extractLeafCases(hierarchicalCells, currentSubjects, currentCtx, divisionBlock);
+    const leafCases = this.extractLeafCases(hierarchicalCells, currentSubjects, currentCtx, divisionHead);
     // console.log(`  📋 발견된 케이스: ${leafCases.length}개`);
 
     for (let i = 0; i < leafCases.length; i++) {
@@ -108,7 +172,7 @@ export class runCaseExecution {
     cells: HierarchicalCell[],
     initialSubjects: Subject[],
     initialContext: Context,
-    divisionBlock: any
+    divisionHead: DivisionHeadData
   ): DivisionCase[] {
     const leafCases: DivisionCase[] = [];
 
@@ -129,8 +193,8 @@ export class runCaseExecution {
       const currentPath = [...path, cell.type];
 
       // 현재 셀의 조건으로 과목들을 필터링 (context는 참조용으로 그대로 전달)
-      // const headerIndex = this.calculateHeaderIndex(cell, divisionBlock);
-      const headerCell = divisionBlock.header_cells?.[cell.colIndex]?.[0];
+      // divisionHead.header는 Array<{ division_type: string }> 형태
+      const headerCell = divisionHead.header[cell.colIndex]?.division_type;
 
 
       const currentProcessingSubjects = this.filterSubjectsByCell(
@@ -341,22 +405,6 @@ export class runCaseExecution {
     return filteredSubjects;
   }
 
-  /**
-   * 셀의 깊이(depth)에 해당하는 header_cells 인덱스 계산
-   */
-  private calculateHeaderIndex(cell: HierarchicalCell, divisionBlock: any): number {
-    // 셀의 깊이(level)를 기반으로 header_cells의 인덱스 계산
-    // 일반적으로 깊이 0 = 첫 번째 헤더, 깊이 1 = 두 번째 헤더 등
-    const headerIndex = cell.level;
-
-    // header_cells 배열 범위 확인
-    const maxIndex = (divisionBlock.header_cells?.length || 1) - 1;
-    const validIndex = Math.min(headerIndex, maxIndex);
-
-    // console.log(`        📊 깊이 ${cell.level} → Header 인덱스 ${validIndex} (최대: ${maxIndex})`);
-
-    return validIndex;
-  }
 
   // private async executeSingleCaseBlock(
   //   ctx: Context,
@@ -502,10 +550,10 @@ export class runCaseExecution {
         
       case 2: // ApplySubject
         if (type === 'header') {
-          // header: { text_content, include_option }
+          // header: { include_option: '0' | '1' }
           // Executor는 headerRowCells[0]?.[0]에서 includeMode를 읽음 (0=include, 1=exclude)
-          const includeOption = data.include_option || 'include';
-          return [includeOption === 'include' ? 0 : 1];
+          const includeOption = data.include_option || '0';
+          return [includeOption === '0' ? 0 : 1];
         } else {
           // body: { subject_groups: [...] }
           return [data.subject_groups || []];
@@ -513,70 +561,80 @@ export class runCaseExecution {
         
       case 3: // GradeRatio
         if (type === 'header') {
-          // header: 각 열의 학년 정보
+          // header: 각 열의 학년 정보 [{ grade: string }]
           // Executor는 headerRowCells[0]에서 각 항목의 [0]을 읽음
           return Array.isArray(data) ? data.map((item: any) => [item.grade || item]) : [[data]];
         } else {
-          // body: 각 열의 비율 정보
+          // body: 각 열의 비율 정보 [{ ratio: number }]
           // Executor는 bodyRowCells[0]에서 각 항목의 [0]을 읽음
           return Array.isArray(data) ? data.map((item: any) => [item.ratio || item]) : [[data]];
         }
         
       case 4: // ApplyTerm
-        if (type === 'body') {
-          // body: { terms: [...], top_terms: number }
+        if (type === 'header') {
+          // header: { include_option: '0' | '1' }
+          const includeOption = data.include_option || '0';
+          return [includeOption === '0' ? 0 : 1];
+        } else {
+          // body: { terms: string, top_count: number, use_top_count?: boolean }
           // Executor는 bodyRowCells[0]?.[0]에서 termsString, bodyRowCells[0]?.[2]에서 topTerms를 읽음
-          const terms = data.terms || [];
-          const termsString = terms.join('|');
-          return [termsString, null, data.top_terms || 0];
+          const terms = data.terms || '';
+          const termsString = Array.isArray(terms) ? terms.join('|') : terms;
+          return [termsString, null, data.top_count || 0];
         }
-        break;
         
       case 5: // TopSubject
         if (type === 'body') {
-          // body: { mode, score_type, top_count, sort_orders }
-          // Executor는 bodyRowCells[0]?.[0]=mode, [1]=scoreType, [3]=topSliceNumber, [5]=sortOrders를 읽음
+          // body: { topsubject_option: string, target: string, top_count: number, topsubject_order: string[] }
+          // Executor는 bodyRowCells[0]?.[0]=mode, [1]=scoreType ([item, asc]), [3]=topSliceNumber, [5]=sortOrders를 읽음
+          const target = data.target || 'finalScore';
+          // target을 [item, asc] 형식으로 변환 (기본값: 내림차순, asc=0)
+          const scoreType = Array.isArray(target) ? target : [target, 0];
           return [
-            data.mode || 1,
-            data.score_type || null,
+            Number(data.topsubject_option) || 1,
+            scoreType,
             null,
             data.top_count || 0,
             null,
-            data.sort_orders || []
+            data.topsubject_order || []
           ];
         }
         break;
         
       case 6: // SubjectGroupRatio
         if (type === 'header') {
-          // header: 각 열의 교과군 정보
-          return Array.isArray(data) ? data.map((item: any) => [item.subject_group || item]) : [[data]];
+          // header: 각 열의 교과군 정보 [{ subject_groups: string[] }]
+          // Executor는 headerRowCells[0]에서 각 항목이 subject_groups 배열
+          return Array.isArray(data) ? data.map((item: any) => item.subject_groups || item) : [data];
         } else {
-          // body: 각 열의 비율 정보
+          // body: 각 열의 비율 정보 [{ ratio: number }]
+          // Executor는 bodyRowCells[0]에서 각 항목의 [0]이 ratio
           return Array.isArray(data) ? data.map((item: any) => [item.ratio || item]) : [[data]];
         }
         
       case 7: // SeparationRatio
         if (type === 'header') {
-          // header: 각 열의 과목구분 정보
-          return Array.isArray(data) ? data.map((item: any) => [item.separation || item]) : [[data]];
+          // header: 각 열의 과목구분 정보 [{ subject_separations: string[] }]
+          // Executor는 headerRowCells[0]에서 각 항목의 [0]이 subject_separations 배열
+          return Array.isArray(data) ? data.map((item: any) => [item.subject_separations || item]) : [[data]];
         } else {
-          // body: 각 열의 비율 정보
+          // body: 각 열의 비율 정보 [{ ratio: number }]
+          // Executor는 bodyRowCells[0]에서 각 항목의 [0]이 ratio
           return Array.isArray(data) ? data.map((item: any) => [item.ratio || item]) : [[data]];
         }
         
       case 8: // ScoreMap
         if (type === 'header') {
-          // header: { variable_scope, filter_option }
+          // header: { var_scope: string }
           // Executor는 headerRowCells[0]?.[1]=variableScope, [2]=filterOption을 읽음
-          return [null, data.variable_scope || 0, data.filter_option || 0];
+          return [null, Number(data.var_scope) || 0, 0]; // filter_option은 instance에 없으므로 기본값 0
         } else {
-          // body: { input_type, input_range, output_type, table }
+          // body: { input_prop: string, output_prop: string, table: any[][] }
           // Executor는 bodyRowCells[0]?.[0]=inputType, [1]=inputRange, [2]=outputType, [4]=table을 읽음
           return [
-            data.input_type || null,
-            data.input_range || -1,
-            data.output_type || null,
+            data.input_prop || null,
+            -1, // input_range는 instance에 없으므로 기본값 -1
+            data.output_prop || null,
             null,
             data.table || null
           ];
@@ -584,45 +642,54 @@ export class runCaseExecution {
         
       case 9: // Formula
         if (type === 'header') {
-          // header: { variable_scope }
-          return [null, data.variable_scope || 0];
+          // header: { var_scope: string }
+          return [null, Number(data.var_scope) || 0];
         } else {
-          // body: { score_type, expr }
-          return [data.score_type || null, null, data.expr || null];
+          // body: { expr: string, output_prop: string }
+          // Executor는 bodyRowCells[0]?.[0]=scoreType, [2]=expr을 읽음
+          return [data.output_prop || null, null, data.expr || null];
         }
         
       case 11: // Condition
         if (type === 'header') {
-          // header: { variable_scope }
-          return [null, data.variable_scope || 0];
+          // header: { var_scope: string }
+          return [null, Number(data.var_scope) || 0];
         } else {
-          // body: { conditions: [...] }
-          return [data.conditions || []];
+          // body: { exprs: any[] }
+          // Executor는 bodyRowCells[0]?.[0]에서 exprs 배열을 읽음
+          return [data.exprs || []];
         }
         
       case 12: // Aggregation
-        if (type === 'header') {
-          // header: { variable_scope }
-          return [null, data.variable_scope || 0];
-        } else {
-          // body: { input_type, func, output_type }
-          return [data.input_type || null, data.func || 0, null, data.output_type || null];
+        if (type === 'body') {
+          // body: { input_prop: string, func: string, output_prop: string }
+          // Executor는 bodyRowCells[0]?.[0]=inputType, [1]=func, [3]=outputType을 읽음
+          return [data.input_prop || null, Number(data.func) || 0, null, data.output_prop || null];
         }
+        break;
         
       case 13: // Ratio
         if (type === 'body') {
-          // body: { ratio, score_type }
-          return [data.ratio || 0, data.score_type || null];
+          // body: { ratio: number }
+          // Executor는 bodyRowCells[0]?.[0]=ratio, [1]=scoreType을 읽음
+          return [data.ratio || 0, null]; // score_type은 instance에 없으므로 null
         }
         break;
         
       case 14: // Decimal
         if (type === 'header') {
-          // header: { variable_scope }
-          return [null, data.variable_scope || 0];
+          // header: { var_scope: string } (instance에 없지만 Executor가 기대함)
+          return [null, 0]; // var_scope는 instance에 없으므로 기본값 0
         } else {
-          // body: { score_type, decimal_places, option }
-          return [data.score_type || null, null, data.decimal_places || 0, null, data.option || 0];
+          // body: { input_prop: string, decimal_place: number, decimal_func: string }
+          // Executor는 bodyRowCells[0]?.[0]=scoreType, [2]=decimalPlaces, [4]=option을 읽음
+          return [
+            data.input_prop || null,
+            null,
+            data.decimal_place || 0,
+            null,
+            Number(data.decimal_func) || 0
+          ];
         }
     }
     
