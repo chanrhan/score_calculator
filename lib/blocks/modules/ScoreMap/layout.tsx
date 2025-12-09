@@ -8,7 +8,7 @@ import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent, LayoutRenderContext } from '../common/types';
 import { createTokenElement, createTableElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
-import { Table } from '@/components/builder/block_builder/CellElement/Table';
+import { TableModal } from '@/components/builder/block_builder/CellElement/TableModal';
 import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import scoreMapStyles from './ScoreMap.module.css';
@@ -73,7 +73,7 @@ export const ScoreMapLayout: {
             <span className={scoreMapStyles.arrow}> 로 매핑</span>
           </div>
           <div className={scoreMapStyles.row}>
-            <Table
+            <TableModal
               element={createTableElement({
                 init_rows: 2,
                 init_cols: 3,

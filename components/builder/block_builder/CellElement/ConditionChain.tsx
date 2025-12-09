@@ -5,7 +5,7 @@ import type { ConditionChainElement, ConditionChainItemType } from '@/types/bloc
 import { Token } from './Token'
 import { Text } from './Text'
 import { InputField } from './InputField'
-import { Formula } from './Formula'
+import { FormulaModal } from './FormulaModal'
 import { SelectionInput } from './SelectionInput'
 import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus'
 import styles from './ConditionChain.module.css'
@@ -145,7 +145,7 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
         return <Text element={{ ...(field as any), content: String((field as any).content ?? '') }} />
       case 'Formula':
         return (
-          <Formula
+          <FormulaModal
             element={{ ...(field as any), value: fieldValue }}
             onChange={(v) => updateItemAt(rowIndex, actualColIndex, v)}
             varScope={varScope}

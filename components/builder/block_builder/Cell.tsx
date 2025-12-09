@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { CellElement } from '@/types/block-structure'
-import { Token, Text, InputField, Formula, Table, List, ConditionChain, SelectionInput, OrderToken } from './CellElement'
+import { Token, Text, InputField, Formula, Table, List, ConditionChain, SelectionInput, OrderToken, TableModal, FormulaModal } from './CellElement'
 import { BLOCK_TYPE } from '@/types/block-types'
 import { getBlockTypeNameById } from '@/lib/blockManager'
 import { getBlockType } from '@/types/block-structure'
@@ -21,7 +21,8 @@ interface CellProps {
 const CellElementRenderer: React.FC<{ 
   element: CellElement
   onChange?: (value: any) => void
-}> = ({ element, onChange }) => {
+  varScope?: '0' | '1'
+}> = ({ element, onChange, varScope }) => {
   // console.table(element);
   switch (element.type) {
     case 'Token':
@@ -33,9 +34,9 @@ const CellElementRenderer: React.FC<{
     case 'SelectionInput':
       return <SelectionInput element={element as any} onChange={onChange} />
     case 'Formula':
-      return <Formula element={element as any} onChange={onChange} />
+      return <FormulaModal element={element as any} onChange={onChange} varScope={varScope} />
     case 'Table':
-      return <Table element={element as any} onChange={onChange} />
+      return <TableModal element={element as any} onChange={onChange} />
     case 'List':
       return <List element={element as any} onChange={onChange} />
     case 'ConditionChain':

@@ -8,7 +8,7 @@ import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent, LayoutRenderContext } from '../common/types';
 import { createTokenElement, createFormulaElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
-import { Formula } from '@/components/builder/block_builder/CellElement/Formula';
+import { FormulaModal } from '@/components/builder/block_builder/CellElement/FormulaModal';
 import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import formulaStyles from './Formula.module.css';
@@ -36,7 +36,7 @@ export const FormulaLayout: {
       return (
         <div className={formulaStyles.body}>
           <div className={formulaStyles.row}>
-            <Formula
+            <FormulaModal
               element={createFormulaElement({
                 menu_key: 'variable',
                 value: expr,

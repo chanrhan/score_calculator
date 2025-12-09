@@ -5,7 +5,7 @@ import type { ListElement } from '@/types/block-structure'
 import { Token } from './Token'
 import { Text } from './Text'
 import { InputField } from './InputField'
-import { Formula } from './Formula'
+import { FormulaModal } from './FormulaModal'
 import styles from './List.module.css'
 import { OrderToken } from './OrderToken'
 
@@ -81,7 +81,7 @@ export const List: React.FC<ListProps> = ({ element, onChange, className = '' })
         return <Text element={{ type: 'Text', content: String(itemValue ?? ''), ...base }} />
       case 'Formula':
         return (
-          <Formula
+          <FormulaModal
             element={{ type: 'Formula', value: itemValue, menu_key: '', ...base }}
             onChange={(v) => updateItemAt(index, v)}
           />
