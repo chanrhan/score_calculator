@@ -127,34 +127,64 @@ function createRowTemplateForGeneralBlock(colCount: number): any[] {
   return Array.from({ length: colCount }, () => [null]);
 }
 
+/**
+ * 블록 타입에 따라 빈 바디 행을 생성합니다.
+ * 각 블록 타입의 BlockInstance 생성자가 빈 객체를 받으면 기본값으로 초기화하므로,
+ * 빈 객체 {}를 생성하는 것이 안전합니다.
+ */
+function createEmptyBodyRowForBlock(block: FlowBlock): any {
+  // body_cells의 첫 번째 행을 확인하여 구조 파악
+  if (block.body_cells && Array.isArray(block.body_cells) && block.body_cells.length > 0) {
+    const firstRow = block.body_cells[0];
+    // 객체 형태인 경우 (예: { var_name: '', expr: '' })
+    if (typeof firstRow === 'object' && firstRow !== null && !Array.isArray(firstRow)) {
+      // 빈 객체 반환 (BlockInstance 생성자에서 기본값으로 채워짐)
+      return {};
+    }
+    // 배열 형태인 경우 (예: [[null], [null]])
+    if (Array.isArray(firstRow)) {
+      const colCount = block.header_cells?.length || 0;
+      return createRowTemplateForGeneralBlock(colCount);
+    }
+  }
+  
+  // 기본값: 빈 객체 (대부분의 블록이 객체 형태 사용)
+  return {};
+}
+
 function normalizeGeneralBlockBodyRows(block: FlowBlock, targetRowCount: number): FlowBlock {
   const cloned = deepClone(block);
   const colCount = cloned.header_cells?.length || 0;
   if (!Array.isArray(cloned.body_cells)) cloned.body_cells = [] as any;
 
   if (cloned.body_cells.length === 0) {
+    // 빈 body_cells인 경우, 빈 행 템플릿 생성
     cloned.body_cells = Array.from({ length: targetRowCount }, () =>
-      createRowTemplateForGeneralBlock(colCount)
+      createEmptyBodyRowForBlock(cloned)
     ) as any;
   } else if (cloned.body_cells.length < targetRowCount) {
-    const lastRow = deepClone(
-      cloned.body_cells[cloned.body_cells.length - 1] ?? createRowTemplateForGeneralBlock(colCount)
-    );
+    // 행이 부족한 경우, 빈 행을 추가 (마지막 행 복제하지 않음)
+    const emptyRowTemplate = createEmptyBodyRowForBlock(cloned);
     while (cloned.body_cells.length < targetRowCount) {
-      cloned.body_cells.push(deepClone(lastRow));
+      cloned.body_cells.push(deepClone(emptyRowTemplate));
     }
   } else if (cloned.body_cells.length > targetRowCount) {
     cloned.body_cells = cloned.body_cells.slice(0, targetRowCount) as any;
   }
 
+  // 열 수 맞추기 (배열 형태인 경우에만)
   cloned.body_cells = cloned.body_cells.map((row: any) => {
     const newRow = deepClone(row);
-    if (newRow.length < colCount) {
-      const templateCell = [null];
-      while (newRow.length < colCount) newRow.push(deepClone(templateCell));
-    } else if (newRow.length > colCount) {
-      newRow.length = colCount;
+    // 배열 형태인 경우에만 열 수 조정
+    if (Array.isArray(newRow)) {
+      if (newRow.length < colCount) {
+        const templateCell = [null];
+        while (newRow.length < colCount) newRow.push(deepClone(templateCell));
+      } else if (newRow.length > colCount) {
+        newRow.length = colCount;
+      }
     }
+    // 객체 형태인 경우는 그대로 유지 (BlockInstance에서 처리)
     return newRow;
   }) as any;
 
