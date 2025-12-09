@@ -86,12 +86,23 @@ function renderTableCell({
     const divisionHeadCols = header.length
     if (colIndex === 0 && divisionHeadCols > 0) {
       const handleNameBlur = () => {
-        if (setIsEditingName) setIsEditingName(false)
-        if (onComponentNameChange && editedName !== componentName) {
-          onComponentNameChange(editedName || 'Component')
-        } else if (setEditedName) {
-          setEditedName(componentName || 'Component')
+        // 편집 완료 시 빈 값이면 원래 값으로 복원
+        const trimmedName = editedName?.trim() || ''
+        if (!trimmedName) {
+          // 빈 값이면 원래 값으로 복원하고 편집 종료
+          if (setEditedName) setEditedName(componentName || 'Component')
+          if (setIsEditingName) setIsEditingName(false)
+          return
         }
+        // 값이 있고 변경되었을 때만 저장
+        if (onComponentNameChange && trimmedName !== componentName) {
+          onComponentNameChange(trimmedName)
+        } else if (setEditedName && trimmedName !== editedName) {
+          // 공백만 제거된 경우 editedName 업데이트
+          setEditedName(trimmedName)
+        }
+        // 편집 종료
+        if (setIsEditingName) setIsEditingName(false)
       }
       
       const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -114,8 +125,10 @@ function renderTableCell({
             {isEditingName ? (
               <input
                 type="text"
-                value={editedName || componentName || 'Component'}
-                onChange={(e) => setEditedName && setEditedName(e.target.value)}
+                value={editedName ?? ''}
+                onChange={(e) => {
+                  if (setEditedName) setEditedName(e.target.value);
+                }}
                 onBlur={handleNameBlur}
                 onKeyDown={handleNameKeyDown}
                 className="font-semibold text-sm border-2 border-blue-500 rounded px-2 py-1 outline-none"
@@ -444,9 +457,12 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
   const [isEditingName, setIsEditingName] = React.useState(false)
   const [editedName, setEditedName] = React.useState(componentName || 'Component')
   
+  // componentName prop 변경 시 editedName 업데이트 (편집 중이 아닐 때만)
   React.useEffect(() => {
-    setEditedName(componentName || 'Component')
-  }, [componentName])
+    if (!isEditingName) {
+      setEditedName(componentName || 'Component')
+    }
+  }, [componentName, isEditingName])
 
   // 테이블 셀 형태로 렌더링하는 경우
   if (renderAsTableCell && rowIndex !== undefined && colIndex !== undefined) {

@@ -97,17 +97,32 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   const [isEditingName, setIsEditingName] = React.useState(false);
   const [editedName, setEditedName] = React.useState(name || '');
   
-  // name prop 변경 시 editedName 업데이트
+  // name prop 변경 시 editedName 업데이트 (편집 중이 아닐 때만)
   React.useEffect(() => {
-    setEditedName(name || '');
-  }, [name]);
-  
-  // 이름 편집 완료 핸들러
-  const handleNameBlur = () => {
-    setIsEditingName(false);
-    if (onNameChange && editedName !== name) {
-      onNameChange(editedName);
+    if (!isEditingName) {
+      setEditedName(name || '');
     }
+  }, [name, isEditingName]);
+  
+  // 이름 편집 완료 핸들러 (blur 시점에만 호출됨)
+  const handleNameBlur = () => {
+    // 편집 완료 시 빈 값이면 원래 값으로 복원
+    const trimmedName = editedName.trim();
+    if (!trimmedName) {
+      // 빈 값이면 원래 값으로 복원하고 편집 종료
+      setEditedName(name || '');
+      setIsEditingName(false);
+      return;
+    }
+    // 값이 있고 변경되었을 때만 저장
+    if (onNameChange && trimmedName !== name) {
+      onNameChange(trimmedName);
+    } else if (trimmedName !== editedName) {
+      // 공백만 제거된 경우 editedName 업데이트
+      setEditedName(trimmedName);
+    }
+    // 편집 종료
+    setIsEditingName(false);
   };
   
   // Enter 키로 편집 완료
