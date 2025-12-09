@@ -5,6 +5,7 @@
 export interface TokenMenuItem {
   label: string
   value: string
+  scope?: number // 0: 과목, 1: 학생, 2: 상관없음(기본값)
 }
 
 export interface TokenMenu {
@@ -75,12 +76,12 @@ export const EXTENDED_SCORE_TYPE_MENU: TokenMenu = {
   key: 'extended_score_type',
   name: '점수 유형(확장)',
   items: [
-    { label: '원점수', value: 'originalScore' },
-    { label: '석차등급', value: 'rankingGrade' },
-    { label: '성취도등급', value: 'achievement' },
-    { label: '평어등급', value: 'assessment' },
-    { label: '기준점수', value: 'score' },
-    { label: '최종점수', value: 'finalScore' },
+    { label: '원점수', value: 'originalScore', scope: 0 }, // 과목
+    { label: '석차등급', value: 'rankingGrade', scope: 0 }, // 과목
+    { label: '성취도등급', value: 'achievement', scope: 0 }, // 과목
+    { label: '평어등급', value: 'assessment', scope: 0 }, // 과목
+    { label: '기준점수', value: 'score', scope: 0 }, // 과목
+    { label: '최종점수', value: 'finalScore', scope: 2 }, // 상관없음
   ]
 } as const
 
@@ -146,11 +147,11 @@ export const SCORE_TYPE_MENU: TokenMenu = {
   key: 'score_type',
   name: '점수 유형',
   items: [
-    { label: '원점수', value: 'originalScore' },
-    { label: '석차등급', value: 'rankingGrade' },
-    { label: '성취도등급', value: 'achievement' },
-    { label: '평어등급', value: 'assessment' },
-    { label: '기준점수', value: 'score' },
+    { label: '원점수', value: 'originalScore', scope: 0 }, // 과목
+    { label: '석차등급', value: 'rankingGrade', scope: 0 }, // 과목
+    { label: '성취도등급', value: 'achievement', scope: 0 }, // 과목
+    { label: '평어등급', value: 'assessment', scope: 0 }, // 과목
+    { label: '기준점수', value: 'score', scope: 0 }, // 과목
   ]
 } as const
 
@@ -198,16 +199,16 @@ export const VARIABLE_MENU: TokenMenu = {
   key: 'variable',
   name: '변수',
   items: [
-    { label: '원점수', value: 'originalScore' },
-    { label: '석차등급', value: 'rankingGrade' },
-    { label: '성취도점수', value: 'achievement' },
-    { label: '평어점수', value: 'assessment' },
-    { label: '기준점수', value: 'score' },
-    { label: '최종점수', value: 'finalScore' },
-    { label: '이수단위', value: 'unit' },
-    { label: '필터링 블록 ID', value: 'filtered_block_id' },
-    { label: '평균', value: 'avgScore' },
-    { label: '표준편차', value: 'standardDeviation' },
+    { label: '원점수', value: 'originalScore', scope: 0 }, // 과목
+    { label: '석차등급', value: 'rankingGrade', scope: 0 }, // 과목
+    { label: '성취도점수', value: 'achievement', scope: 0 }, // 과목
+    { label: '평어점수', value: 'assessment', scope: 0 }, // 과목
+    { label: '기준점수', value: 'score', scope: 0 }, // 과목
+    { label: '최종점수', value: 'finalScore', scope: 2 }, // 상관없음 (학생/과목 모두)
+    { label: '이수단위', value: 'unit', scope: 0 }, // 과목
+    { label: '필터링 블록 ID', value: 'filtered_block_id', scope: 0 }, // 과목
+    { label: '평균', value: 'avgScore', scope: 1 }, // 학생
+    { label: '표준편차', value: 'standardDeviation', scope: 1 }, // 학생
   ]
 } as const
 
@@ -215,8 +216,8 @@ export const VAR_SCOPE_MENU: TokenMenu = {
   key: 'var_scope',
   name: '변수 범위',
   items: [
-    { label: '학생', value: '0' },
-    { label: '과목', value: '1' },
+    { label: '과목', value: '0', scope: 2 }, // 상관없음
+    { label: '학생', value: '1', scope: 2 }, // 상관없음
   ]
 } as const
 

@@ -15,8 +15,21 @@ export class RatioBlockInstance extends BlockInstance {
     super(blockId, BLOCK_TYPE.RATIO, data);
     
     // 기본값 정의
+    const defaultVarScope = '0';
     const defaultRatio = 100;
     const defaultInputProp = 'finalScore';
+    
+    // var_scope 초기화 (헤더에서 읽거나 기본값 사용)
+    if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
+      const headerObj = data.header_cells[0];
+      if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
+        this.setVarScope(headerObj.var_scope || defaultVarScope);
+      } else {
+        this.setVarScope(defaultVarScope);
+      }
+    } else {
+      this.setVarScope(defaultVarScope);
+    }
     
     // body_cells 처리: 기본 1*1
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
@@ -96,8 +109,9 @@ export class RatioBlockInstance extends BlockInstance {
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {
+    // 하위 호환성을 위해 header_cells[0]에 var_scope 포함
     return {
-      header_cells: [],
+      header_cells: [{ var_scope: this.getVarScope() }],
       body_cells: this.bodyCells
     };
   }
@@ -131,7 +145,9 @@ export class RatioBlockInstance extends BlockInstance {
   }
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
-    if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
+    if (propertyName === 'var_scope') {
+      this.setVarScope(value);
+    } else if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
       if (propertyName === 'ratio') {
         this.bodyCells[rowIndex].ratio = Number(value) || 100;
       } else if (propertyName === 'input_prop') {

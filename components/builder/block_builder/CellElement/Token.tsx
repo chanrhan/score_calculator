@@ -18,7 +18,7 @@ interface TokenProps {
   onChange?: (value: string) => void
   className?: string
   autoFit?: boolean // 자동 크기 조정 옵션
-  varScope?: '0' | '1' // 블록 헤더의 var_scope 값 ('0': 학생, '1': 과목)
+  varScope?: '0' | '1' // 블록 헤더의 var_scope 값 ('0': 과목, '1': 학생)
 }
 
 export const Token: React.FC<TokenProps> = ({ element, onChange, className = '', autoFit = true, varScope }) => {
@@ -47,6 +47,7 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
           order: idx + 1,
           label: item.label,
           value: item.value,
+          scope: item.scope ?? 2, // scope 속성 포함 (기본값 2: 상관없음)
         }))
       } else if (selectedUnivId && menu_key) {
         // 상수 파일에 없으면 스토어 캐시에서 확인
@@ -63,17 +64,23 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
             order: item.order || idx + 1,
             label: item.label,
             value: item.value,
+            scope: item.scope ?? 2, // scope 속성 포함 (기본값 2: 상관없음)
           }))
         }
       }
 
-      // scope 필터링 적용 (menu_key가 'variable'일 때만)
+      // scope 필터링 적용: 각 항목의 scope 속성에 따라 필터링
+      // scope: 0=과목, 1=학생, 2=상관없음(항상 보임), undefined=상관없음(기본값)
       let filteredItems: TokenMenuItem[] = baseItems
-      if (menu_key === 'variable' && varScope !== undefined) {
-        const scopeAttributes = getAttributesByScope(varScope)
-        // baseItems에서 scope에 해당하는 속성만 필터링
-        const attributeKeys = new Set(scopeAttributes.map(attr => attr.key))
-        filteredItems = baseItems.filter(item => attributeKeys.has(item.value))
+      if (varScope !== undefined) {
+        filteredItems = baseItems.filter(item => {
+          const itemScope = item.scope ?? 2 // 기본값은 2 (상관없음)
+          // scope가 2이면 항상 보임
+          if (itemScope === 2) return true
+          // varScope와 itemScope가 일치하면 보임
+          // varScope '0'=과목, '1'=학생
+          return String(itemScope) === varScope
+        })
       }
 
       // var_use: 파이프라인 변수 병합
@@ -81,15 +88,20 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
       if (var_use) {
         const nextOrderStart = filteredItems.length + 1
         // scope 필터링 적용 (varScope가 있을 때)
+        // pipeline variable의 scope: '0'=과목, '1'=학생
         let varsToInclude = Array.from(variablesByName.values())
         if (varScope !== undefined) {
-          varsToInclude = varsToInclude.filter(v => (v as any).scope === varScope)
+          varsToInclude = varsToInclude.filter(v => {
+            const vScope = (v as any).scope || '0'
+            return vScope === varScope
+          })
         }
         const vars: TokenMenuItem[] = varsToInclude.map((v, idx) => ({ 
           id: -1000 - idx, 
           order: nextOrderStart + idx, 
           value: v.variable_name, 
           label: v.variable_name, 
+          scope: (v as any).scope === '0' ? 0 : (v as any).scope === '1' ? 1 : 2, // pipeline variable scope를 token menu scope로 변환
           created_at: undefined, 
           updated_at: undefined 
         })) as any

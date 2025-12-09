@@ -5,7 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent, LayoutRenderContext } from '../common/types';
 import { createTokenElement, createInputFieldElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
@@ -22,7 +22,7 @@ export const DecimalLayout: {
   body: LayoutComponent;
 } = {
   header: () => <span className={decimalStyles.label}>소수점 처리</span>,
-  body: ({ properties, readOnly, onChange }) => {
+  body: ({ properties, readOnly, onChange, varScope }: LayoutRenderContext & { varScope?: '0' | '1' }) => {
       const inputProp = properties.input_prop || 'finalScore';
       const decimalPlace = properties.decimal_place !== undefined ? String(properties.decimal_place) : '2';
       const decimalFunc = properties.decimal_func || '0';
@@ -36,6 +36,7 @@ export const DecimalLayout: {
                 value: inputProp,
                 optional: false,
                 visible: true,
+                var_use: true
               })}
               onChange={(value) => {
                 if (!readOnly) {
@@ -43,8 +44,9 @@ export const DecimalLayout: {
                 }
               }}
               autoFit={true}
+              varScope={varScope}
             />
-            <span className={decimalStyles.label}>소수점</span>
+            <span className={decimalStyles.label}>을(를) 소수점 </span>
             <InputField
               element={createInputFieldElement({
                 value: decimalPlace,
@@ -58,7 +60,7 @@ export const DecimalLayout: {
               }}
               autoFit={true}
             />
-            <span className={decimalStyles.label}>자리</span>
+            <span className={decimalStyles.label}>자리까지</span>
             <Token
               element={createTokenElement({
                 menu_key: TOKEN_MENU_KEYS.DECIMAL_FUNC,
@@ -112,6 +114,9 @@ export class DecimalLayoutRenderer extends GenericBlockLayoutRenderer {
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
+    
+    // 블록 레벨에서 var_scope 값 가져오기
+    const varScope = (block as any).getVarScope() as '0' | '1';
 
     const LayoutComponent = getLayoutComponent(DecimalLayout.body, colIndex);
     if (!LayoutComponent) {
@@ -130,13 +135,16 @@ export class DecimalLayoutRenderer extends GenericBlockLayoutRenderer {
             <div className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></div>
           )}
           <LayoutComponent
-            properties={properties}
-            readOnly={readOnly || false}
-            onChange={(propertyName, value) => {
-              if (readOnly) return;
-              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
-              onBlockChange?.(block.block_id, block);
-            }}
+            {...({
+              properties,
+              readOnly: readOnly || false,
+              onChange: (propertyName: string, value: any) => {
+                if (readOnly) return;
+                block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+                onBlockChange?.(block.block_id, block);
+              },
+              varScope: varScope,
+            } as any)}
           />
         </div>
       </td>

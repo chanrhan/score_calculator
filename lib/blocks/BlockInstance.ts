@@ -13,11 +13,30 @@ export interface BlockInstanceData {
 
 // 기본 블록 인스턴스 추상 클래스
 export abstract class BlockInstance {
+  // var_scope는 블록 레벨 속성으로 관리 (헤더 셀이 아닌 블록 자체의 속성)
+  protected _varScope: string = '0'; // '0': 과목(Subject), '1': 학생(Student)
+
   protected constructor(
     public readonly block_id: number,
     public readonly block_type: number,
     protected data: BlockInstanceData
-  ) {}
+  ) {
+    // fromDbFormat에서 var_scope를 초기화할 때 사용
+  }
+
+  /**
+   * var_scope 값 가져오기 (공개 메서드)
+   */
+  public getVarScope(): string {
+    return this._varScope;
+  }
+
+  /**
+   * var_scope 값 설정하기 (공개 메서드)
+   */
+  public setVarScope(value: string): void {
+    this._varScope = value === '0' || value === '1' ? value : '0';
+  }
 
   // 공통 메서드
   abstract updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void;
@@ -205,6 +224,18 @@ export class GenericBlockInstance extends BlockInstance {
 
     // header_cells 변환
     let headerCells: any = [];
+    
+    // var_scope를 지원하는 블록인지 확인
+    const varScopeSupportedBlocks = [
+      BLOCK_TYPE.FORMULA,
+      BLOCK_TYPE.CONDITION,
+      BLOCK_TYPE.SCORE_MAP,
+      BLOCK_TYPE.DECIMAL,
+      BLOCK_TYPE.RATIO,
+    ];
+    
+    const supportsVarScope = varScopeSupportedBlocks.includes(this.block_type);
+    
     if (this.data.header_cells && Array.isArray(this.data.header_cells) && this.data.header_cells.length > 0) {
       const headerValues = this.data.header_cells[0];
       if (Array.isArray(headerValues)) {
@@ -213,20 +244,22 @@ export class GenericBlockInstance extends BlockInstance {
         
         if (this.block_type === BLOCK_TYPE.SCORE_MAP) {
           // ScoreMap: [null, variableScope, filterOption]
-          headerObj.variable_scope = headerValues[1] || 0;
+          // 블록 레벨 var_scope 사용
+          headerObj.var_scope = this.getVarScope();
           headerObj.filter_option = headerValues[2] || 0;
-        } else if (this.block_type === BLOCK_TYPE.FORMULA || this.block_type === BLOCK_TYPE.CONDITION || 
-                   this.block_type === BLOCK_TYPE.AGGREGATION || this.block_type === BLOCK_TYPE.DECIMAL) {
-          // Formula, Condition, Aggregation, Decimal: [null, variableScope]
-          headerObj.variable_scope = headerValues[1] || 0;
+        } else if (supportsVarScope) {
+          // Formula, Condition, Decimal: 블록 레벨 var_scope 사용
+          headerObj.var_scope = this.getVarScope();
+        } else if (this.block_type === BLOCK_TYPE.AGGREGATION) {
+          // Aggregation은 제외 (사용자 요청)
         } else {
           // 기타 블록: 구조에서 변환 시도
           if (structure.cols && structure.cols.length > 0) {
             const headerElements = structure.cols[0].header?.elements || [];
             headerElements.forEach((element, index) => {
               if (element.type === 'Token' && 'menu_key' in element && element.menu_key) {
-                if (element.menu_key === 'variable_scope') {
-                  headerObj.variable_scope = headerValues[index] || 0;
+                if (element.menu_key === 'variable_scope' && supportsVarScope) {
+                  headerObj.var_scope = this.getVarScope();
                 } else if (element.menu_key === 'filter_option') {
                   headerObj.filter_option = headerValues[index] || 0;
                 }
@@ -356,18 +389,16 @@ export class GenericBlockInstance extends BlockInstance {
 
     // 블록 타입별 변환
     if (this.block_type === BLOCK_TYPE.SCORE_MAP) {
-      // ScoreMap: { variable_scope, filter_option } -> [null, variable_scope, filter_option]
+      // ScoreMap: { var_scope, filter_option } -> [null, var_scope, filter_option]
       const headerObj = headerCells[0];
       if (typeof headerObj === 'object' && headerObj !== null) {
-        return [null, headerObj.variable_scope || 0, headerObj.filter_option || 0];
+        return [null, headerObj.var_scope || 0, headerObj.filter_option || 0];
       }
     } else if (this.block_type === BLOCK_TYPE.FORMULA || this.block_type === BLOCK_TYPE.CONDITION || 
-               this.block_type === BLOCK_TYPE.AGGREGATION || this.block_type === BLOCK_TYPE.DECIMAL) {
-      // Formula, Condition, Aggregation, Decimal: { variable_scope } -> [null, variable_scope]
-      const headerObj = headerCells[0];
-      if (typeof headerObj === 'object' && headerObj !== null) {
-        return [null, headerObj.variable_scope || 0];
-      }
+               this.block_type === BLOCK_TYPE.DECIMAL) {
+      // Formula, Condition, Decimal: { var_scope } -> [] (더 이상 헤더 셀에 표시하지 않음)
+      // 헤더 셀에는 더 이상 var_scope가 없음
+      return [];
     } else if (this.block_type === BLOCK_TYPE.APPLY_SUBJECT) {
       // ApplySubject: { text_content, include_option } -> [text_content, include_option]
       const headerObj = headerCells[0];

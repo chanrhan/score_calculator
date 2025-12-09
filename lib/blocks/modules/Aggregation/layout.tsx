@@ -35,6 +35,8 @@ export const AggregationLayout: {
                 value: inputProp,
                 optional: false,
                 visible: true,
+                var_use: true,
+                var_store: true,
               })}
               onChange={(value) => {
                 if (!readOnly) {
@@ -42,6 +44,7 @@ export const AggregationLayout: {
                 }
               }}
               autoFit={true}
+              varScope="0" // 과목 scope
             />
             <Token
               element={createTokenElement({
@@ -57,13 +60,15 @@ export const AggregationLayout: {
               }}
               autoFit={true}
             />
-            <span className={aggregationStyles.arrow}>→</span>
+            <span className={aggregationStyles.arrow}>=</span>
             <Token
               element={createTokenElement({
                 menu_key: TOKEN_MENU_KEYS.VARIABLE,
                 value: outputProp,
                 optional: false,
                 visible: true,
+                var_use: true,
+                var_store: true,
               })}
               onChange={(value) => {
                 if (!readOnly) {
@@ -71,6 +76,7 @@ export const AggregationLayout: {
                 }
               }}
               autoFit={true}
+              varScope="1" // 학생 scope
             />
           </div>
         </div>

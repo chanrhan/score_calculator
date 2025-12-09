@@ -22,25 +22,10 @@ export const ScoreMapLayout: {
   body: LayoutComponent;
 } = {
   header: ({ properties, readOnly, onChange }) => {
-      const varScope = properties.var_scope || '0';
-      
+      // 헤더에는 더 이상 var_scope가 없음
       return (
         <div className={scoreMapStyles.header}>
           <span className={scoreMapStyles.label}>배점표</span>
-          <Token
-            element={createTokenElement({
-              menu_key: TOKEN_MENU_KEYS.VAR_SCOPE,
-              value: varScope,
-              optional: false,
-              visible: true,
-            })}
-            onChange={(value) => {
-              if (!readOnly) {
-                onChange?.('var_scope', value);
-              }
-            }}
-            autoFit={true}
-          />
         </div>
       );
     },
@@ -58,6 +43,7 @@ export const ScoreMapLayout: {
                 value: inputProp,
                 optional: false,
                 visible: true,
+                var_use: true
               })}
               onChange={(value) => {
                 if (!readOnly) {
@@ -67,13 +53,14 @@ export const ScoreMapLayout: {
               autoFit={true}
               varScope={varScope}
             />
-            <span className={scoreMapStyles.arrow}>→</span>
+            <span className={scoreMapStyles.arrow}> 를 </span>
             <Token
               element={createTokenElement({
                 menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
                 value: outputProp,
                 optional: false,
                 visible: true,
+                var_use: true,
               })}
               onChange={(value) => {
                 if (!readOnly) {
@@ -83,6 +70,7 @@ export const ScoreMapLayout: {
               autoFit={true}
               varScope={varScope}
             />
+            <span className={scoreMapStyles.arrow}> 로 매핑</span>
           </div>
           <div className={scoreMapStyles.row}>
             <Table
@@ -155,9 +143,8 @@ export class ScoreMapLayoutRenderer extends GenericBlockLayoutRenderer {
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
     
-    // 헤더에서 var_scope 값 가져오기
-    const headerProperties = block.getHeaderProperties(colIndex);
-    const varScope = headerProperties.var_scope || '0';
+    // 블록 레벨에서 var_scope 값 가져오기
+    const varScope = (block as any).getVarScope() as '0' | '1';
 
     const LayoutComponent = getLayoutComponent(ScoreMapLayout.body, colIndex);
     if (!LayoutComponent) {

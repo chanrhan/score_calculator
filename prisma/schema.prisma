@@ -199,6 +199,7 @@ model token_menu_item {
   order      Int
   label      String
   value      String
+  scope      Int        @default(2) // 0: 과목, 1: 학생, 2: 상관없음
   created_at DateTime   @default(now())
   menu_key   String
   univ_id    String     @db.Char(3)

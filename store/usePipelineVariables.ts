@@ -4,7 +4,7 @@ export type PipelineVariable = {
   univ_id: string;
   pipeline_id: number;
   variable_name: string;
-  scope: string; // '0': 학생(Student), '1': 과목(Subject)
+  scope: string; // '0': 과목(Subject), '1': 학생(Student)
 };
 
 type PipelineVariablesState = {

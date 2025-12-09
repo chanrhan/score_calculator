@@ -63,6 +63,7 @@ export const TopSubjectLayout: {
                 value: target,
                 optional: false,
                 visible: true,
+                var_use: true
               })}
               onChange={(value) => {
                 if (!readOnly) {

@@ -56,6 +56,7 @@ export interface TokenMenuItem {
   order: number;
   label: string;
   value: string;
+  scope?: number; // 0: 과목, 1: 학생, 2: 상관없음(기본값)
   created_at?: Date;
   updated_at?: Date;
 }

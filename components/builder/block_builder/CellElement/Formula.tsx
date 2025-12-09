@@ -57,14 +57,21 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
           order: idx + 1,
           label: item.label,
           value: item.value,
+          scope: item.scope ?? 2, // scope 속성 포함 (기본값 2: 상관없음)
         }))
       : []
     
-    // scope 필터링 적용
+    // scope 필터링 적용: 각 항목의 scope 속성에 따라 필터링
+    // scope: 0=과목, 1=학생, 2=상관없음(항상 보임), undefined=상관없음(기본값)
     if (varScope !== undefined) {
-      const scopeAttributes = getAttributesByScope(varScope)
-      const attributeKeys = new Set(scopeAttributes.map(attr => attr.key))
-      base = base.filter(item => attributeKeys.has(item.value))
+      base = base.filter(item => {
+        const itemScope = item.scope ?? 2 // 기본값은 2 (상관없음)
+        // scope가 2이면 항상 보임
+        if (itemScope === 2) return true
+        // varScope와 itemScope가 일치하면 보임
+        // varScope '0'=과목, '1'=학생
+        return String(itemScope) === varScope
+      })
     }
     
     setBaseItems(base)

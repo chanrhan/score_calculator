@@ -6,10 +6,6 @@ import { BLOCK_TYPE } from '@/types/block-types';
 import { FlowBlockType } from '@/types/block-structure';
 
 export class ScoreMapBlockInstance extends BlockInstance {
-  private headerCell: {
-    var_scope: string;
-  };
-  
   private bodyCells: Array<{
     input_prop: string;
     output_prop: string;
@@ -25,22 +21,16 @@ export class ScoreMapBlockInstance extends BlockInstance {
     const defaultOutputProp = 'score';
     const defaultTable: any[][] = [];
     
-    // header_cells 처리
+    // var_scope 초기화 (헤더에서 읽거나 기본값 사용)
     if (data.header_cells && Array.isArray(data.header_cells) && data.header_cells.length > 0) {
       const headerObj = data.header_cells[0];
       if (typeof headerObj === 'object' && headerObj !== null && !Array.isArray(headerObj)) {
-        this.headerCell = {
-          var_scope: headerObj.var_scope || defaultVarScope,
-        };
+        this.setVarScope(headerObj.var_scope || defaultVarScope);
       } else {
-        this.headerCell = {
-          var_scope: defaultVarScope,
-        };
+        this.setVarScope(defaultVarScope);
       }
     } else {
-      this.headerCell = {
-        var_scope: defaultVarScope,
-      };
+      this.setVarScope(defaultVarScope);
     }
     
     // body_cells 처리
@@ -73,10 +63,9 @@ export class ScoreMapBlockInstance extends BlockInstance {
   }
 
   updateCellValue(rowIndex: number, colIndex: number, elementIndex: number, value: any): void {
+    // 헤더 셀은 더 이상 var_scope를 포함하지 않음
     if (rowIndex === -1) {
-      if (elementIndex === 0) {
-        this.headerCell.var_scope = value;
-      }
+      // 헤더 셀 업데이트는 무시 (var_scope는 블록 레벨 속성으로 관리)
     } else {
       if (this.bodyCells[rowIndex]) {
         if (elementIndex === 0) {
@@ -129,15 +118,17 @@ export class ScoreMapBlockInstance extends BlockInstance {
   }
 
   toDbFormat(): { header_cells: any; body_cells: any } {
+    // 하위 호환성을 위해 header_cells[0]에 var_scope 포함
     return {
-      header_cells: [this.headerCell],
+      header_cells: [{ var_scope: this.getVarScope() }],
       body_cells: this.bodyCells
     };
   }
 
   getHeaderCellValues(colIndex: number): any[] {
+    // 헤더 셀에는 더 이상 var_scope가 없음
     if (colIndex === 0) {
-      return [this.headerCell.var_scope];
+      return [];
     }
     return [];
   }
@@ -154,10 +145,9 @@ export class ScoreMapBlockInstance extends BlockInstance {
   }
 
   getHeaderProperties(colIndex: number): Record<string, any> {
+    // 헤더에는 더 이상 var_scope가 없음
     if (colIndex === 0) {
-      return {
-        var_scope: this.headerCell.var_scope,
-      };
+      return {};
     }
     return {};
   }
@@ -175,7 +165,7 @@ export class ScoreMapBlockInstance extends BlockInstance {
 
   updateProperty(propertyName: string, value: any, rowIndex?: number, colIndex?: number): void {
     if (propertyName === 'var_scope') {
-      this.headerCell.var_scope = value;
+      this.setVarScope(value);
     } else if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
       if (propertyName === 'input_prop') {
         this.bodyCells[rowIndex].input_prop = value;

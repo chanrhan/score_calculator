@@ -16,7 +16,7 @@ export class DecimalBlockExecutor extends BlockExecutor {
 
   constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
     super(blockId, caseIndex);
-    this.variableScope = 0; // var_scope는 instance에 없으므로 기본값 0
+    this.variableScope = Number(headerData?.var_scope) || 0;
     this.scoreType = bodyData?.input_prop || null;
     this.decimalPlaces = Number(bodyData?.decimal_place) || 0;
     this.option = Number(bodyData?.decimal_func) || 0;
@@ -29,19 +29,7 @@ export class DecimalBlockExecutor extends BlockExecutor {
       return { ctx, subjects };
     }
     if (this.variableScope == 0) {
-      const inputValue = Number(this.getContextProperty(ctx, this.scoreType as string))
-      const result = this.performDecimalOperation(inputValue);
-      calcLog(`        🔧 ${this.scoreType} : ${inputValue} -> ${result}`);
-      this.setContextProperty(ctx, subjects, this.scoreType as string, result);
-      log = {
-        input_key: this.scoreType,
-        input: inputValue,
-        output_key: this.scoreType,
-        output: result
-      };
-      logManager.addContextLog(log);
-      logManager.saveContextToSnapshot(ctx, this.blockId, this.caseIndex, BLOCK_TYPE.DECIMAL);
-    } else if (this.variableScope == 1) {
+      // Subject (과목) 범위
       subjects.forEach(subject => {
         const inputValue = Number(this.getSubjectProperty(subject, this.scoreType as string))
         const result = this.performDecimalOperation(inputValue);
@@ -56,6 +44,20 @@ export class DecimalBlockExecutor extends BlockExecutor {
         logManager.addLog(subject.seqNumber, log);
       });
       logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, BLOCK_TYPE.DECIMAL);
+    } else if (this.variableScope == 1) {
+      // Context (학생) 범위
+      const inputValue = Number(this.getContextProperty(ctx, this.scoreType as string))
+      const result = this.performDecimalOperation(inputValue);
+      calcLog(`        🔧 ${this.scoreType} : ${inputValue} -> ${result}`);
+      this.setContextProperty(ctx, subjects, this.scoreType as string, result);
+      log = {
+        input_key: this.scoreType,
+        input: inputValue,
+        output_key: this.scoreType,
+        output: result
+      };
+      logManager.addContextLog(log);
+      logManager.saveContextToSnapshot(ctx, this.blockId, this.caseIndex, BLOCK_TYPE.DECIMAL);
     }
     return { ctx, subjects };
   }

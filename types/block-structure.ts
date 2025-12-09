@@ -394,13 +394,6 @@ export const BLOCK_TYPES = {
         header: {
           elements: [
             { type: 'Text', optional: false, visible: true, content: '수식' },
-            {
-              type: 'Token',
-              optional: false,
-              visible: true,
-              menu_key: 'variable_scope',
-              value: '0', // 0: context, 1: subject
-            },
           ],
         },
         rows: [
@@ -452,13 +445,6 @@ export const BLOCK_TYPES = {
         header: {
           elements: [
             { type: 'Text', optional: false, visible: true, content: '조건' },
-            {
-              type: 'Token',
-              optional: false,
-              visible: true,
-              menu_key: 'variable_scope',
-              value: '0', // 0: context, 1: subject
-            },
           ],
         },
         rows: [
@@ -491,13 +477,6 @@ export const BLOCK_TYPES = {
         header: {
           elements: [
             { type: 'Text', optional: false, visible: true, content: '집계' },
-            {
-              type: 'Token',
-              optional: false,
-              visible: true,
-              menu_key: 'variable_scope',
-              value: '0', // 0: context, 1: subject
-            },
           ],
         },
         rows: [
@@ -574,13 +553,6 @@ export const BLOCK_TYPES = {
         header: {
           elements: [
             { type: 'Text', optional: false, visible: true, content: '소수점 처리' },
-            {
-              type: 'Token',
-              optional: false,
-              visible: true,
-              menu_key: 'variable_scope',
-              value: '0', // 0: context, 1: subject
-            },
           ],
         },
         rows: [

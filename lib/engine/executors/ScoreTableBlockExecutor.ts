@@ -31,21 +31,7 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
         let inputValue: any = null;
         let log: CalculationLog;
         if(this.variableScope == 0) {
-            inputValue = this.getContextProperty(ctx, this.inputType);
-            log = {
-                input_key: this.inputType,
-                input: inputValue,
-                output_key: this.outputType,
-                output: null
-            };
-            const {matched, matchedValue} = this.mappingScore(inputValue);
-            if(matched) {
-                log.output = matchedValue;
-                this.setContextProperty(ctx, subjects, this.outputType, matchedValue);
-            }
-            logManager.addContextLog(log);
-            logManager.saveContextToSnapshot(ctx, this.blockId, this.caseIndex, 8);
-        }else if(this.variableScope == 1) {
+            // Subject (과목) 범위
             subjects.forEach(subject => {
                 inputValue = this.getSubjectProperty(subject, this.inputType);
                 log = {
@@ -67,6 +53,22 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
                 logManager.addLog(subject.seqNumber, log);
             });
             logManager.saveToSnapshot(subjects, this.blockId, this.caseIndex, 8);
+        }else if(this.variableScope == 1) {
+            // Context (학생) 범위
+            inputValue = this.getContextProperty(ctx, this.inputType);
+            log = {
+                input_key: this.inputType,
+                input: inputValue,
+                output_key: this.outputType,
+                output: null
+            };
+            const {matched, matchedValue} = this.mappingScore(inputValue);
+            if(matched) {
+                log.output = matchedValue;
+                this.setContextProperty(ctx, subjects, this.outputType, matchedValue);
+            }
+            logManager.addContextLog(log);
+            logManager.saveContextToSnapshot(ctx, this.blockId, this.caseIndex, 8);
         }
 
         calcLog(` 매핑된 과목들 : (${this.matchedCount}/${subjects.length})개`);

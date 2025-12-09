@@ -90,20 +90,8 @@ export class ConditionBlockExecutor extends BlockExecutor {
     }
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {
-        let leftValueValue = this.getContextProperty(ctx, this.leftValue as string);
-
         if (this.variableScope == 0) {
-            let finalExpr = '';
-            for(let i = 0; i < this.conditions.length; i++){
-                const expr = this.getConditionExpr(ctx, subjects[0], i);
-                finalExpr += expr;
-            }
-            const result = evalExpr(finalExpr, { ctx, subjects });
-            calcLog(`        🔧 expr: [${finalExpr}] = ${result}`);
-            return { ctx, subjects: result ? subjects : [] };
-        }
-
-        if (this.variableScope == 1) {
+            // Subject (과목) 범위
             const isConditionEqualToFilteredId = this.leftValue == 'filtered_block_id';
             subjects = subjects.filter(subject => {
                 if(!isConditionEqualToFilteredId && subject.filtered_block_id > 0) {
@@ -126,6 +114,19 @@ export class ConditionBlockExecutor extends BlockExecutor {
                 }
             });
         }
+
+        if (this.variableScope == 1) {
+            // Context (학생) 범위
+            let leftValueValue = this.getContextProperty(ctx, this.leftValue as string);
+            let finalExpr = '';
+            for(let i = 0; i < this.conditions.length; i++){
+                const expr = this.getConditionExpr(ctx, subjects[0], i);
+                finalExpr += expr;
+            }
+            const result = evalExpr(finalExpr, { ctx, subjects });
+            calcLog(`        🔧 expr: [${finalExpr}] = ${result}`);
+            return { ctx, subjects: result ? subjects : [] };
+        }
         return { ctx, subjects };
     }
 
@@ -137,8 +138,11 @@ export class ConditionBlockExecutor extends BlockExecutor {
         }
         let leftValue = null;
         if(this.variableScope == 0){
-            leftValue = this.getContextProperty(ctx, condition[exprStartIndex]);
+            // Subject (과목) 범위
+            leftValue = this.getSubjectProperty(subject, condition[exprStartIndex]);
         }else{
+            // Context (학생) 범위
+            leftValue = this.getContextProperty(ctx, condition[exprStartIndex]);
             leftValue = this.getSubjectProperty(subject, condition[exprStartIndex]);
         }
         const operator = condition[exprStartIndex + 1];

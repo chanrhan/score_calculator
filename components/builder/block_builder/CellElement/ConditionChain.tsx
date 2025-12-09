@@ -114,13 +114,15 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
     
     switch (field.type) {
       case 'Token':
+        const tokenElement = { ...(field as any), value: fieldValue }
+        // VARIABLE 키를 사용하는 Token에 var_use, var_store 설정
+        if (tokenElement.menu_key === TOKEN_MENU_KEYS.VARIABLE) {
+          tokenElement.var_use = true
+          tokenElement.var_store = true
+        }
         return (
           <Token
-            element={
-              { ...(field as any),
-                value: fieldValue, 
-              }
-            }
+            element={tokenElement}
             onChange={(v) => updateItemAt(rowIndex, actualColIndex, v)}
             varScope={varScope}
           />

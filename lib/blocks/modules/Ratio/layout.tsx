@@ -5,7 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent, LayoutRenderContext } from '../common/types';
 import { createInputFieldElement, createTokenElement } from '../common/elementHelpers';
 import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
@@ -22,7 +22,7 @@ export const RatioLayout: {
   body: LayoutComponent;
 } = {
   header: () => <span className={ratioStyles.label}>반영비율</span>,
-  body: ({ properties, readOnly, onChange }) => {
+  body: ({ properties, readOnly, onChange, varScope }: LayoutRenderContext & { varScope?: '0' | '1' }) => {
       const inputProp = properties.input_prop || 'finalScore';
       const ratio = properties.ratio !== undefined ? String(properties.ratio) : '100';
       
@@ -34,6 +34,7 @@ export const RatioLayout: {
               value: inputProp,
               optional: false,
               visible: true,
+              var_use: true
             })}
             onChange={(value) => {
               if (!readOnly) {
@@ -41,6 +42,7 @@ export const RatioLayout: {
               }
             }}
             autoFit={true}
+            varScope={varScope}
           />
           <InputField
             element={createInputFieldElement({
@@ -94,6 +96,9 @@ export class RatioLayoutRenderer extends GenericBlockLayoutRenderer {
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
+    
+    // 블록 레벨에서 var_scope 값 가져오기
+    const varScope = (block as any).getVarScope() as '0' | '1';
 
     const LayoutComponent = getLayoutComponent(RatioLayout.body, colIndex);
     if (!LayoutComponent) {
@@ -112,13 +117,16 @@ export class RatioLayoutRenderer extends GenericBlockLayoutRenderer {
             <div className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></div>
           )}
           <LayoutComponent
-            properties={properties}
-            readOnly={readOnly || false}
-            onChange={(propertyName, value) => {
-              if (readOnly) return;
-              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
-              onBlockChange?.(block.block_id, block);
-            }}
+            {...({
+              properties,
+              readOnly: readOnly || false,
+              onChange: (propertyName: string, value: any) => {
+                if (readOnly) return;
+                block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+                onBlockChange?.(block.block_id, block);
+              },
+              varScope: varScope,
+            } as any)}
           />
         </div>
       </td>

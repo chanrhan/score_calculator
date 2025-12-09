@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScopeToggle } from '@/components/ui/scope-toggle';
 
 export interface RenderCellContext {
   readOnly: boolean;
@@ -108,6 +109,17 @@ export abstract class BlockLayoutRenderer {
     const isColEditable = block.getStructure()?.col_editable || false;
     const isHovered = hoveredBlockId === block.block_id;
 
+    // var_scope 토글을 표시할 블록 타입 확인
+    const shouldShowScopeToggle = [
+      BLOCK_TYPE.FORMULA,
+      BLOCK_TYPE.CONDITION,
+      BLOCK_TYPE.SCORE_MAP,
+      BLOCK_TYPE.DECIMAL,
+      BLOCK_TYPE.RATIO,
+    ].includes(block.block_type);
+
+    const currentVarScope = (block as any).getVarScope() as '0' | '1';
+
     return (
       <td
         className={styles.blockNameCell}
@@ -128,7 +140,19 @@ export abstract class BlockLayoutRenderer {
           setHoveredBlockId?.(null);
         }}
       >
-        <span title={tooltip || undefined}>{blockTypeName} 블록</span>
+        <div className={styles.blockNameContent}>
+          <span title={tooltip || undefined}>{blockTypeName} 블록</span>
+          {shouldShowScopeToggle && (
+            <ScopeToggle
+              value={currentVarScope}
+              onChange={(newValue) => {
+                (block as any).setVarScope(newValue);
+                onBlockChange?.(block.block_id, block);
+              }}
+              disabled={readOnly}
+            />
+          )}
+        </div>
         {!readOnly && (
           <>
             {/* 결합 모드일 때 직접 버튼들 표시 */}
