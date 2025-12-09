@@ -27,6 +27,9 @@ interface ContextMenuState {
 export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, TableProps>(({ element, onChange, onElementChange, onGetCurrentData, className = '', input_prop, output_prop }, ref) => {
   const { value, init_rows, init_cols, input_type, output_type, optional, visible, input_option, range: rangeProp } = element
   
+  // 체크박스용 고유 ID 생성
+  const checkboxId = React.useId()
+  
   // range 값을 로컬 state로 관리하여 체크박스 상태를 안정적으로 유지
   const [range, setRange] = React.useState<boolean>(!!rangeProp)
   
@@ -282,6 +285,8 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
   
   // onChange 호출 시 1열 제외하는 헬퍼 함수
   const notifyChange = (data: any[][]) => {
+    // tableDataRef를 즉시 업데이트하여 최신 값 보장
+    tableDataRef.current = data
     // input_prop/output_prop가 있으면 1열을 제외하고 저장
     const dataToSave = (input_prop !== undefined || output_prop !== undefined)
       ? data.map(row => row.slice(1)) // 1열 제외
@@ -472,9 +477,21 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
       </div>
       
       {/* range 체크박스 */}
-      <div className={styles.rangeCheckboxContainer} onClick={(e) => e.stopPropagation()}>
-        <label className={styles.rangeCheckboxLabel}>
+      <div 
+        className={styles.rangeCheckboxContainer} 
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <label 
+          className={styles.rangeCheckboxLabel}
+          htmlFor={checkboxId}
+          onClick={(e) => {
+            e.stopPropagation()
+            // label 클릭 시 input이 자동으로 토글되도록 함
+          }}
+        >
           <input
+            id={checkboxId}
             type="checkbox"
             checked={!!range}
             onChange={(e) => {

@@ -42,23 +42,27 @@ export const TableModal: React.FC<TableModalProps> = ({
     if (!newOpen && open) {
       // 모달이 닫힐 때 최종 상태 저장
       if (onChange) {
-        if (tableRef.current) {
-          // Table 컴포넌트에서 최신 tableData 가져오기
-          try {
-            const currentTableData = tableRef.current.getCurrentTableData()
-            const finalElement = { ...localElement, value: currentTableData }
-            console.log('Saving on close:', finalElement)
-            onChange(finalElement)
-          } catch (error) {
-            console.error('Error getting current table data:', error)
-            // 에러 발생 시 localElement 사용
-            onChange(localElement)
+        // 약간의 지연을 두어 Table 컴포넌트의 상태 업데이트가 완료되도록 함
+        setTimeout(() => {
+          if (tableRef.current) {
+            // Table 컴포넌트에서 최신 tableData 가져오기
+            try {
+              const currentTableData = tableRef.current.getCurrentTableData()
+              const finalElement = { ...localElement, value: currentTableData }
+              console.log('Saving on close:', finalElement)
+              // value만 전달 (부모 컴포넌트에서 table 속성으로 저장)
+              onChange(currentTableData)
+            } catch (error) {
+              console.error('Error getting current table data:', error)
+              // 에러 발생 시 localElement의 value 사용
+              onChange(localElement.value || [])
+            }
+          } else {
+            // tableRef가 없으면 localElement의 value 사용
+            console.log('Saving on close (no ref):', localElement)
+            onChange(localElement.value || [])
           }
-        } else {
-          // tableRef가 없으면 localElement 사용
-          console.log('Saving on close (no ref):', localElement)
-          onChange(localElement)
-        }
+        }, 0)
       }
     }
     setOpen(newOpen)
@@ -103,8 +107,8 @@ export const TableModal: React.FC<TableModalProps> = ({
               // value만 변경하는 경우 - 로컬 state 업데이트
               const updatedElement = { ...localElement, value: newValue }
               setLocalElement(updatedElement)
-              // 실시간으로도 저장
-              onChange?.(updatedElement)
+              // 실시간으로도 저장 - value만 전달
+              onChange?.(newValue)
             }}
             onElementChange={(partialElement) => {
               // element 속성 변경 (range 등) - 로컬 state 업데이트
@@ -112,11 +116,8 @@ export const TableModal: React.FC<TableModalProps> = ({
               const updatedElement = { ...localElement, ...partialElement }
               console.log('Updated element:', updatedElement)
               setLocalElement(updatedElement)
-              // 실시간으로도 저장
-              if (onChange) {
-                console.log('Calling onChange with updated element')
-                onChange(updatedElement)
-              }
+              // range 등의 속성 변경은 value에 영향을 주지 않으므로 저장하지 않음
+              // (range는 UI 상태일 뿐이고, 실제 저장되는 것은 value만)
             }}
             input_prop={input_prop}
             output_prop={output_prop}
