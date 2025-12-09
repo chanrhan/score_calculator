@@ -10,6 +10,38 @@
   color: #4b5563;
 }
 
+/* range 체크박스 */
+.rangeCheckboxContainer {
+  margin-bottom: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+}
+
+.rangeCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rangeCheckbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.rangeCheckboxText {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
 /* 표 위쪽 버튼 바 */
 .actionBar {
   display: flex;
@@ -129,6 +161,7 @@
   max-width: 100%;
   background-color: #ffffff;
   position: relative;
+  overflow: visible;
 }
 
 .table {
@@ -242,7 +275,7 @@
   border-bottom: 1px solid #e5e7eb;
   padding: 0.375rem;
   white-space: nowrap;
-  overflow: hidden;
+  overflow: visible;
   text-overflow: ellipsis;
   min-width: 60px;
   max-width: 200px;
@@ -555,4 +588,131 @@
   color: #9ca3af;
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+/* 범위 편집 UI */
+.rangeEditor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 200px;
+  width: max-content;
+  background-color: #ffffff;
+  border: 1px solid #3b82f6;
+  border-radius: 0.25rem;
+  padding: 0.375rem;
+  z-index: 1000;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  animation: rangeEditorExpand 0.15s ease-out;
+  white-space: nowrap;
+}
+
+@keyframes rangeEditorExpand {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.rangeEditorForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.rangeInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.rangeSeparator {
+  font-size: 0.75rem;
+  color: #6b7280;
+  padding: 0 0.125rem;
+}
+
+.rangeNumberInput {
+  width: 50px;
+  padding: 0.25rem 0.375rem;
+  font-size: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.rangeNumberInput:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.rangeBoundarySelect {
+  padding: 0.25rem 0.25rem;
+  font-size: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  background-color: #ffffff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  width: 35px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.rangeBoundarySelect:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.rangeApplyButton,
+.rangeCancelButton {
+  padding: 0.25rem 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.rangeApplyButton {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.rangeApplyButton:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.rangeCancelButton {
+  background-color: #ffffff;
+  border-color: #d1d5db;
+  color: #374151;
+}
+
+.rangeCancelButton:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+/* 범위 표시 스타일 */
+.rangeDisplay {
+  color: #111827;
+  font-weight: 500;
 }

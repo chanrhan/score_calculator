@@ -33,6 +33,7 @@ export interface TableElement extends CellElementBase {
   input_option?: string // 옵션 (예: 'range')
   output_type: string
   value: any[][] // 테이블 값들
+  range?: boolean // 범위값 지정 UI 표시 여부
 }
 
 // Formula Element

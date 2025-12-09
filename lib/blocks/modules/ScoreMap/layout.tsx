@@ -89,6 +89,8 @@ export const ScoreMapLayout: {
                   onChange?.('table', Array.isArray(value) ? value : []);
                 }
               }}
+              input_prop={inputProp}
+              output_prop={outputProp}
             />
           </div>
         </div>

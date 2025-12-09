@@ -93,6 +93,7 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
                     continue;
                 }
 
+                // 저장 시 1열은 제외하고 저장되므로, 계산 시에는 모든 열을 사용
                 for (let c = 0; c < inputRow.length; c++) {
                     const input = inputRow[c];
                     const output = outputRow[c];
