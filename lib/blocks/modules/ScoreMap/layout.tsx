@@ -61,6 +61,7 @@ export const ScoreMapLayout: {
                 optional: false,
                 visible: true,
                 var_use: true,
+                var_store: true
               })}
               onChange={(value) => {
                 if (!readOnly) {

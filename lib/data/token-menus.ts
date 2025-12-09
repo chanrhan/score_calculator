@@ -204,11 +204,11 @@ export const VARIABLE_MENU: TokenMenu = {
     { label: '성취도점수', value: 'achievement', scope: 0 }, // 과목
     { label: '평어점수', value: 'assessment', scope: 0 }, // 과목
     { label: '기준점수', value: 'score', scope: 0 }, // 과목
-    { label: '최종점수', value: 'finalScore', scope: 2 }, // 상관없음 (학생/과목 모두)
+    { label: '최종점수', value: 'finalScore', scope: 1 }, // 상관없음 (학생/과목 모두)
     { label: '이수단위', value: 'unit', scope: 0 }, // 과목
     { label: '필터링 블록 ID', value: 'filtered_block_id', scope: 0 }, // 과목
-    { label: '평균', value: 'avgScore', scope: 1 }, // 학생
-    { label: '표준편차', value: 'standardDeviation', scope: 1 }, // 학생
+    { label: '평균', value: 'avgScore', scope: 0 }, // 학생
+    { label: '표준편차', value: 'standardDeviation', scope: 0 }, // 학생
   ]
 } as const
 
