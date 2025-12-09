@@ -78,7 +78,18 @@ export const FormulaInput = React.forwardRef<FormulaInputRef, FormulaInputProps>
     const walker = document.createTreeWalker(
       tempDiv,
       NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
-      null
+      {
+        acceptNode: (node) => {
+          // 변수 span의 자식 노드는 건너뛰기 (중복 방지)
+          if (node.nodeType === Node.TEXT_NODE) {
+            const parent = node.parentElement
+            if (parent && parent.hasAttribute('data-variable')) {
+              return NodeFilter.FILTER_REJECT
+            }
+          }
+          return NodeFilter.FILTER_ACCEPT
+        }
+      }
     )
     
     let node: Node | null
