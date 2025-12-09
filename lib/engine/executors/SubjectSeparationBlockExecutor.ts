@@ -11,12 +11,17 @@ export class SubjectSeparationBlockExecutor extends BlockExecutor {
     private subjectSeparationCodes: Array<Array<string>>;
     private ratios: Array<number>;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        const headers: Array<any> = headerRowCells[0] || [];
-        this.subjectSeparationCodes = headers.map(item => item || []);
-        const bodies: Array<any> = bodyRowCells[0] || [];
-        this.ratios = bodies.map(item => item?.[0] || 0);
+        // headerData와 bodyData는 배열 형식 [{ subject_separations: string[] }], [{ ratio: number }]
+        const headers: Array<any> = Array.isArray(headerData) ? headerData : [];
+        // subject_separations는 배열이지만 Executor는 첫 번째 요소만 사용하므로 [subject_separations] 형식으로 변환
+        this.subjectSeparationCodes = headers.map(item => {
+            const separations = item?.subject_separations || item || [];
+            return Array.isArray(separations) ? separations : [separations];
+        });
+        const bodies: Array<any> = Array.isArray(bodyData) ? bodyData : [];
+        this.ratios = bodies.map(item => item?.ratio || 0);
     }
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {

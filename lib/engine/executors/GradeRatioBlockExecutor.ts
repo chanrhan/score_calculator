@@ -10,12 +10,13 @@ export class GradeRatioBlockExecutor extends BlockExecutor {
     private grades: Array<number>;
     private ratios : Array<number>;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        const headers: Array<any> = headerRowCells[0] || [];
-        this.grades = headers.map(item => item?.[0]);
-        const bodies : Array<any> = bodyRowCells[0] || [];
-        this.ratios = bodies.map(item => item?.[0] || 0);
+        // headerData와 bodyData는 배열 형식 [{ grade: string }], [{ ratio: number }]
+        const headers: Array<any> = Array.isArray(headerData) ? headerData : [];
+        this.grades = headers.map(item => item?.grade || item);
+        const bodies: Array<any> = Array.isArray(bodyData) ? bodyData : [];
+        this.ratios = bodies.map(item => item?.ratio || 0);
     }
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {

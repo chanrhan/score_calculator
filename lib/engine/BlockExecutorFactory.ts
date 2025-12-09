@@ -27,34 +27,34 @@ import { ApplyRatioBlockExecutor } from './executors/ApplyRatioBlockExecutor';
  * 각 블록 타입에 해당하는 실행기를 등록하고 조회
  */
 export class BlockExecutorFactory {
-  public static getExecutor(blockType: number, blockId: number, caseIndex: number, bodyRowCells: any[], headerRowCells: any[]): BlockExecutor | null {
+  public static getExecutor(blockType: number, blockId: number, caseIndex: number, bodyData: any, headerData: any): BlockExecutor | null {
     switch (blockType) {
       case BLOCK_TYPE.APPLY_SUBJECT:
-        return new ApplySubjectBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new ApplySubjectBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.GRADE_RATIO:
-        return new GradeRatioBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);  
+        return new GradeRatioBlockExecutor(blockId, caseIndex, headerData, bodyData);  
       case BLOCK_TYPE.APPLY_TERM:
-        return new ApplyTermBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new ApplyTermBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.TOP_SUBJECT:
-        return new TopSubjectBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new TopSubjectBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.SUBJECT_GROUP_RATIO:
-        return new SubjectGroupRatioBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new SubjectGroupRatioBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.SEPARATION_RATIO:
-        return new SubjectSeparationBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new SubjectSeparationBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.SCORE_MAP:
-        return new ScoreTableBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new ScoreTableBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.FORMULA:
-        return new FormulaBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new FormulaBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.VARIABLE:
         return null;
       case BLOCK_TYPE.CONDITION:
-        return new ConditionBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new ConditionBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.AGGREGATION:
-        return new AggregationBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new AggregationBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.RATIO:
-        return new ApplyRatioBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new ApplyRatioBlockExecutor(blockId, caseIndex, headerData, bodyData);
       case BLOCK_TYPE.DECIMAL:
-        return new DecimalBlockExecutor(blockId, caseIndex, headerRowCells, bodyRowCells);
+        return new DecimalBlockExecutor(blockId, caseIndex, headerData, bodyData);
       
       }
     return null;

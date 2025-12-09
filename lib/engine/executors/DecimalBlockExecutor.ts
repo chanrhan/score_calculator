@@ -14,12 +14,12 @@ export class DecimalBlockExecutor extends BlockExecutor {
   private decimalPlaces: number;
   private option: number;
 
-  constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+  constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
     super(blockId, caseIndex);
-    this.variableScope = headerRowCells[0]?.[1] || 0;
-    this.scoreType = bodyRowCells[0]?.[0] || null;
-    this.decimalPlaces = Number(bodyRowCells[0]?.[2]) || 0;
-    this.option = Number(bodyRowCells[0]?.[4]) || 0;
+    this.variableScope = 0; // var_scope는 instance에 없으므로 기본값 0
+    this.scoreType = bodyData?.input_prop || null;
+    this.decimalPlaces = Number(bodyData?.decimal_place) || 0;
+    this.option = Number(bodyData?.decimal_func) || 0;
   }
   public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {
     const logManager = new CalculationLogManager();

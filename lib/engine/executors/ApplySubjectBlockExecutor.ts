@@ -10,10 +10,11 @@ export class ApplySubjectBlockExecutor extends BlockExecutor {
     private applySubjectsParams : Array<string>;
     private isAllSubject : boolean;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        this.includeMode = Number(headerRowCells[0]?.[0]) == 0;
-        this.applySubjectsParams = bodyRowCells[0]?.[0] || [];
+        const includeOption = headerData?.include_option || '0';
+        this.includeMode = includeOption === '0';
+        this.applySubjectsParams = bodyData?.subject_groups || [];
         this.isAllSubject = this.applySubjectsParams.includes("*");
     }
 

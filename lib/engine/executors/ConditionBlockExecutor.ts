@@ -17,10 +17,10 @@ export class ConditionBlockExecutor extends BlockExecutor {
     private operator: string | null;
     private rightValue: string | null;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        this.variableScope = headerRowCells[0]?.[1] || 0;
-        this.conditions = bodyRowCells[0]?.[0] || [];
+        this.variableScope = Number(headerData?.var_scope) || 0;
+        this.conditions = bodyData?.exprs || [];
         this.leftValue = this.conditions?.[0]?.[0] || null;
         this.operator = this.conditions?.[0]?.[1] || null;
         this.rightValue = this.conditions?.[0]?.[2] || null;

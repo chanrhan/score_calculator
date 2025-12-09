@@ -15,11 +15,11 @@ export class FormulaBlockExecutor extends BlockExecutor {
     private scoreType: string | null;
     private expr: string | null;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        this.variableScope = headerRowCells[0]?.[1] || 0;
-        this.scoreType = bodyRowCells[0]?.[0] || null;
-        this.expr = bodyRowCells[0]?.[2] || null;
+        this.variableScope = Number(headerData?.var_scope) || 0;
+        this.scoreType = bodyData?.output_prop || null;
+        this.expr = bodyData?.expr || null;
     }
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {

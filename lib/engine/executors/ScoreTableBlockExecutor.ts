@@ -16,14 +16,14 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
     private table: Array<Array<string>>;
     private matchedCount: number = 0;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        this.variableScope = headerRowCells[0]?.[1] || 0;
-        this.filterOption = headerRowCells[0]?.[2] || 0;
-        this.inputType = bodyRowCells[0]?.[0] || null;
-        this.inputRange = bodyRowCells[0]?.[1] || -1;
-        this.outputType = bodyRowCells[0]?.[2] || null;
-        this.table = bodyRowCells[0]?.[4] || null;
+        this.variableScope = Number(headerData?.var_scope) || 0;
+        this.filterOption = 0; // filter_option은 instance에 없으므로 기본값 0
+        this.inputType = bodyData?.input_prop || null;
+        this.inputRange = -1; // input_range는 instance에 없으므로 기본값 -1
+        this.outputType = bodyData?.output_prop || null;
+        this.table = bodyData?.table || null;
     }
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {

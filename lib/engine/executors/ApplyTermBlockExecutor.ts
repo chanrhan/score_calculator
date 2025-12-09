@@ -9,10 +9,13 @@ export class ApplyTermBlockExecutor extends BlockExecutor {
     private termsString : string;
     private topTerms : number;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        this.termsString = bodyRowCells[0]?.[0] || [];
-        this.topTerms = bodyRowCells[0]?.[2] || 0;
+        const terms = bodyData?.terms || '';
+        this.termsString = Array.isArray(terms) ? terms.join('|') : terms;
+        // use_top_count가 true일 때만 top_count 사용
+        const useTopCount = bodyData?.use_top_count || false;
+        this.topTerms = useTopCount ? (bodyData?.top_count || 0) : 0;
     }
 
     public override execute(ctx: Context, subjects: Subject[]) : { ctx: Context, subjects: Subject[] } {

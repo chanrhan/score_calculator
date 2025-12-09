@@ -18,14 +18,18 @@ export class TopSubjectBlockExecutor extends BlockExecutor {
 
     private collator: Intl.Collator;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        this.mode = bodyRowCells[0]?.[0] || 1;
-        this.scoreType = bodyRowCells[0]?.[1] || null;
+        this.mode = Number(bodyData?.topsubject_option) || 1;
+        const target = bodyData?.target || 'finalScore';
+        // target을 [item, asc] 형식으로 변환 (기본값: 내림차순, asc=0)
+        this.scoreType = Array.isArray(target) ? target[0] : target;
         this.scoreItem = this.scoreType?.[0];
         this.scoreAsc = Number(this.scoreType[1]) == 0;
-        this.topSliceNumber = bodyRowCells[0]?.[3] || 0;
-        this.sortOrders = bodyRowCells[0]?.[5] || [];
+        this.topSliceNumber = bodyData?.top_count || 0;
+        // use_order가 true일 때만 sortOrders 사용
+        const useOrder = bodyData?.use_order || false;
+        this.sortOrders = useOrder ? (bodyData?.topsubject_order || []) : [];
         this.collator = new Intl.Collator('ko', { sensitivity: 'base', numeric: true });
     }
 

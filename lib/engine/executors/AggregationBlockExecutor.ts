@@ -12,11 +12,11 @@ export class AggregationBlockExecutor extends BlockExecutor {
     private outputType: string | null;
     private func: number;
 
-    constructor(blockId: number, caseIndex: number, headerRowCells: any[], bodyRowCells: any[]) {
+    constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        this.inputType = bodyRowCells[0]?.[0] || null;
-        this.outputType = bodyRowCells[0]?.[3] || null;
-        this.func = Number(bodyRowCells[0]?.[1]) || 0;
+        this.inputType = bodyData?.input_prop || null;
+        this.outputType = bodyData?.output_prop || null;
+        this.func = Number(bodyData?.func) || 0;
     }
 
     public override execute(ctx: Context, subjects: Subject[]): { ctx: Context, subjects: Subject[] } {

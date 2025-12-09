@@ -6,8 +6,10 @@ import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
-import { createInputFieldElement } from '../common/elementHelpers';
+import { createInputFieldElement, createTokenElement } from '../common/elementHelpers';
 import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
+import { Token } from '@/components/builder/block_builder/CellElement/Token';
+import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import ratioStyles from './Ratio.module.css';
 
@@ -21,24 +23,39 @@ export const RatioLayout: {
 } = {
   header: () => <span className={ratioStyles.label}>반영비율</span>,
   body: ({ properties, readOnly, onChange }) => {
+      const inputProp = properties.input_prop || 'finalScore';
       const ratio = properties.ratio !== undefined ? String(properties.ratio) : '100';
       
       return (
         <>
+          <Token
+            element={createTokenElement({
+              menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
+              value: inputProp,
+              optional: false,
+              visible: true,
+            })}
+            onChange={(value) => {
+              if (!readOnly) {
+                onChange?.('input_prop', value);
+              }
+            }}
+            autoFit={true}
+          />
           <InputField
-          element={createInputFieldElement({
-            value: ratio,
-            optional: false,
-            visible: true,
-          })}
-          onChange={(value) => {
-            if (!readOnly) {
-              onChange?.('ratio', Number(value) || 100);
-            }
-          }}
-          autoFit={true}
-        />
-        <span>%</span>
+            element={createInputFieldElement({
+              value: ratio,
+              optional: false,
+              visible: true,
+            })}
+            onChange={(value) => {
+              if (!readOnly) {
+                onChange?.('ratio', Number(value) || 100);
+              }
+            }}
+            autoFit={true}
+          />
+          <span>%</span>
         </>
       );
     },
