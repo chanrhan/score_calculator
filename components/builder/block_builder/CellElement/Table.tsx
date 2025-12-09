@@ -3,7 +3,6 @@
 import * as React from 'react'
 import { TableElement } from '@/types/block-structure'
 import { getTokenMenu } from '@/lib/data/token-menus'
-import { parseRangeToDisplay, formatRangeFromInput, parseRangeToInput, RangeInput } from '@/lib/utils/rangeUtils'
 import styles from './Table.module.css'
 
 interface TableProps {
@@ -25,18 +24,7 @@ interface ContextMenuState {
 }
 
 export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, TableProps>(({ element, onChange, onElementChange, onGetCurrentData, className = '', input_prop, output_prop }, ref) => {
-  const { value, init_rows, init_cols, input_type, output_type, optional, visible, input_option, range: rangeProp } = element
-  
-  // 체크박스용 고유 ID 생성
-  const checkboxId = React.useId()
-  
-  // range 값을 로컬 state로 관리하여 체크박스 상태를 안정적으로 유지
-  const [range, setRange] = React.useState<boolean>(!!rangeProp)
-  
-  // element의 range 값이 변경되면 로컬 state도 업데이트
-  React.useEffect(() => {
-    setRange(!!rangeProp)
-  }, [rangeProp])
+  const { value, init_rows, init_cols, input_type, output_type, optional, visible, input_option } = element
   
   if (optional && !visible) {
     return null
@@ -147,18 +135,6 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
     index: null
   })
 
-  // 범위 편집 상태
-  const [editingRangeCell, setEditingRangeCell] = React.useState<{ rowIndex: number; colIndex: number } | null>(null)
-  const [rangeFormData, setRangeFormData] = React.useState<RangeInput>({
-    start: null,
-    end: null,
-    includeStart: true,
-    includeEnd: true
-  })
-
-  // range 속성이 true인지 확인
-  const isRangeMode = range === true
-
   // 테이블 및 wrapper ref
   const tableRef = React.useRef<HTMLTableElement>(null)
   const wrapperRef = React.useRef<HTMLDivElement>(null)
@@ -190,11 +166,6 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
             const menuItem = scoreTypeMenu.items.find(item => item.value === output_prop)
             cellValue = menuItem?.label || output_prop
           }
-        } else if (isRangeMode && rowIndex % 2 === 0 && colIndex > 0) {
-          // 범위 모드이고 입력 행이면 범위를 한글 설명으로 표시
-          if (cellValue) {
-            cellValue = parseRangeToDisplay(cellValue)
-          }
         }
         
         // 한글/영문 구분하여 더 정확한 너비 계산
@@ -221,7 +192,7 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
     }
     
     return columnWidths
-  }, [tableData, init_cols, input_prop, output_prop, isRangeMode])
+  }, [tableData, init_cols, input_prop, output_prop])
   
   const columnWidths = calculateColumnWidths()
   
@@ -237,52 +208,6 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
     notifyChange(newData)
   }
 
-  // 범위 편집 시작
-  const startRangeEdit = (rowIndex: number, colIndex: number) => {
-    if (!isRangeMode) return
-    
-    // 입력 행(홀수 행, 0, 2, 4, ...)인지 확인
-    const isInputRow = rowIndex % 2 === 0
-    if (!isInputRow) return
-
-    // 1열은 편집 불가
-    if (colIndex === 0 && (input_prop !== undefined || output_prop !== undefined)) {
-      return
-    }
-
-    const cellValue = tableData[rowIndex]?.[colIndex] || ''
-    const parsed = parseRangeToInput(cellValue)
-    setRangeFormData(parsed)
-    setEditingRangeCell({ rowIndex, colIndex })
-  }
-
-  // 범위 편집 취소
-  const cancelRangeEdit = () => {
-    setEditingRangeCell(null)
-    setRangeFormData({
-      start: null,
-      end: null,
-      includeStart: true,
-      includeEnd: true
-    })
-  }
-
-  // 범위 편집 적용
-  const applyRangeEdit = () => {
-    if (!editingRangeCell) return
-
-    const { rowIndex, colIndex } = editingRangeCell
-    const formattedRange = formatRangeFromInput(rangeFormData)
-    
-    const newData = [...tableData]
-    newData[rowIndex] = [...newData[rowIndex]]
-    newData[rowIndex][colIndex] = formattedRange
-    setTableData(newData)
-    notifyChange(newData)
-    
-    cancelRangeEdit()
-  }
-  
   // onChange 호출 시 1열 제외하는 헬퍼 함수
   const notifyChange = (data: any[][]) => {
     // tableDataRef를 즉시 업데이트하여 최신 값 보장
@@ -404,22 +329,6 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
     }
   }, [contextMenu.visible])
 
-  // 전역 클릭 이벤트로 범위 편집 닫기
-  React.useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (editingRangeCell) {
-        const target = e.target as HTMLElement
-        const rangeEditor = target.closest(`.${styles.rangeEditor}`)
-        if (!rangeEditor) {
-          cancelRangeEdit()
-        }
-      }
-    }
-    if (editingRangeCell) {
-      document.addEventListener('click', handleClick)
-      return () => document.removeEventListener('click', handleClick)
-    }
-  }, [editingRangeCell])
 
   const handleMenuAction = (action: 'addRow' | 'removeRow' | 'addColumn' | 'removeColumn') => {
     closeContextMenu()
@@ -444,18 +353,6 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
     return totalColumnWidth
   }, [columnWidths])
 
-  // range 속성 변경 핸들러
-  const handleRangeChange = React.useCallback((checked: boolean) => {
-    console.log('handleRangeChange called:', checked, 'onElementChange:', !!onElementChange)
-    setRange(checked)
-    if (onElementChange) {
-      console.log('Calling onElementChange with range:', checked)
-      onElementChange({ range: checked })
-    } else {
-      console.warn('onElementChange is not provided')
-    }
-  }, [onElementChange])
-  
   // 현재 데이터를 가져오는 함수
   const getCurrentTableData = React.useCallback(() => {
     const dataToSave = (input_prop !== undefined || output_prop !== undefined)
@@ -474,41 +371,6 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
       <div className={styles.tableInfo}>
         {/* {input_type} → {output_type}
         {input_option && <span> ({input_option})</span>} */}
-      </div>
-      
-      {/* range 체크박스 */}
-      <div 
-        className={styles.rangeCheckboxContainer} 
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <label 
-          className={styles.rangeCheckboxLabel}
-          htmlFor={checkboxId}
-          onClick={(e) => {
-            e.stopPropagation()
-            // label 클릭 시 input이 자동으로 토글되도록 함
-          }}
-        >
-          <input
-            id={checkboxId}
-            type="checkbox"
-            checked={!!range}
-            onChange={(e) => {
-              e.stopPropagation()
-              const checked = e.target.checked
-              handleRangeChange(checked)
-            }}
-            className={styles.rangeCheckbox}
-            onClick={(e) => {
-              e.stopPropagation()
-            }}
-            onMouseDown={(e) => {
-              e.stopPropagation()
-            }}
-          />
-          <span className={styles.rangeCheckboxText}>범위값 지정</span>
-        </label>
       </div>
       
       {/* 표 위쪽 버튼 바 */}
@@ -597,8 +459,6 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
                   // 1열이고 input_prop/output_prop가 있으면 특별 처리
                   const isFirstColumn = colIndex === 0
                   const hasProps = input_prop !== undefined || output_prop !== undefined
-                  const isInputRow = rowIndex % 2 === 0 // 입력 행(홀수 행, 0, 2, 4, ...)
-                  const isEditingThisCell = editingRangeCell?.rowIndex === rowIndex && editingRangeCell?.colIndex === colIndex
                   
                   let displayValue = cell
                   let isReadOnly = false
@@ -622,11 +482,6 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
                       displayValue = label
                       isReadOnly = true
                     }
-                  } else if (isRangeMode && isInputRow && !isFirstColumn) {
-                    // 범위 모드이고 입력 행이면 범위를 한글 설명으로 표시
-                    if (cell) {
-                      displayValue = parseRangeToDisplay(cell)
-                    }
                   }
                   
                   return (
@@ -640,100 +495,19 @@ export const Table = React.forwardRef<{ getCurrentTableData: () => any[][] }, Ta
                         handleContextMenu(e, 'column', colIndex)
                       }}
                     >
-                      {isEditingThisCell ? (
-                        // 범위 편집 UI (간단한 버전)
-                        <div className={styles.rangeEditor} onClick={(e) => e.stopPropagation()}>
-                          <div className={styles.rangeEditorForm}>
-                            <div className={styles.rangeInputGroup}>
-                              <input
-                                type="number"
-                                value={rangeFormData.start ?? ''}
-                                onChange={(e) => setRangeFormData({
-                                  ...rangeFormData,
-                                  start: e.target.value ? parseFloat(e.target.value) : null
-                                })}
-                                className={styles.rangeNumberInput}
-                                placeholder="시작"
-                                size={5}
-                              />
-                              <select
-                                value={rangeFormData.includeStart ? 'gte' : 'gt'}
-                                onChange={(e) => setRangeFormData({
-                                  ...rangeFormData,
-                                  includeStart: e.target.value === 'gte'
-                                })}
-                                className={styles.rangeBoundarySelect}
-                              >
-                                <option value="gte">≥</option>
-                                <option value="gt">&gt;</option>
-                              </select>
-                              <span className={styles.rangeSeparator}>~</span>
-                              <input
-                                type="number"
-                                value={rangeFormData.end ?? ''}
-                                onChange={(e) => setRangeFormData({
-                                  ...rangeFormData,
-                                  end: e.target.value ? parseFloat(e.target.value) : null
-                                })}
-                                className={styles.rangeNumberInput}
-                                placeholder="끝"
-                                size={5}
-                              />
-                              <select
-                                value={rangeFormData.includeEnd ? 'lte' : 'lt'}
-                                onChange={(e) => setRangeFormData({
-                                  ...rangeFormData,
-                                  includeEnd: e.target.value === 'lte'
-                                })}
-                                className={styles.rangeBoundarySelect}
-                              >
-                                <option value="lte">≤</option>
-                                <option value="lt">&lt;</option>
-                              </select>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  applyRangeEdit()
-                                }}
-                                className={styles.rangeApplyButton}
-                                title="적용"
-                              >
-                                ✓
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  cancelRangeEdit()
-                                }}
-                                className={styles.rangeCancelButton}
-                                title="취소"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <input
-                          type="text"
-                          value={displayValue}
-                          onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                          className={styles.tableInput}
-                          readOnly={isReadOnly || (isRangeMode && isInputRow && !isFirstColumn)}
-                          style={isReadOnly ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}}
-                          onClick={(e) => {
-                            if (isRangeMode && isInputRow && !isFirstColumn && !isReadOnly) {
-                              e.stopPropagation()
-                              startRangeEdit(rowIndex, colIndex)
-                            }
-                          }}
-                          onContextMenu={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleContextMenu(e, 'column', colIndex)
-                          }}
-                        />
-                      )}
+                      <input
+                        type="text"
+                        value={displayValue}
+                        onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                        className={styles.tableInput}
+                        readOnly={isReadOnly}
+                        style={isReadOnly ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}}
+                        onContextMenu={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleContextMenu(e, 'column', colIndex)
+                        }}
+                      />
                     </td>
                   )
                 })}

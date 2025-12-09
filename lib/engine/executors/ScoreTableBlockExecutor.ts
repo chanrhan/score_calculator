@@ -11,7 +11,6 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
     private variableScope: number;
     private filterOption: number;
     private inputType: string;
-    private inputRange: number;
     private outputType: string;
     private table: Array<Array<string>>;
     private matchedCount: number = 0;
@@ -21,7 +20,6 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
         this.variableScope = Number(headerData?.var_scope) || 0;
         this.filterOption = 0; // filter_option은 instance에 없으므로 기본값 0
         this.inputType = bodyData?.input_prop || null;
-        this.inputRange = -1; // input_range는 instance에 없으므로 기본값 -1
         this.outputType = bodyData?.output_prop || null;
         this.table = bodyData?.table || null;
     }
@@ -102,27 +100,33 @@ export class ScoreTableBlockExecutor extends BlockExecutor {
                         continue;
                     }
                     
-                    if (inputValue as number && this.inputRange == 1) {
-                        const rangeInfo = this.parseRange(input);
-                        if (rangeInfo) {
-                            const { start, end, includeStart, includeEnd } = rangeInfo;
-                            const numValue = Number(inputValue);
-                            
-                            // start가 -Infinity가 아니면 시작값 비교
-                            const startMatch = start === -Infinity || (includeStart ? numValue >= start : numValue > start);
-                            // end가 Infinity가 아니면 끝값 비교
-                            const endMatch = end === Infinity || (includeEnd ? numValue <= end : numValue < end);
-                            
-                            if (startMatch && endMatch) {
-                                matched = true;
-                            }
+                    // input 값이 범위 형식인지 자동 감지
+                    const rangeInfo = this.parseRange(input);
+                    if (rangeInfo) {
+                        // 범위 형식인 경우: 숫자 값이 범위에 포함되는지 확인
+                        const numValue = Number(inputValue);
+                        if (isNaN(numValue)) {
+                            // inputValue가 숫자가 아니면 범위 매칭 불가
+                            continue;
                         }
-                    } else if (this.inputRange == 0) {
+                        
+                        const { start, end, includeStart, includeEnd } = rangeInfo;
+                        
+                        // start가 -Infinity가 아니면 시작값 비교
+                        const startMatch = start === -Infinity || (includeStart ? numValue >= start : numValue > start);
+                        // end가 Infinity가 아니면 끝값 비교
+                        const endMatch = end === Infinity || (includeEnd ? numValue <= end : numValue < end);
+                        
+                        if (startMatch && endMatch) {
+                            matched = true;
+                        }
+                    } else {
+                        // 범위 형식이 아닌 경우: 정확히 일치하는지 확인
                         if (inputValue == input) {
                             matched = true;
                         }
-                        
                     }
+                    
                     if (matched) {
                         this.matchedCount++;
                         calcLog(`        ✅ ${inputValue} -> ${output}`);
