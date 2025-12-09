@@ -34,6 +34,7 @@ export interface LayoutRenderContext {
   onChange?: (propertyName: string, value: any) => void;
   className?: string;
   colIndex?: number; // 열 인덱스 (헤더/바디 셀이 동일한 구조일 때 사용)
+  varScope?: '0' | '1'; // 블록 헤더의 var_scope 값 ('0': 학생, '1': 과목)
 }
 
 /**

@@ -5,7 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent, LayoutRenderContext } from '../common/types';
 import { createTokenElement, createConditionChainElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { ConditionChain } from '@/components/builder/block_builder/CellElement/ConditionChain';
@@ -44,7 +44,7 @@ export const ConditionLayout: {
         </div>
       );
     },
-  body: ({ properties, readOnly, onChange }) => {
+  body: ({ properties, readOnly, onChange, varScope }: LayoutRenderContext & { varScope?: '0' | '1' }) => {
       const exprs = properties.exprs || [];
       
       return (
@@ -65,6 +65,7 @@ export const ConditionLayout: {
                 onChange?.('exprs', Array.isArray(value) ? value : []);
               }
             }}
+            varScope={varScope}
           />
         </div>
       );
@@ -117,6 +118,10 @@ export class ConditionLayoutRenderer extends GenericBlockLayoutRenderer {
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
+    
+    // 헤더에서 var_scope 값 가져오기
+    const headerProperties = block.getHeaderProperties(colIndex);
+    const varScope = headerProperties.var_scope || '0';
 
     const LayoutComponent = getLayoutComponent(ConditionLayout.body, colIndex);
     if (!LayoutComponent) {
@@ -142,6 +147,7 @@ export class ConditionLayoutRenderer extends GenericBlockLayoutRenderer {
               block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
               onBlockChange?.(block.block_id, block);
             }}
+            varScope={varScope as '0' | '1'}
           />
         </div>
       </td>

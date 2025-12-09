@@ -216,7 +216,7 @@ export const VAR_SCOPE_MENU: TokenMenu = {
   name: '변수 범위',
   items: [
     { label: '학생', value: '0' },
-    { label: '과목별', value: '1' },
+    { label: '과목', value: '1' },
   ]
 } as const
 

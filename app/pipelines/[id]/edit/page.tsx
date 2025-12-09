@@ -12,6 +12,7 @@ import { usePipelineVariables } from '@/store/usePipelineVariables';
 import { useBlockDataStore } from '@/store/useBlockDataStore';
 import { toast } from 'sonner';
 import { createDefaultDivisionHead } from '@/lib/utils/divisionHeadUtils';
+import { VariableListPanel } from '@/components/PipelineEditor/VariableListPanel';
 import styles from './page.module.css';
 
 // DB pipeline id 사용 (ensure 후 세팅)
@@ -473,6 +474,7 @@ export default function PipelineEditPage() {
           </button>
         </div>
       </div>
+      <VariableListPanel pipelineId={dbPipelineId || undefined} univId={selectedUnivId || undefined} />
       <div className={styles.canvasContainer}>
         <Canvas pipelineId={pipeline.id} dbPipelineId={dbPipelineId} />
       </div>

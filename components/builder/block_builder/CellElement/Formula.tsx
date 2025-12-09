@@ -7,6 +7,7 @@ import styles from './Formula.module.css'
 import { VARIABLE_MENU } from '@/lib/data/token-menus'
 import { usePipelineVariables } from '@/store/usePipelineVariables'
 import { FormulaInput, type FormulaInputRef } from './FormulaInput'
+import { getAttributesByScope } from '@/lib/utils/scope-attributes'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -29,9 +30,10 @@ interface FormulaProps {
   element: FormulaElement
   onChange?: (value: string) => void
   className?: string
+  varScope?: '0' | '1' // 블록 헤더의 var_scope 값 ('0': 학생, '1': 과목)
 }
 
-export const Formula: React.FC<FormulaProps> = ({ element, onChange, className = '' }) => {
+export const Formula: React.FC<FormulaProps> = ({ element, onChange, className = '', varScope }) => {
   const { menu_key, value, optional, visible } = element
   const var_use = (element as any).var_use ?? true
   const var_store = (element as any).var_store ?? true
@@ -49,7 +51,7 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
   React.useEffect(() => {
     // Formula 블록에서는 항상 VARIABLE_MENU를 기본으로 사용
     const variableMenu = VARIABLE_MENU
-    const base: TokenMenuItem[] = variableMenu 
+    let base: TokenMenuItem[] = variableMenu 
       ? (variableMenu.items || []).map((item, idx) => ({
           id: idx + 1,
           order: idx + 1,
@@ -57,13 +59,26 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
           value: item.value,
         }))
       : []
+    
+    // scope 필터링 적용
+    if (varScope !== undefined) {
+      const scopeAttributes = getAttributesByScope(varScope)
+      const attributeKeys = new Set(scopeAttributes.map(attr => attr.key))
+      base = base.filter(item => attributeKeys.has(item.value))
+    }
+    
     setBaseItems(base)
 
     // var_use: 파이프라인 변수 병합
     let merged: TokenMenuItem[] = base
     if (var_use) {
       const nextOrderStart = base.length + 1
-      const vars: TokenMenuItem[] = Array.from(variablesByName.values()).map((v, idx) => ({ 
+      // scope 필터링 적용 (varScope가 있을 때)
+      let varsToInclude = Array.from(variablesByName.values())
+      if (varScope !== undefined) {
+        varsToInclude = varsToInclude.filter(v => (v as any).scope === varScope)
+      }
+      const vars: TokenMenuItem[] = varsToInclude.map((v, idx) => ({ 
         id: -1000 - idx, 
         order: nextOrderStart + idx, 
         value: v.variable_name, 
@@ -81,7 +96,7 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
     }
 
     setVariableItems(merged)
-  }, [menu_key, variablesByName, var_use, var_store])
+  }, [menu_key, variablesByName, var_use, var_store, varScope])
 
   if (optional && !visible) {
     return null
@@ -110,7 +125,9 @@ export const Formula: React.FC<FormulaProps> = ({ element, onChange, className =
     }
     setSaving(true)
     setError(null)
-    const res = await create(currentKey.univId, currentKey.pipelineId, name)
+    // varScope가 있으면 해당 scope로 저장, 없으면 기본값 '0'
+    const scope = varScope || '0'
+    const res = await (create as any)(currentKey.univId, currentKey.pipelineId, name, scope)
     setSaving(false)
     if (!res.success) { 
       setError(res.error || '저장 실패')

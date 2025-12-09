@@ -4,20 +4,25 @@ export type PipelineVariableRow = {
   univ_id: string;
   pipeline_id: bigint | number;
   variable_name: string;
+  scope: string; // '0': 학생(Student), '1': 과목(Subject)
   created_at?: Date;
   updated_at?: Date;
 };
 
 export class PipelineVariablesService {
-  static async list(univId: string, pipelineId: number): Promise<PipelineVariableRow[]> {
+  static async list(univId: string, pipelineId: number, scope?: string): Promise<PipelineVariableRow[]> {
+    const where: any = { univ_id: univId, pipeline_id: BigInt(pipelineId) };
+    if (scope !== undefined) {
+      where.scope = scope;
+    }
     const rows = await (prisma as any).pipeline_variable.findMany({
-      where: { univ_id: univId, pipeline_id: BigInt(pipelineId) },
+      where,
       orderBy: { variable_name: 'asc' },
     });
     return rows as unknown as PipelineVariableRow[];
   }
 
-  static async create({ univId, pipelineId, name }: { univId: string; pipelineId: number; name: string }): Promise<PipelineVariableRow> {
+  static async create({ univId, pipelineId, name, scope = '0' }: { univId: string; pipelineId: number; name: string; scope?: string }): Promise<PipelineVariableRow> {
     const trimmed = (name ?? '').trim();
     if (!trimmed) {
       const err: any = new Error('Name required');
@@ -30,6 +35,13 @@ export class PipelineVariablesService {
     //   err.code = 'VALIDATION';
     //   throw err;
     // }
+
+    // Validate scope
+    if (scope !== '0' && scope !== '1') {
+      const err: any = new Error('Invalid scope. Must be "0" (Student) or "1" (Subject)');
+      err.code = 'VALIDATION';
+      throw err;
+    }
 
     // Unique per (pipeline_id, variable_name)
     const exists = await (prisma as any).pipeline_variable.findUnique({
@@ -46,6 +58,7 @@ export class PipelineVariablesService {
         univ_id: univId,
         pipeline_id: BigInt(pipelineId),
         variable_name: trimmed,
+        scope: scope,
       },
     });
     return created as unknown as PipelineVariableRow;

@@ -249,6 +249,7 @@ model pipeline_variable {
   univ_id       String   @db.Char(3)
   pipeline_id   BigInt
   variable_name String
+  scope         String   @default("0") // '0': 학생(Student), '1': 과목(Subject)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 

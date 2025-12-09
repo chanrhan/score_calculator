@@ -5,7 +5,7 @@ import React from 'react';
 import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
-import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
+import { LayoutComponent, BlockPropertyValues, getLayoutComponent, LayoutRenderContext } from '../common/types';
 import { createTokenElement, createFormulaElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
 import { Formula } from '@/components/builder/block_builder/CellElement/Formula';
@@ -44,7 +44,7 @@ export const FormulaLayout: {
         </div>
       );
     },
-  body: ({ properties, readOnly, onChange }) => {
+  body: ({ properties, readOnly, onChange, varScope }: LayoutRenderContext & { varScope?: '0' | '1' }) => {
       const expr = properties.expr || '';
       const outputProp = properties.output_prop || 'finalScore';
       
@@ -65,6 +65,7 @@ export const FormulaLayout: {
                   onChange?.('expr', value);
                 }
               }}
+              varScope={varScope}
             />
             <span className={formulaStyles.equals}> = </span>
             <Token
@@ -80,6 +81,7 @@ export const FormulaLayout: {
                 }
               }}
               autoFit={true}
+              varScope={varScope}
             />
           </div>
         </div>
@@ -133,6 +135,10 @@ export class FormulaLayoutRenderer extends GenericBlockLayoutRenderer {
     
     // 속성 값 직접 가져오기
     const properties = block.getBodyProperties(bodyRowIndex, colIndex);
+    
+    // 헤더에서 var_scope 값 가져오기
+    const headerProperties = block.getHeaderProperties(colIndex);
+    const varScope = headerProperties.var_scope || '0';
 
     const LayoutComponent = getLayoutComponent(FormulaLayout.body, colIndex);
     if (!LayoutComponent) {
@@ -151,13 +157,16 @@ export class FormulaLayoutRenderer extends GenericBlockLayoutRenderer {
             <div className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full"></div>
           )}
           <LayoutComponent
-            properties={properties}
-            readOnly={readOnly || false}
-            onChange={(propertyName, value) => {
-              if (readOnly) return;
-              block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
-              onBlockChange?.(block.block_id, block);
-            }}
+            {...({
+              properties,
+              readOnly: readOnly || false,
+              onChange: (propertyName: string, value: any) => {
+                if (readOnly) return;
+                block.updateProperty(propertyName, value, bodyRowIndex, colIndex);
+                onBlockChange?.(block.block_id, block);
+              },
+              varScope: varScope as '0' | '1',
+            } as any)}
           />
         </div>
       </td>

@@ -14,6 +14,7 @@ interface ConditionChainProps {
   element: ConditionChainElement
   onChange?: (value: Array<Record<string, any>>) => void
   className?: string
+  varScope?: '0' | '1' // 블록 헤더의 var_scope 값 ('0': 학생, '1': 과목)
 }
 
 function defaultFieldValue(type: ConditionChainItemType['type']): any {
@@ -49,7 +50,7 @@ function defaultRowForRowIndex(base: ConditionChainItemType[], rowIndex: number)
   return cardValues
 }
 
-export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChange, className = '' }) => {
+export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChange, className = '', varScope }) => {
   const { value, optional, visible, item_type } = element
 
   if (optional && !visible) {
@@ -121,6 +122,7 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
               }
             }
             onChange={(v) => updateItemAt(rowIndex, actualColIndex, v)}
+            varScope={varScope}
           />
         )
       case 'InputField':
@@ -144,6 +146,7 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
           <Formula
             element={{ ...(field as any), value: fieldValue }}
             onChange={(v) => updateItemAt(rowIndex, actualColIndex, v)}
+            varScope={varScope}
           />
         )
       default:

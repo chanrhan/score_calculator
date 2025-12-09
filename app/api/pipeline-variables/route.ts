@@ -6,6 +6,7 @@ const PostSchema = z.object({
   universityId: z.string().length(3),
   pipelineId: z.union([z.number().int(), z.string().regex(/^\d+$/)]).transform((v) => Number(v)),
   name: z.string().min(1).max(50),
+  scope: z.enum(['0', '1']).optional().default('0'), // '0': 학생, '1': 과목
 });
 
 function toDTO(row: any) {
@@ -13,6 +14,7 @@ function toDTO(row: any) {
     univ_id: row.univ_id,
     pipeline_id: Number(row.pipeline_id),
     variable_name: row.variable_name,
+    scope: row.scope || '0',
     // omit dates or convert as needed
   };
 }
@@ -22,10 +24,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const univId = searchParams.get('universityId') || '';
     const pipelineId = Number(searchParams.get('pipelineId'));
+    const scope = searchParams.get('scope') || undefined; // 선택적 필터링
     if (!univId || !Number.isFinite(pipelineId)) {
       return NextResponse.json({ success: false, message: 'universityId and pipelineId required' }, { status: 400 });
     }
-    const list = await PipelineVariablesService.list(univId, pipelineId);
+    const list = await PipelineVariablesService.list(univId, pipelineId, scope);
     const data = list.map(toDTO);
     return NextResponse.json({ success: true, data }, { status: 200 });
   } catch (error) {
@@ -38,7 +41,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const parsed = PostSchema.parse(body);
-    const created = await PipelineVariablesService.create({ univId: parsed.universityId, pipelineId: parsed.pipelineId, name: parsed.name });
+    const created = await PipelineVariablesService.create({ 
+      univId: parsed.universityId, 
+      pipelineId: parsed.pipelineId, 
+      name: parsed.name,
+      scope: parsed.scope 
+    });
     return NextResponse.json({ success: true, data: toDTO(created) }, { status: 201 });
   } catch (error: any) {
     if (error?.name === 'ZodError') {

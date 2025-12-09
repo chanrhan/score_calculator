@@ -11,15 +11,17 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getTokenMenu } from '@/lib/data/token-menus'
 import { useBlockDataStore } from '@/store/useBlockDataStore'
+import { getAttributesByScope } from '@/lib/utils/scope-attributes'
 
 interface TokenProps {
   element: TokenElement
   onChange?: (value: string) => void
   className?: string
   autoFit?: boolean // 자동 크기 조정 옵션
+  varScope?: '0' | '1' // 블록 헤더의 var_scope 값 ('0': 학생, '1': 과목)
 }
 
-export const Token: React.FC<TokenProps> = ({ element, onChange, className = '', autoFit = true }) => {
+export const Token: React.FC<TokenProps> = ({ element, onChange, className = '', autoFit = true, varScope }) => {
   const { menu_key, value, optional, visible, var_use, var_store } = element
   const { variablesByName, currentKey, create } = usePipelineVariables()
   const { selectedUnivId } = useUniversity()
@@ -65,11 +67,25 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
         }
       }
 
+      // scope 필터링 적용 (menu_key가 'variable'일 때만)
+      let filteredItems: TokenMenuItem[] = baseItems
+      if (menu_key === 'variable' && varScope !== undefined) {
+        const scopeAttributes = getAttributesByScope(varScope)
+        // baseItems에서 scope에 해당하는 속성만 필터링
+        const attributeKeys = new Set(scopeAttributes.map(attr => attr.key))
+        filteredItems = baseItems.filter(item => attributeKeys.has(item.value))
+      }
+
       // var_use: 파이프라인 변수 병합
-      let merged: TokenMenuItem[] = baseItems
+      let merged: TokenMenuItem[] = filteredItems
       if (var_use) {
-        const nextOrderStart = baseItems.length + 1
-        const vars: TokenMenuItem[] = Array.from(variablesByName.values()).map((v, idx) => ({ 
+        const nextOrderStart = filteredItems.length + 1
+        // scope 필터링 적용 (varScope가 있을 때)
+        let varsToInclude = Array.from(variablesByName.values())
+        if (varScope !== undefined) {
+          varsToInclude = varsToInclude.filter(v => (v as any).scope === varScope)
+        }
+        const vars: TokenMenuItem[] = varsToInclude.map((v, idx) => ({ 
           id: -1000 - idx, 
           order: nextOrderStart + idx, 
           value: v.variable_name, 
@@ -77,7 +93,7 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
           created_at: undefined, 
           updated_at: undefined 
         })) as any
-        merged = [...baseItems, ...vars]
+        merged = [...filteredItems, ...vars]
       }
 
       // var_store: 하단에 "변수 추가" 액션 추가
@@ -90,7 +106,7 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
     }
 
     loadMenuItems()
-  }, [menu_key, selectedUnivId, variablesByName, var_use, var_store])
+  }, [menu_key, selectedUnivId, variablesByName, var_use, var_store, varScope])
 
   // 선택된 값에 따른 동적 크기 계산
   React.useEffect(() => {
@@ -129,7 +145,9 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
     if (!name) { setError('변수명을 입력하세요'); return }
     setSaving(true)
     setError(null)
-    const res = await create(currentKey.univId, currentKey.pipelineId, name)
+    // varScope가 있으면 해당 scope로 저장, 없으면 기본값 '0'
+    const scope = varScope || '0'
+    const res = await (create as any)(currentKey.univId, currentKey.pipelineId, name, scope)
     setSaving(false)
     if (!res.success) { setError(res.error || '저장 실패'); return }
     setOpen(false)
