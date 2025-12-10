@@ -13,6 +13,7 @@ import { useBlockDataStore } from '@/store/useBlockDataStore';
 import { toast } from 'sonner';
 import { createDefaultDivisionHead } from '@/lib/utils/divisionHeadUtils';
 import { VariableListPanel } from '@/components/PipelineEditor/VariableListPanel';
+import TimelineBar from '@/components/builder/PipelineEditor/TimelineBar';
 import styles from './page.module.css';
 
 // DB pipeline id 사용 (ensure 후 세팅)
@@ -34,6 +35,7 @@ export default function PipelineEditPage() {
   const [calculationProgress, setCalculationProgress] = React.useState(0);
   const [calculationMode, setCalculationMode] = React.useState<0 | 1>(0); // 0: 전체, 1: 조건부
   const [studentIds, setStudentIds] = React.useState<string[]>([]);
+  const [selectedComponentId, setSelectedComponentId] = React.useState<number | undefined>(undefined);
 
   // 파이프라인 보장 후 DB에서 파이프라인 데이터 로딩
   React.useEffect(() => {
@@ -406,6 +408,10 @@ export default function PipelineEditPage() {
     );
   }
 
+  const handleComponentClick = (componentId: number) => {
+    setSelectedComponentId(componentId);
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -474,9 +480,24 @@ export default function PipelineEditPage() {
           </button>
         </div>
       </div>
-      <VariableListPanel pipelineId={dbPipelineId || undefined} univId={selectedUnivId || undefined} />
-      <div className={styles.canvasContainer}>
-        <Canvas pipelineId={pipeline.id} dbPipelineId={dbPipelineId} />
+      <div className={styles.mainContent}>
+        <VariableListPanel pipelineId={dbPipelineId || undefined} univId={selectedUnivId || undefined} />
+        <div className={styles.contentArea}>
+          {pipeline && pipeline.components.length > 0 && (
+            <TimelineBar
+              components={pipeline.components}
+              selectedComponentId={selectedComponentId}
+              onComponentClick={handleComponentClick}
+            />
+          )}
+          <div className={styles.canvasContainer}>
+            <Canvas 
+              pipelineId={pipeline.id} 
+              dbPipelineId={dbPipelineId} 
+              selectedComponentId={selectedComponentId}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

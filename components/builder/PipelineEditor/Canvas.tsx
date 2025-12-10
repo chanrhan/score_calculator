@@ -17,7 +17,6 @@ import type { AnyBlock } from '@/types/blocks';
 import ComponentNode from '../block_builder/ComponentNode';
 import BlockPalette from './BlockPalette';
 import BlockInspector from './BlockInspector';
-import TimelineBar from './TimelineBar';
 import CustomEdge from './CustomEdge';
 import { BlockCombineProvider } from '@/hooks/blocks/useBlockCombineContext';
 import { BlockGridSyncProvider } from '@/hooks/blocks/useBlockGridSync';
@@ -92,19 +91,44 @@ function usePipelineGraph(
 // 테스트 전용 내보내기 (프로덕션 코드 경량화에 영향 없음)
 export { usePipelineGraph as __test_only_usePipelineGraph };
 
-export default function Canvas({ pipelineId, dbPipelineId, readOnly = false }: { pipelineId: string; dbPipelineId?: number | null; readOnly?: boolean }) {
+export default function Canvas({ 
+  pipelineId, 
+  dbPipelineId, 
+  readOnly = false,
+  selectedComponentId 
+}: { 
+  pipelineId: string; 
+  dbPipelineId?: number | null; 
+  readOnly?: boolean;
+  selectedComponentId?: number;
+}) {
   return (
     <ReactFlowProvider>
       <BlockCombineProvider>
         <BlockGridSyncProvider>
-          <CanvasContent pipelineId={pipelineId} dbPipelineId={dbPipelineId} readOnly={readOnly} />
+          <CanvasContent 
+            pipelineId={pipelineId} 
+            dbPipelineId={dbPipelineId} 
+            readOnly={readOnly}
+            selectedComponentId={selectedComponentId}
+          />
         </BlockGridSyncProvider>
       </BlockCombineProvider>
     </ReactFlowProvider>
   );
 }
 
-function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelineId: string; dbPipelineId?: number | null; readOnly?: boolean }) {
+function CanvasContent({ 
+  pipelineId, 
+  dbPipelineId, 
+  readOnly = false,
+  selectedComponentId 
+}: { 
+  pipelineId: string; 
+  dbPipelineId?: number | null; 
+  readOnly?: boolean;
+  selectedComponentId?: number;
+}) {
   // 파이프라인 상태를 구독하여 변경 시 리렌더
   const pipeline = usePipelines(s => s.pipelines.find(p => p.id === pipelineId))!;
   const { getById, createComponentWithFlowBlock, addFlowBlockToComponent, setComponentXY, connectComponents, toggleEdgeDirection, connectBlocks } = usePipelines();
@@ -136,7 +160,6 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
   const rf = useReactFlow();
   const { focusedBlockId, focusBlockById } = useResultsHighlight();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [selectedComponentId, setSelectedComponentId] = React.useState<number | undefined>(undefined);
 
 
   // Pipeline의 components를 사용하여 연결선 자동 생성
@@ -249,22 +272,23 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
     requestAnimationFrame(() => {
       // try { console.log('[Canvas] fitView to', nodeId); } catch {}
       rf.fitView({ nodes: [node], padding: 0.25, duration: 600, maxZoom: 1.2 });
-      setSelectedComponentId(comp.id);
       focusBlockById(null);
     });
   }, [focusedBlockId, pipeline, rf, focusBlockById]);
 
-  // 타임라인 바에서 컴포넌트 클릭 시 해당 컴포넌트로 스크롤/포커스
-  const handleComponentClick = React.useCallback((componentId: number) => {
-    setSelectedComponentId(componentId);
-    const nodeId = `comp-${componentId}`;
+  // 타임라인 바에서 컴포넌트 클릭 시 해당 컴포넌트 노드로 포커싱
+  React.useEffect(() => {
+    if (selectedComponentId === undefined || !pipeline) return;
+    const nodeId = `comp-${selectedComponentId}`;
     const node = rf.getNode(nodeId as any);
     if (!node) return;
     
+    // 노드가 준비된 뒤에만 포커스 적용
     requestAnimationFrame(() => {
-      rf.fitView({ nodes: [node], padding: 0.25, duration: 600, maxZoom: 1.2 });
+      rf.fitView({ nodes: [node], padding: 0.3, duration: 500, maxZoom: 1.5 });
     });
-  }, [rf]);
+  }, [selectedComponentId, pipeline, rf]);
+
 
   const onDrop: React.DragEventHandler = async (e) => {
     // 블록 이동 처리
@@ -413,16 +437,8 @@ function CanvasContent({ pipelineId, dbPipelineId, readOnly = false }: { pipelin
   return (
     <div className={styles.canvas}>
         <div className={styles.flowContainer} ref={flowWrapperRef}>
-          {/* 타임라인 바 */}
-          {pipeline && pipeline.components.length > 0 && (
-            <TimelineBar
-              components={pipeline.components}
-              selectedComponentId={selectedComponentId}
-              onComponentClick={handleComponentClick}
-            />
-          )}
           {!readOnly && (
-            <div style={{ position: 'absolute', top: 72, right: 8, zIndex: 10, display: 'flex', gap: 8 }}>
+            <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10, display: 'flex', gap: 8 }}>
               <button className="btn" onClick={() => setSettingsOpen(true)} disabled={!dbPipelineId}>계산 설정</button>
             </div>
           )}

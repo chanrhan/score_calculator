@@ -141,20 +141,19 @@ export const VariableListPanel: React.FC<VariableListPanelProps> = ({ pipelineId
     }
   }
 
-  if (!isOpen) {
-    return (
-      <button
-        className={styles.toggleButton}
-        onClick={() => setIsOpen(true)}
-        title="변수 목록 열기"
-      >
-        <ChevronRight className={styles.icon} />
-      </button>
-    )
-  }
-
   return (
-    <div className={styles.panel}>
+    <>
+      {!isOpen && (
+        <button
+          className={styles.toggleButton}
+          onClick={() => setIsOpen(true)}
+          title="변수 목록 열기"
+        >
+          <ChevronRight className={styles.icon} />
+        </button>
+      )}
+      {isOpen && (
+        <div className={styles.panel}>
       <div className={styles.header}>
         <h3 className={styles.title}>사용 가능한 변수 목록</h3>
         <button
@@ -399,7 +398,9 @@ export const VariableListPanel: React.FC<VariableListPanelProps> = ({ pipelineId
           </ul>
         </div>
       </div>
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 
