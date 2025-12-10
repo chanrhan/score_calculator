@@ -77,3 +77,28 @@
   cursor: pointer;
 }
 
+.orderRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.orderList {
+  flex: 1;
+  min-width: 0;
+}
+
+.orderList :global(.listContainer) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.orderList :global(.listItem) {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+

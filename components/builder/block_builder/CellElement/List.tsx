@@ -13,9 +13,10 @@ interface ListProps {
   element: ListElement
   onChange?: (value: any[]) => void
   className?: string
+  showRank?: boolean
 }
 
-export const List: React.FC<ListProps> = ({ element, onChange, className = '' }) => {
+export const List: React.FC<ListProps> = ({ element, onChange, className = '', showRank = false }) => {
   const { value, optional, visible, item_type, menu_key, menu_key2 } = element
 
   // if (optional && !visible) {
@@ -95,6 +96,11 @@ export const List: React.FC<ListProps> = ({ element, onChange, className = '' })
     <div className={`${styles.listContainer} ${className}`}>
       {itemsToRender && itemsToRender.map((itemValue, index) => (
         <div key={index} className={styles.listItem}>
+          {showRank && (
+            <span className={styles.rankLabel}>
+              {index + 2}순위
+            </span>
+          )}
           {renderItem(itemValue, index)}
         </div>
       ))}

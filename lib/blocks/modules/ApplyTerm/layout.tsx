@@ -107,7 +107,7 @@ export const ApplyTermLayout: {
                 </svg>
               )}
             </div>
-            <span className={applyTermStyles.checkboxText}>상위 사용</span>
+            <span className={applyTermStyles.checkboxText}>우수 학기만 반영</span>
           </div>
           {useTopCount && (
             <div className={applyTermStyles.row}>

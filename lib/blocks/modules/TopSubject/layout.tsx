@@ -118,11 +118,11 @@ export const TopSubjectLayout: {
                 </svg>
               )}
             </div>
-            <span className={topSubjectStyles.checkboxText}>추가 정렬</span>
+            <span className={topSubjectStyles.checkboxText}>추가 정렬 기준</span>
           </div>
           {useOrder && (
-            <div className={topSubjectStyles.row}>
-              <span className={topSubjectStyles.label}>정렬:</span>
+            <div className={topSubjectStyles.orderRow}>
+              {/* <span className={topSubjectStyles.label}>정렬:</span> */}
               <List
                 element={createListElement({
                   item_type: 'OrderToken',
@@ -137,6 +137,8 @@ export const TopSubjectLayout: {
                     onChange?.('topsubject_order', Array.isArray(value) ? value : []);
                   }
                 }}
+                showRank={true}
+                className={topSubjectStyles.orderList}
               />
             </div>
           )}

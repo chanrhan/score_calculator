@@ -72,3 +72,11 @@
   font-size: 0.75rem;
   color: #ef4444;
 }
+
+.rankLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}

@@ -23,30 +23,14 @@ interface TokenProps {
   varScope?: '0' | '1' // 블록 헤더의 var_scope 값 ('0': 과목, '1': 학생)
 }
 
-// 라벨 기반 색상 생성 함수 (해시 기반)
+// 토큰 색상 통일 (모든 토큰 동일한 색상)
 const getTagColor = (label: string): { bg: string; text: string; border: string } => {
-  // 노션 스타일 파스텔 톤 색상 팔레트
-  // 배경: 더 흐릿하게 (0.05), 글자/테두리: 더 진하게 (가독성 향상)
-  const colors = [
-    { bg: 'rgba(139, 92, 246, 0.05)', text: 'rgb(124, 58, 237)', border: 'rgba(139, 92, 246, 0.5)' }, // 보라
-    { bg: 'rgba(236, 72, 153, 0.05)', text: 'rgb(219, 39, 119)', border: 'rgba(236, 72, 153, 0.5)' }, // 분홍
-    { bg: 'rgba(239, 68, 68, 0.05)', text: 'rgb(220, 38, 38)', border: 'rgba(239, 68, 68, 0.5)' }, // 빨강
-    { bg: 'rgba(34, 197, 94, 0.05)', text: 'rgb(22, 163, 74)', border: 'rgba(34, 197, 94, 0.5)' }, // 초록
-    { bg: 'rgba(180, 83, 9, 0.05)', text: 'rgb(154, 52, 18)', border: 'rgba(180, 83, 9, 0.5)' }, // 갈색
-    { bg: 'rgba(59, 130, 246, 0.05)', text: 'rgb(37, 99, 235)', border: 'rgba(59, 130, 246, 0.5)' }, // 파랑
-    { bg: 'rgba(168, 85, 247, 0.05)', text: 'rgb(147, 51, 234)', border: 'rgba(168, 85, 247, 0.5)' }, // 보라2
-    { bg: 'rgba(251, 146, 60, 0.05)', text: 'rgb(234, 88, 12)', border: 'rgba(251, 146, 60, 0.5)' }, // 주황
-  ]
-  
-  // 간단한 해시 함수
-  let hash = 0
-  for (let i = 0; i < label.length; i++) {
-    hash = ((hash << 5) - hash) + label.charCodeAt(i)
-    hash = hash & hash // 32bit 정수로 변환
+  // 배경: 옅은 회색, 테두리: 옅은 회색, 글자: 검은색
+  return {
+    bg: 'rgba(156, 163, 175, 0.1)', // 옅은 회색 배경
+    text: 'rgb(0, 0, 0)', // 검은색 글자
+    border: 'rgba(156, 163, 175, 0.3)', // 옅은 회색 테두리
   }
-  
-  const index = Math.abs(hash) % colors.length
-  return colors[index]
 }
 
 export const Token: React.FC<TokenProps> = ({ element, onChange, className = '', autoFit = true, varScope }) => {
