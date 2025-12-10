@@ -2,11 +2,26 @@
   padding: 0.75rem;
   height: 100%;
   overflow-y: auto;
-  background-color: #f9fafb; /* Match panel background */
+  background-color: #f9fafb;
 }
 
 .header {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.titleBar {
+  width: 4px;
+  height: 20px;
+  background-color: #3b82f6;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .title {
@@ -20,114 +35,67 @@
   color: #6b7280;
 }
 
-.horizontalList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.card {
+.tableContainer {
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); /* Aligned with subjectItem */
-  transition: all 0.2s ease-in-out;
-  cursor: pointer;
-}
-.card:hover {
-  border-color: #a5b4fc;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* Aligned with subjectItem */
+  overflow: hidden;
 }
 
-.cardActive {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px #bfdbfe; /* Aligned with subjectItem */
-}
-
-.cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.cardTitle {
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: #111827;
-}
-
-.cardMeta {
-  font-size: 0.75rem;
-  color: #6b7280;
-  /* Monospace removed for sans-serif readability */
-}
-
-.cardBody {
-  padding: 0.75rem;
-}
-
-.logs {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.logRow {
-  /* No special styles needed now */
-}
-
-.logGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-/* Sleeker IO Card */
-.ioCard {
-  padding-top: 0.5rem;
-}
-
-.ioCard + .ioCard {
-  border-left: 1px solid #f3f4f6;
-  padding-left: 0.75rem;
-}
-
-
-.ioHeader {
-  font-size: 0.7rem;
+.tableHeaderCell {
   font-weight: 600;
-  color: #6b7280; /* Subtler color */
-  margin-bottom: 0.4rem;
-  text-transform: uppercase;
+  color: #374151;
+  background-color: #f9fafb;
 }
 
-.ioKey {
-  margin-bottom: 0.2rem;
-  min-height: 20px;
+.tableRow {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
-.ioValue {
+.tableRow:hover {
+  background-color: #f3f4f6;
+}
+
+.tableCell {
+  padding: 0.75rem 1rem;
   font-size: 0.875rem;
   color: #1f2937;
-  word-break: break-all;
-  /* Monospace removed for sans-serif readability */
+  vertical-align: top;
 }
 
-.noLogs {
-  font-size: 0.8125rem;
-  color: #9ca3af;
-  text-align: center;
-  padding: 0.75rem;
+.cellContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.keyWrapper {
+  font-size: 0.7rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.keyWrapper :global(.keyText) {
+  font-size: 0.7rem;
+}
+
+.valueWrapper {
+  font-size: 0.875rem;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.valueText {
+  word-break: break-all;
+  white-space: pre-wrap;
 }
 
 .empty {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  min-height: 200px;
   color: #9ca3af;
   font-size: 0.875rem;
 }
-

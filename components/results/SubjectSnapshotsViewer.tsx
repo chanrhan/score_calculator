@@ -4,9 +4,9 @@ import * as React from 'react';
 import type { Subject, Snapshot, CalculationLog } from '@/types/domain';
 import { useResultsHighlight } from '@/components/results/ResultsHighlightContext';
 import { useLogKeyHighlight } from './LogKeyHighlightContext';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import styles from './SubjectSnapshotsViewer.module.css';
 import keyStyles from './KeyHighlighter.module.css';
-import { BLOCK_TYPE_MAP } from '@/types/block-types';
 import { Subject_Separation } from '@/types/text-mapping';
 
 type Props = {
@@ -71,10 +71,23 @@ export default function SubjectSnapshotsViewer({ subject }: Props) {
     );
   }
 
+  // 모든 스냅샷의 로그를 하나의 배열로 평탄화
+  const allLogs: Array<{ log: CalculationLog; blockId: number }> = [];
+  snapshots.forEach((snap) => {
+    if (snap.logs && snap.logs.length > 0) {
+      snap.logs.forEach((log) => {
+        allLogs.push({ log, blockId: snap.block_id });
+      });
+    }
+  });
+
   return (  
     <div className={styles.viewer}>
       <div className={styles.header}>
-        <div className={styles.title}>{subject.subjectName}</div>
+        <div className={styles.titleSection}>
+          <div className={styles.titleBar}></div>
+          <div className={styles.title}>{subject.subjectName}</div>
+        </div>
         <div className={styles.meta}>
           <span>{subject.subjectGroup}</span>
           <span>· {subject.unit}학점</span>
@@ -83,66 +96,61 @@ export default function SubjectSnapshotsViewer({ subject }: Props) {
         </div>
       </div>
 
-      {snapshots.length === 0 ? (
-        <div className={styles.empty}>스냅샷이 없습니다.</div>
+      {allLogs.length === 0 ? (
+        <div className={styles.empty}>로그가 없습니다.</div>
       ) : (
-        <div className={styles.horizontalList}>
-          {snapshots.map((snap, idx) => (
-            <div
-              key={`${snap.block_id}-${snap.case_index}-${idx}`}
-              className={`${styles.card} ${activeKey === `${snap.block_id}:${snap.case_index}` ? styles.cardActive : ''}`}
-              onMouseEnter={() => setActiveKey(`${snap.block_id}:${snap.case_index}`)}
-              onMouseLeave={() => setActiveKey(prev => (prev === `${snap.block_id}:${snap.case_index}` ? null : prev))}
-              onClick={() => {
-                try { console.log('[SnapshotViewer] click card', { blockId: snap.block_id, caseIndex: snap.case_index }); } catch {}
-                setActiveKey(`${snap.block_id}:${snap.case_index}`);
-                focusBlockById(snap.block_id);
-              }}
-              onMouseDown={() => { try { console.log('[SnapshotViewer] mousedown', { blockId: snap.block_id }); } catch {} }}
-              onMouseUp={() => { try { console.log('[SnapshotViewer] mouseup', { blockId: snap.block_id }); } catch {} }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  try { console.log('[SnapshotViewer] key activate card', { blockId: snap.block_id, caseIndex: snap.case_index }); } catch {}
-                  setActiveKey(`${snap.block_id}:${snap.case_index}`);
-                  focusBlockById(snap.block_id);
-                }
-              }}
-            >
-              <div className={styles.cardHeader}>
-                {/* 보조 클릭 영역 */}
-                <div onClick={(e) => { e.stopPropagation(); try { console.log('[SnapshotViewer] click header'); } catch {}; focusBlockById(snap.block_id); }} />
-                <div className={styles.cardTitle}>{BLOCK_TYPE_MAP[snap.block_type as keyof typeof BLOCK_TYPE_MAP]}</div>
-                <div className={styles.cardMeta}>Block ID #{snap.block_id}</div>
-              </div>
-              <div className={styles.cardBody} onClick={(e) => { e.stopPropagation(); try { console.log('[SnapshotViewer] click body'); } catch {}; focusBlockById(snap.block_id); }}>
-                {snap.logs && snap.logs.length > 0 ? (
-                  <div className={styles.logs}>
-                    {snap.logs.map((log: CalculationLog, lidx) => (
-                      <div key={lidx} className={styles.logRow}>
-                        <div className={styles.logGrid}>
-                          <div className={`${styles.ioCard} ${styles.inputCard}`}>
-                            <div className={styles.ioHeader}>입력</div>
-                            <div className={styles.ioKey}><KeyDisplay value={log.input_key} /></div>
-                            <div className={styles.ioValue}>{formatValue(log.input)}</div>
-                          </div>
-                          <div className={`${styles.ioCard} ${styles.outputCard}`}>
-                            <div className={styles.ioHeader}>출력</div>
-                            <div className={styles.ioKey}><KeyDisplay value={log.output_key} /></div>
-                            <div className={styles.ioValue}>{formatValue(log.output)}</div>
-                          </div>
-                        </div>
+        <div className={styles.tableContainer}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className={styles.tableHeaderCell}>입력</TableHead>
+                <TableHead className={styles.tableHeaderCell}>출력</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {allLogs.map((item, idx) => (
+                <TableRow
+                  key={idx}
+                  className={styles.tableRow}
+                  onClick={() => {
+                    try { console.log('[SnapshotViewer] click row', { blockId: item.blockId }); } catch {};
+                    focusBlockById(item.blockId);
+                  }}
+                  onMouseEnter={() => setActiveKey(`${item.blockId}:${idx}`)}
+                  onMouseLeave={() => setActiveKey(null)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      focusBlockById(item.blockId);
+                    }
+                  }}
+                >
+                  <TableCell className={styles.tableCell}>
+                    <div className={styles.cellContent}>
+                      <div className={styles.keyWrapper}>
+                        <KeyDisplay value={item.log.input_key} />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={styles.noLogs}>로그가 없습니다.</div>
-                )}
-              </div>
-            </div>
-          ))}
+                      <div className={styles.valueWrapper}>
+                        <span className={styles.valueText}>{formatValue(item.log.input)}</span>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className={styles.tableCell}>
+                    <div className={styles.cellContent}>
+                      <div className={styles.keyWrapper}>
+                        <KeyDisplay value={item.log.output_key} />
+                      </div>
+                      <div className={styles.valueWrapper}>
+                        <span className={styles.valueText}>{formatValue(item.log.output)}</span>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
