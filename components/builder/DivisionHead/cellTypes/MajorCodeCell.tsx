@@ -96,7 +96,7 @@ export const MajorCodeCell: React.FC<MajorCodeCellProps> = ({
           )}
         </div>
         <span style={{ fontSize: '12px', userSelect: 'none', lineHeight: '1.2' }}>
-          제외
+          제외할 단위 추가
         </span>
       </div>
       {isExcludeEnabled && (

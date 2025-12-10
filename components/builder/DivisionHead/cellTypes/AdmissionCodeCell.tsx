@@ -96,7 +96,7 @@ export const AdmissionCodeCell: React.FC<AdmissionCodeCellProps> = ({
           )}
         </div>
         <span style={{ fontSize: '12px', userSelect: 'none', lineHeight: '1.2' }}>
-          제외
+          제외할 전형 추가
         </span>
       </div>
       {isExcludeEnabled && (

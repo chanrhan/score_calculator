@@ -10,21 +10,21 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   width: 100%;
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: wrap;
 }
 
 .checkboxRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   position: relative;
   z-index: 10;
   user-select: none;
@@ -80,7 +80,7 @@
 .orderRow {
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: 2px;
   flex-wrap: wrap;
 }
 

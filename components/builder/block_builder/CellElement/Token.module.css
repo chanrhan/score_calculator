@@ -10,8 +10,8 @@
 .selectedTag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px 4px 10px;
+  gap: 4px;
+  padding: 3px 6px 3px 8px;
   border-radius: 6px;
   border: 1px solid;
   font-size: 0.75rem;
@@ -57,8 +57,8 @@
 .placeholder {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 3px 6px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
   background-color: white;
