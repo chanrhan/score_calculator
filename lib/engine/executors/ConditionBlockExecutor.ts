@@ -130,6 +130,51 @@ export class ConditionBlockExecutor extends BlockExecutor {
         return { ctx, subjects };
     }
 
+    private formatValueForExistsCheck(value: any): string {
+        // 존재 여부 체크를 위한 값 포맷팅
+        // null/undefined는 리터럴로 사용 (DSL 평가기에서 식별자로 해석됨)
+        if (value === null) {
+            return 'null';
+        }
+        if (value === undefined) {
+            return 'undefined';
+        }
+        
+        // 불리언 값 처리
+        if (typeof value === 'boolean') {
+            return value ? 'true' : 'false';
+        }
+        
+        // 숫자인 경우 그대로 반환
+        if (typeof value === 'number') {
+            return String(value);
+        }
+        
+        // 문자열인 경우
+        if (typeof value === 'string') {
+            // 이미 문자열 리터럴로 감싸져 있는지 확인
+            if ((value.startsWith("'") && value.endsWith("'")) || 
+                (value.startsWith('"') && value.endsWith('"'))) {
+                return value;
+            }
+            
+            // 숫자로 변환 가능한지 확인
+            const numValue = Number(value);
+            if (!isNaN(numValue) && value.trim() === String(numValue)) {
+                return String(numValue);
+            }
+            
+            // 문자열 리터럴로 감싸기 (작은따옴표 이스케이프 처리)
+            const escaped = value.replace(/'/g, "\\'");
+            return `'${escaped}'`;
+        }
+        
+        // 기타 타입은 문자열로 변환
+        const str = String(value);
+        const escaped = str.replace(/'/g, "\\'");
+        return `'${escaped}'`;
+    }
+
     private getConditionExpr(ctx: Context, subject: Subject, index: number): string {
         const condition = this.conditions[index];
         let exprStartIndex = 0;
@@ -147,8 +192,34 @@ export class ConditionBlockExecutor extends BlockExecutor {
         }
         const operator = condition[exprStartIndex + 1];
         const rightValue = condition[exprStartIndex + 2];
+        
+        // 존재 여부 연산자 처리
+        if (operator === 'exists' || operator === 'not_exists') {
+            // 존재 여부 체크는 rightValue가 필요 없음
+            // 원본 값을 그대로 사용하여 null/undefined 체크
+            const processedLeftValue = this.formatValueForExistsCheck(leftValue);
+            let existsExpr: string;
+            
+            if (operator === 'exists') {
+                // 값이 존재함: null이 아니고 undefined가 아니고 빈 문자열이 아님
+                // 숫자 0은 존재하는 값으로 간주
+                existsExpr = `(${processedLeftValue} != null && ${processedLeftValue} != undefined && ${processedLeftValue} != '')`;
+            } else {
+                // 값이 존재하지 않음: null이거나 undefined이거나 빈 문자열임
+                existsExpr = `(${processedLeftValue} == null || ${processedLeftValue} == undefined || ${processedLeftValue} == '')`;
+            }
+            
+            if(index == 0){
+                return existsExpr;
+            }else{
+                const logicalOperator = condition[0];
+                return ` ${logicalOperator} (${existsExpr})`;
+            }
+        }
+        
+        // 일반 연산자 처리
         const processedLeftValue = this.formatValueForExpr(leftValue);
-        const processedRightValue = this.processRightValue(rightValue, ctx);
+        const processedRightValue = this.processRightValue(rightValue, ctx, subject);
 
         if(index == 0){
             return `${processedLeftValue} ${operator} ${processedRightValue}`;

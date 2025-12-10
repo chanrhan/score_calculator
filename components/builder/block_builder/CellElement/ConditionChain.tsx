@@ -195,6 +195,16 @@ export const ConditionChain: React.FC<ConditionChainProps> = ({ element, onChang
                 // 논리 연산자가 있는 경우 카드 데이터 사용, 없으면 전체 데이터 사용
                 const adjustedRow = rowIndex >= 1 ? cardData : normalizedRow
                 const hasLogicalOperator = rowIndex >= 1
+                
+                // operator 값 확인 (schema에서 operator는 보통 두 번째 필드, colIndex 1)
+                const operatorValue = adjustedRow[1]
+                const isExistsOperator = operatorValue === 'exists' || operatorValue === 'not_exists'
+                
+                // Formula 필드이고 exists/not_exists 연산자가 선택된 경우 숨김
+                if (field.type === 'Formula' && isExistsOperator) {
+                  return null
+                }
+                
                 return (
                   <div key={colIndex} className={styles.itemField}>
                     {renderField(field, rowIndex, adjustedRow, colIndex, hasLogicalOperator)}

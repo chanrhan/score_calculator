@@ -151,6 +151,8 @@ function getPath(obj: any, path: string): any {
 function resolveIdentifier(id: string, env: DslContext): any {
   if (id === 'true') return true;
   if (id === 'false') return false;
+  if (id === 'null') return null;
+  if (id === 'undefined') return undefined;
 
   // if (id.startsWith('metrics.')) return getPath(env.ctx, id);
   // if (id.startsWith('vars.')) {

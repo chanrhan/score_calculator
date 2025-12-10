@@ -126,11 +126,13 @@ export const OPERATOR_MENU: TokenMenu = {
   key: 'operator',
   name: '연산자',
   items: [
-    { label: '=', value: '==' },
-    { label: '>=', value: '>=' },
-    { label: '>', value: '>' },
-    { label: '<=', value: '<=' },
-    { label: '<', value: '<' },
+    { label: '보다 큼', value: '>' },
+    { label: '보다 크거나 같음', value: '>=' },
+    { label: '같음', value: '==' },
+    { label: '보다 작거나 같음', value: '<=' },
+    { label: '보다 작음', value: '<' },
+    { label: '값이 존재함', value: 'exists' },
+    { label: '값이 존재하지 않음', value: 'not_exists' },
   ]
 } as const
 
