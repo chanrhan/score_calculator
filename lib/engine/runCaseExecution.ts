@@ -81,10 +81,12 @@ export class runCaseExecution {
               break;
             case 'admissionCode':
               values[0] = otherProps.codes ?? [];
+              values[1] = otherProps.exclude ?? false; // exclude 플래그
               values[2] = otherProps.exclude_codes ?? []; // exclude_codes가 있다면
               break;
             case 'majorCode':
               values[0] = otherProps.codes ?? [];
+              values[1] = otherProps.exclude ?? false; // exclude 플래그
               values[2] = otherProps.exclude_codes ?? []; // exclude_codes가 있다면
               break;
             case 'applicantScCode':
@@ -264,7 +266,7 @@ export class runCaseExecution {
     context: Context,
     headerCell: string
   ): Subject[] {
-    const cellValue = cell.values[0];
+    const cellValue = cell.values[0]
     calcLog(`     🗡️ 구분조건: ${headerCell}: ${cellValue}`);
     switch (headerCell) {
       case "graduateYear":
@@ -304,27 +306,37 @@ export class runCaseExecution {
           return subjects;
         }
         return [];
-      case "admissionCode":
+      case "admissionCode": {
         const admissionCodes: Array<string> = cellValue as Array<string> || [];
+        const isExcludeEnabled = cell.values[1] === true; // exclude 플래그 확인
         // console.log(`admissionCodes: ${admissionCodes}, compared: ${context.admissionCode}`);
-        if (admissionCodes.includes("*") || admissionCodes.includes(context.admissionCode)) {
-          const excludeAdmissionCodes: Array<string> = cell.values[2] as Array<string> || [];
-          if (excludeAdmissionCodes.includes(context.admissionCode)) {
-            return [];
+        if (admissionCodes.includes("**") || admissionCodes.includes(context.admissionCode)) {
+          // exclude가 true일 때만 *제외 로직 적용
+          if (isExcludeEnabled) {
+            const excludeAdmissionCodes: Array<string> = cell.values[2] as Array<string> || [];
+            if (excludeAdmissionCodes.includes(context.admissionCode)) {
+              return [];
+            }
           }
           return subjects;
         }
         return [];
-      case "majorCode":
+      }
+      case "majorCode": {
         const majorCodes: Array<string> = cellValue as Array<string> || [];
-        if (majorCodes.includes("*") || majorCodes.includes(context.majorCode)) {
-          const excludeMajorCodes: Array<string> = cell.values[2] as Array<string> || [];
-          if (excludeMajorCodes.includes(context.majorCode)) {
-            return [];
+        const isExcludeEnabled = cell.values[1] === true; // exclude 플래그 확인
+        if (majorCodes.includes("**") || majorCodes.includes(context.majorCode)) {
+          // exclude가 true일 때만 제외 로직 적용
+          if (isExcludeEnabled) {
+            const excludeMajorCodes: Array<string> = cell.values[2] as Array<string> || [];
+            if (excludeMajorCodes.includes(context.majorCode)) {
+              return [];
+            }
           }
           return subjects;
         }
         return [];
+      }
       case "applicantScCode":
         calcLog(`     🗡️ : ${context.applicantScCode}: ${cellValue}`);
         if (context.applicantScCode == cell.values[0]) {

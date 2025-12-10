@@ -195,15 +195,27 @@ export async function POST(req: NextRequest, { params }: { params: { resource: s
       if (sheetType === 'admissions') {
       mapped = normalizedRows.map(mapAdmissions)
         .filter(r => r.code && r.name)
-        .map(r => ({ ...r, code: String(r.code).padStart(2, '0') }))
+        .map(r => {
+          const codeStr = String(r.code)
+          const code = /^[0-9]+$/.test(codeStr) ? codeStr.padStart(2, '0') : codeStr
+          return { ...r, code }
+        })
       } else if (sheetType === 'units') {
       mapped = normalizedRows.map(mapUnits)
         .filter(r => r.code && r.name)
-        .map(r => ({ ...r, code: String(r.code).padStart(2, '0') }))
+        .map(r => {
+          const codeStr = String(r.code)
+          const code = /^[0-9]+$/.test(codeStr) ? codeStr.padStart(2, '0') : codeStr
+          return { ...r, code }
+        })
       } else if (sheetType === 'organizations') {
         mapped = normalizedRows.map(mapOrganizations)
           .filter(r => r.code && r.name)
-          .map(r => ({ ...r, code: String(r.code).padStart(2, '0') }))
+          .map(r => {
+            const codeStr = String(r.code)
+            const code = /^[0-9]+$/.test(codeStr) ? codeStr.padStart(2, '0') : codeStr
+            return { ...r, code }
+          })
       } else if (sheetType === 'curricula') {
         mapped = normalizedRows.map(mapCurricula)
           .filter(r => r.organization_code && r.organization_name && r.subject_code && r.subject_name && r.course_code)

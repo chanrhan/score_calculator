@@ -137,11 +137,19 @@ export async function POST(req: NextRequest) {
       if (sheetType === 'admissions') {
         mapped = normalizedRows.map(r => mapAdmissions(r, univ_id))
           .filter(r => r.code && r.name)
-          .map(r => ({ ...r, code: String(r.code).padStart(2, '0') }))
+          .map(r => {
+            const codeStr = String(r.code)
+            const code = /^[0-9]+$/.test(codeStr) ? codeStr.padStart(2, '0') : codeStr
+            return { ...r, code }
+          })
       } else if (sheetType === 'units') {
         mapped = normalizedRows.map(r => mapUnits(r, univ_id))
           .filter(r => r.code && r.name)
-          .map(r => ({ ...r, code: String(r.code).padStart(2, '0') }))
+          .map(r => {
+            const codeStr = String(r.code)
+            const code = /^[0-9]+$/.test(codeStr) ? codeStr.padStart(2, '0') : codeStr
+            return { ...r, code }
+          })
       } else if (sheetType === 'curricula') {
         mapped = normalizedRows.map(r => mapCurricula(r, univ_id))
           .filter(r => r.organization_name && r.subject_code && r.subject_name && r.course_code)

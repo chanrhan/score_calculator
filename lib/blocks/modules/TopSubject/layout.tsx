@@ -94,7 +94,7 @@ export const TopSubjectLayout: {
             onMouseDown={(e) => {
               e.stopPropagation();
             }}
-            style={{ cursor: readOnly ? 'not-allowed' : 'pointer' }}
+            style={{ cursor: readOnly ? 'not-allowed' : 'pointer', marginTop: '2px' }}
           >
             <div 
               className={`${topSubjectStyles.checkbox} ${useOrder ? topSubjectStyles.checkboxChecked : ''}`}

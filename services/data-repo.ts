@@ -50,7 +50,11 @@ export const dataRepo = {
 
       // 일괄 처리
       for (const r of univRows) {
-        const value = sanitizeString(String(r.code)).padStart(2, '0')
+        // 특수 문자(* 등)는 패딩하지 않음
+        const sanitizedCode = sanitizeString(String(r.code))
+        const value = /^[0-9]+$/.test(sanitizedCode) 
+          ? sanitizedCode.padStart(2, '0') 
+          : sanitizedCode
         const label = sanitizeString(r.name)
 
         const existingItem = await prisma.token_menu_item.findFirst({
@@ -90,12 +94,18 @@ export const dataRepo = {
 
   async upsertAdmissions(rows: AdmissionUpsertRow[]): Promise<void> {
     if (rows.length === 0) return
-    // 데이터 정제 및 코드는 2자리 제약. 패딩 보정
-    const normalized = rows.map(r => ({ 
-      ...r, 
-      code: sanitizeString(String(r.code)).padStart(2, '0'),
-      name: sanitizeString(r.name)
-    }))
+    // 데이터 정제 및 코드는 2자리 제약. 패딩 보정 (특수 문자는 제외)
+    const normalized = rows.map(r => {
+      const sanitizedCode = sanitizeString(String(r.code))
+      const code = /^[0-9]+$/.test(sanitizedCode) 
+        ? sanitizedCode.padStart(2, '0') 
+        : sanitizedCode
+      return {
+        ...r, 
+        code,
+        name: sanitizeString(r.name)
+      }
+    })
     await prisma.$transaction(
       normalized.map((r) =>
         prisma.admission.upsert({
@@ -109,12 +119,18 @@ export const dataRepo = {
 
   async upsertUnits(rows: UnitUpsertRow[]): Promise<void> {
     if (rows.length === 0) return
-    // 데이터 정제 및 코드는 2자리 제약. 패딩 보정
-    const normalized = rows.map(r => ({ 
-      ...r, 
-      code: sanitizeString(String(r.code)).padStart(2, '0'),
-      name: sanitizeString(r.name)
-    }))
+    // 데이터 정제 및 코드는 2자리 제약. 패딩 보정 (특수 문자는 제외)
+    const normalized = rows.map(r => {
+      const sanitizedCode = sanitizeString(String(r.code))
+      const code = /^[0-9]+$/.test(sanitizedCode) 
+        ? sanitizedCode.padStart(2, '0') 
+        : sanitizedCode
+      return {
+        ...r, 
+        code,
+        name: sanitizeString(r.name)
+      }
+    })
     await prisma.$transaction(
       normalized.map((r) =>
         prisma.major.upsert({

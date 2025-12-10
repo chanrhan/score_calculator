@@ -31,12 +31,12 @@
 }
 
 .checkbox {
-  width: 14px;
-  height: 14px;
-  min-width: 14px;
-  min-height: 14px;
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
   border: 1.5px solid #d1d5db;
-  border-radius: 3px;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,8 +63,8 @@
 }
 
 .checkIcon {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   color: #ffffff;
   stroke-width: 2;
 }
