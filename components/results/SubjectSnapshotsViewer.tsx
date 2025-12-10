@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import styles from './SubjectSnapshotsViewer.module.css';
 import keyStyles from './KeyHighlighter.module.css';
 import { Subject_Separation } from '@/types/text-mapping';
+import { BLOCK_TYPE_MAP } from '@/types/block-types';
 
 type Props = {
   subject: Subject | null;
@@ -72,11 +73,11 @@ export default function SubjectSnapshotsViewer({ subject }: Props) {
   }
 
   // 모든 스냅샷의 로그를 하나의 배열로 평탄화
-  const allLogs: Array<{ log: CalculationLog; blockId: number }> = [];
+  const allLogs: Array<{ log: CalculationLog; blockId: number; blockType: number }> = [];
   snapshots.forEach((snap) => {
     if (snap.logs && snap.logs.length > 0) {
       snap.logs.forEach((log) => {
-        allLogs.push({ log, blockId: snap.block_id });
+        allLogs.push({ log, blockId: snap.block_id, blockType: snap.block_type });
       });
     }
   });
@@ -103,6 +104,7 @@ export default function SubjectSnapshotsViewer({ subject }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className={styles.tableHeaderCell}>블록 타입</TableHead>
                 <TableHead className={styles.tableHeaderCell}>입력</TableHead>
                 <TableHead className={styles.tableHeaderCell}>출력</TableHead>
               </TableRow>
@@ -127,6 +129,11 @@ export default function SubjectSnapshotsViewer({ subject }: Props) {
                     }
                   }}
                 >
+                  <TableCell className={styles.tableCell}>
+                    <span className={styles.blockTypeText}>
+                      {BLOCK_TYPE_MAP[item.blockType as keyof typeof BLOCK_TYPE_MAP] || `타입 ${item.blockType}`}
+                    </span>
+                  </TableCell>
                   <TableCell className={styles.tableCell}>
                     <div className={styles.cellContent}>
                       <div className={styles.keyWrapper}>

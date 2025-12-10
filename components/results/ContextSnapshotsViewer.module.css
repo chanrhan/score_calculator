@@ -91,6 +91,12 @@
   white-space: pre-wrap;
 }
 
+.blockTypeText {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
 .empty {
   display: flex;
   justify-content: center;
