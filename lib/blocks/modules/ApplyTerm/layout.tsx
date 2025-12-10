@@ -26,7 +26,7 @@ export const ApplyTermLayout: {
       
       return (
         <div className={applyTermStyles.header}>
-          <span className={applyTermStyles.label}>반영학기</span>
+          {/* <span className={applyTermStyles.label}>반영학기</span> */}
           <Token
             element={createTokenElement({
               menu_key: TOKEN_MENU_KEYS.INCLUDE_EXCLUDE,

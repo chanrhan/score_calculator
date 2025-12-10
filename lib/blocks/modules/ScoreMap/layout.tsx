@@ -25,7 +25,7 @@ export const ScoreMapLayout: {
       // 헤더에는 더 이상 var_scope가 없음
       return (
         <div className={scoreMapStyles.header}>
-          <span className={scoreMapStyles.label}>배점표</span>
+          {/* <span className={scoreMapStyles.label}>배점표</span> */}
         </div>
       );
     },

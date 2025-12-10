@@ -22,7 +22,13 @@ export const TopSubjectLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: () => <span className={topSubjectStyles.label}>상위 과목 선정</span>,
+  header: () => {
+    return (
+      <div className={topSubjectStyles.header}>
+        {/* <span className={topSubjectStyles.label}>상위 과목 선정</span> */}
+      </div>
+    );
+  },
   body: ({ properties, readOnly, onChange }) => {
       const topsubjectOption = properties.topsubject_option || '1';
       const target = properties.target || 'finalScore';

@@ -20,7 +20,13 @@ export const AggregationLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: () => <span className={aggregationStyles.label}>집계</span>,
+  header: () => {
+    return (
+      <div className={aggregationStyles.header}>
+        {/* <span className={aggregationStyles.label}>집계</span> */}
+      </div>
+    );
+  },
   body: ({ properties, readOnly, onChange }) => {
       const inputProp = properties.input_prop || 'finalScore';
       const func = properties.func || '0';

@@ -1,0 +1,344 @@
+/* components/results/snapshot.module.css */
+/* 스냅샷 읽기 전용 컴포넌트 스타일 */
+
+/* 블록 헤더 */
+.blockHeader,
+.snapshotBlockHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 6px;
+}
+
+.snapshotBlockHeader {
+  margin-bottom: 6px;
+}
+
+.blockIcon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.blockName {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* 셀 컨텐츠 */
+.cellContent {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  min-height: 24px;
+  flex-wrap: wrap;
+}
+
+.textElement {
+  color: #334155;
+  font-size: 11px;
+  line-height: 1.4;
+  background-color: #e9f5ff;
+  color: #0056b3;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* 빈 셀 */
+.emptyCell {
+  min-height: 40px;
+  background: #f8fafc;
+}
+
+/* 테이블 스타일 */
+.tableWrapper {
+  width: 100%;
+  margin: 8px 0;
+}
+
+.readOnlyTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.readOnlyTable tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.readOnlyTable tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+.readOnlyTable th,
+.readOnlyTable td {
+  padding: 6px 8px;
+  border-right: 1px solid #e2e8f0;
+  font-size: 11px;
+  color: #475569;
+  text-align: left;
+}
+
+.readOnlyTable th {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-weight: 600;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.readOnlyTable td:last-child,
+.readOnlyTable th:last-child {
+  border-right: none;
+}
+
+.emptyTable {
+  padding: 12px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* 컴포넌트 카드 */
+.componentCard,
+.snapshotComponentCard {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  margin-bottom: 0;
+  transition: box-shadow 0.2s ease;
+  min-width: 300px;
+  max-width: 600px;
+}
+
+.componentCard:hover,
+.snapshotComponentCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.componentHeader,
+.snapshotComponentHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.componentName,
+.snapshotComponentHeader .componentName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.componentOrder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* 블록 그리드 */
+.blockGrid,
+.snapshotComponentGrid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.blockCard,
+.snapshotBlockCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+
+.blockCard:hover,
+.snapshotBlockCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.blockTable,
+.snapshotBlockTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 11px;
+}
+
+.blockTable td,
+.snapshotTableCell {
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  vertical-align: top;
+  background: white;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.blockTable tr:first-child td,
+.snapshotTableHeader {
+  padding: 6px 8px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  font-weight: 500;
+  border-bottom: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 11px;
+}
+
+/* 블록 섹션 */
+.blocksSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 구분 헤드 섹션 */
+.divisionHeadSection {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.divisionHeadHeader {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.divisionHeadBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.divisionHeadRow {
+  display: flex;
+  gap: 8px;
+}
+
+/* 테이블 셀 공통 스타일 */
+.tableCell {
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  vertical-align: top;
+  background: white;
+}
+
+/* 구분 헤드 스타일 */
+.divisionHeadCell {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 500;
+}
+
+/* 연결선 스타일 */
+.connectionLine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 0;
+  color: #94a3b8;
+}
+
+.connectionArrow {
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, #cbd5e1 0%, #94a3b8 100%);
+  position: relative;
+}
+
+.connectionArrow::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: -4px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid #94a3b8;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+
+/* ReactFlow 래퍼 */
+.reactFlowWrapper {
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+}
+
+.flowNodeWrapper {
+  width: 100%;
+  min-width: 300px;
+  max-width: 600px;
+}
+
+/* 파이프라인 뷰어 */
+.pipelineViewer {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100%;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #94a3b8;
+  font-size: 16px;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .pipelineViewer {
+    padding: 16px;
+  }
+
+  .componentCard {
+    padding: 16px;
+  }
+
+  .blockTable td {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+

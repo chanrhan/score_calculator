@@ -25,7 +25,7 @@ export const FormulaLayout: {
       // 헤더에는 더 이상 var_scope가 없음
       return (
         <div className={formulaStyles.header}>
-          <span className={formulaStyles.label}>수식</span>
+          {/* <span className={formulaStyles.label}>수식</span> */}
         </div>
       );
     },

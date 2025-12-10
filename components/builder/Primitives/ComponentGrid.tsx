@@ -181,30 +181,30 @@ export const ComponentGrid: React.FC<ComponentGridProps> = ({
   const totalColsWithDivisionHead = totalCols + divisionHeadCols;
 
   // 전체 그리드 구조 로그 (렌더링 시 한 번만 출력)
-  React.useEffect(() => {
-    const gridInfo = {
-      '구분 헤드': {
-        활성화: divisionHeadData.isActive,
-        열개수: divisionHeadCols,
-        바디행수: divisionHeadData.body.length,
-        헤더: divisionHeadData.header,
-        바디: divisionHeadData.body,
-      },
-      '블록들': {
-        개수: blocks.length,
-        총열개수: totalCols,
-        각블록열개수: blocks.map(b => {
-          const db = b.toDbFormat();
-          return { id: b.block_id, 열개수: db.header_cells?.length || 1 };
-        }),
-      },
-      '전체 그리드': {
-        총행수: totalRowsWithDivisionHead,
-        총열수: totalColsWithDivisionHead,
-        구조: `[${totalRowsWithDivisionHead}행 × ${totalColsWithDivisionHead}열] = 구분헤드(${divisionHeadCols}열) + 블록들(${totalCols}열)`,
-      },
-    };
-  }, [divisionHeadData, divisionHeadCols, blocks, totalCols, totalRowsWithDivisionHead, totalColsWithDivisionHead])
+  // React.useEffect(() => {
+  //   const gridInfo = {
+  //     '구분 헤드': {
+  //       활성화: divisionHeadData.isActive,
+  //       열개수: divisionHeadCols,
+  //       바디행수: divisionHeadData.body.length,
+  //       헤더: divisionHeadData.header,
+  //       바디: divisionHeadData.body,
+  //     },
+  //     '블록들': {
+  //       개수: blocks.length,
+  //       총열개수: totalCols,
+  //       각블록열개수: blocks.map(b => {
+  //         const db = b.toDbFormat();
+  //         return { id: b.block_id, 열개수: db.header_cells?.length || 1 };
+  //       }),
+  //     },
+  //     '전체 그리드': {
+  //       총행수: totalRowsWithDivisionHead,
+  //       총열수: totalColsWithDivisionHead,
+  //       구조: `[${totalRowsWithDivisionHead}행 × ${totalColsWithDivisionHead}열] = 구분헤드(${divisionHeadCols}열) + 블록들(${totalCols}열)`,
+  //     },
+  //   };
+  // }, [divisionHeadData, divisionHeadCols, blocks, totalCols, totalRowsWithDivisionHead, totalColsWithDivisionHead])
 
   // 렌더링 컨텍스트 생성
   // tokenMenus는 이제 코드 상수로 관리되므로 하위 호환성을 위해 빈 배열 전달

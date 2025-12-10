@@ -21,7 +21,13 @@ export const RatioLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: () => <span className={ratioStyles.label}>반영비율</span>,
+  header: () => {
+    return (
+      <div className={ratioStyles.header}>
+        {/* <span className={ratioStyles.label}>반영비율</span> */}
+      </div>
+    );
+  },
   body: ({ properties, readOnly, onChange, varScope }: LayoutRenderContext & { varScope?: '0' | '1' }) => {
       const inputProp = properties.input_prop || 'finalScore';
       const ratio = properties.ratio !== undefined ? String(properties.ratio) : '100';

@@ -21,7 +21,13 @@ export const DecimalLayout: {
   header: LayoutComponent;
   body: LayoutComponent;
 } = {
-  header: () => <span className={decimalStyles.label}>소수점 처리</span>,
+  header: () => {
+    return (
+      <div className={decimalStyles.header}>
+        {/* <span className={decimalStyles.label}>소수점 처리</span> */}
+      </div>
+    );
+  },
   body: ({ properties, readOnly, onChange, varScope }: LayoutRenderContext & { varScope?: '0' | '1' }) => {
       const inputProp = properties.input_prop || 'finalScore';
       const decimalPlace = properties.decimal_place !== undefined ? String(properties.decimal_place) : '2';

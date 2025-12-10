@@ -266,19 +266,19 @@ export abstract class BlockLayoutRenderer {
   protected getBlockTypeName(blockType: number): string {
     const blockTypeMap: Record<number, string> = {
       [BLOCK_TYPE.DIVISION]: '구분',
-      [BLOCK_TYPE.APPLY_SUBJECT]: '반영교과',
-      [BLOCK_TYPE.GRADE_RATIO]: '학년비율',
-      [BLOCK_TYPE.APPLY_TERM]: '반영학기',
-      [BLOCK_TYPE.TOP_SUBJECT]: '상위교과',
-      [BLOCK_TYPE.SUBJECT_GROUP_RATIO]: '교과그룹비율',
-      [BLOCK_TYPE.SEPARATION_RATIO]: '분리비율',
-      [BLOCK_TYPE.SCORE_MAP]: '점수매핑',
+      [BLOCK_TYPE.APPLY_SUBJECT]: '과목 반영',
+      [BLOCK_TYPE.GRADE_RATIO]: '학년별 반영비율',
+      [BLOCK_TYPE.APPLY_TERM]: '학기 반영',
+      [BLOCK_TYPE.TOP_SUBJECT]: '우수 교과 선정',
+      [BLOCK_TYPE.SUBJECT_GROUP_RATIO]: '교과군별 반영비율',
+      [BLOCK_TYPE.SEPARATION_RATIO]: '과목구분별 반영비율',
+      [BLOCK_TYPE.SCORE_MAP]: '배점표',
       [BLOCK_TYPE.FORMULA]: '수식',
       [BLOCK_TYPE.VARIABLE]: '변수',
       [BLOCK_TYPE.CONDITION]: '조건',
       [BLOCK_TYPE.AGGREGATION]: '집계',
-      [BLOCK_TYPE.RATIO]: '비율',
-      [BLOCK_TYPE.DECIMAL]: '소수점',
+      [BLOCK_TYPE.RATIO]: '반영 비율',
+      [BLOCK_TYPE.DECIMAL]: '소수점 처리',
     };
     return blockTypeMap[blockType] || '알 수 없음';
   }

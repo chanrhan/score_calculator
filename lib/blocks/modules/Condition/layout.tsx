@@ -25,7 +25,7 @@ export const ConditionLayout: {
       // 헤더에는 더 이상 var_scope가 없음
       return (
         <div className={conditionStyles.header}>
-          <span className={conditionStyles.label}>조건</span>
+          {/* <span className={conditionStyles.label}>조건</span> */}
         </div>
       );
     },
