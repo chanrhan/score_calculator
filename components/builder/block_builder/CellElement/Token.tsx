@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button'
 import { getTokenMenu } from '@/lib/data/token-menus'
 import { useBlockDataStore } from '@/store/useBlockDataStore'
 import { getAttributesByScope } from '@/lib/utils/scope-attributes'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { X, ChevronDown } from 'lucide-react'
 
 interface TokenProps {
   element: TokenElement
@@ -21,17 +23,44 @@ interface TokenProps {
   varScope?: '0' | '1' // 블록 헤더의 var_scope 값 ('0': 과목, '1': 학생)
 }
 
+// 라벨 기반 색상 생성 함수 (해시 기반)
+const getTagColor = (label: string): { bg: string; text: string; border: string } => {
+  // 노션 스타일 파스텔 톤 색상 팔레트
+  // 배경: 더 흐릿하게 (0.05), 글자/테두리: 더 진하게 (가독성 향상)
+  const colors = [
+    { bg: 'rgba(139, 92, 246, 0.05)', text: 'rgb(124, 58, 237)', border: 'rgba(139, 92, 246, 0.5)' }, // 보라
+    { bg: 'rgba(236, 72, 153, 0.05)', text: 'rgb(219, 39, 119)', border: 'rgba(236, 72, 153, 0.5)' }, // 분홍
+    { bg: 'rgba(239, 68, 68, 0.05)', text: 'rgb(220, 38, 38)', border: 'rgba(239, 68, 68, 0.5)' }, // 빨강
+    { bg: 'rgba(34, 197, 94, 0.05)', text: 'rgb(22, 163, 74)', border: 'rgba(34, 197, 94, 0.5)' }, // 초록
+    { bg: 'rgba(180, 83, 9, 0.05)', text: 'rgb(154, 52, 18)', border: 'rgba(180, 83, 9, 0.5)' }, // 갈색
+    { bg: 'rgba(59, 130, 246, 0.05)', text: 'rgb(37, 99, 235)', border: 'rgba(59, 130, 246, 0.5)' }, // 파랑
+    { bg: 'rgba(168, 85, 247, 0.05)', text: 'rgb(147, 51, 234)', border: 'rgba(168, 85, 247, 0.5)' }, // 보라2
+    { bg: 'rgba(251, 146, 60, 0.05)', text: 'rgb(234, 88, 12)', border: 'rgba(251, 146, 60, 0.5)' }, // 주황
+  ]
+  
+  // 간단한 해시 함수
+  let hash = 0
+  for (let i = 0; i < label.length; i++) {
+    hash = ((hash << 5) - hash) + label.charCodeAt(i)
+    hash = hash & hash // 32bit 정수로 변환
+  }
+  
+  const index = Math.abs(hash) % colors.length
+  return colors[index]
+}
+
 export const Token: React.FC<TokenProps> = ({ element, onChange, className = '', autoFit = true, varScope }) => {
   const { menu_key, value, optional, visible, var_use, var_store } = element
   const { variablesByName, currentKey, create } = usePipelineVariables()
   const { selectedUnivId } = useUniversity()
   const { getDynamicTokenMenu, loadDynamicTokenMenu } = useBlockDataStore()
   const [menuItems, setMenuItems] = React.useState<any[]>([])
-  const [selectWidth, setSelectWidth] = React.useState<number | undefined>(undefined)
   const [open, setOpen] = React.useState(false)
   const [newVarName, setNewVarName] = React.useState('')
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [popoverOpen, setPopoverOpen] = React.useState(false)
+  const [searchQuery, setSearchQuery] = React.useState('')
   
   // 상수 파일에서 token_menu 데이터 가져오기, 없으면 스토어 캐시 또는 API에서 동적으로 로드
   React.useEffect(() => {
@@ -120,22 +149,22 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
     loadMenuItems()
   }, [menu_key, selectedUnivId, variablesByName, var_use, var_store, varScope])
 
-  // 선택된 값에 따른 동적 크기 계산
-  React.useEffect(() => {
-    if (!autoFit || !value) {
-      setSelectWidth(undefined)
-      return
+  // 검색 필터링된 메뉴 아이템
+  const filteredMenuItems = React.useMemo(() => {
+    if (!searchQuery.trim()) {
+      return menuItems
     }
+    const query = searchQuery.toLowerCase()
+    return menuItems.filter(item => 
+      item.label?.toLowerCase().includes(query) || 
+      item.value?.toLowerCase().includes(query)
+    )
+  }, [menuItems, searchQuery])
 
-    // 선택된 항목의 텍스트 길이 계산
-    const selectedItem = menuItems.find(item => item.value === value)
-    if (selectedItem) {
-      const textLength = selectedItem.label?.length || 0
-      // 텍스트 길이에 따른 최소 너비 계산 (한글 기준 약 14px per character)
-      const minWidth = Math.max(80, textLength * 14 + 40) // 최소 80px, 패딩 고려
-      setSelectWidth(minWidth)
-    }
-  }, [value, menuItems, autoFit])
+  // 선택된 항목 정보
+  const selectedItem = React.useMemo(() => {
+    return menuItems.find(item => item.value === value)
+  }, [menuItems, value])
   
   if (optional && !visible) {
     return null
@@ -146,9 +175,17 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
       setNewVarName('')
       setError(null)
       setOpen(true)
+      setPopoverOpen(false)
       return
     }
     onChange?.(v)
+    setPopoverOpen(false)
+    setSearchQuery('')
+  }
+
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onChange?.('')
   }
 
   const onSaveVar = async () => {
@@ -165,21 +202,81 @@ export const Token: React.FC<TokenProps> = ({ element, onChange, className = '',
     setOpen(false)
   }
 
+  const selectedItemColor = selectedItem ? getTagColor(selectedItem.label) : null
+
   return (
     <>
-      <select
-        value={value || ''}
-        onChange={(e) => onSelectChange(e.target.value)}
-        className={`${styles.select} ${className}`}
-        style={autoFit && selectWidth ? { width: `${selectWidth}px` } : {}}
-      >
-        {!value && <option value="">선택하세요</option>}
-        {menuItems.map((item) => (
-          <option key={item.id} value={item.value}>
-            {item.label}
-          </option>
-        ))}
-      </select>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger asChild>
+          <div className={`${styles.tokenContainer} ${className} ${popoverOpen ? styles.popoverOpen : ''}`}>
+            {selectedItem ? (
+              <div
+                className={styles.selectedTag}
+                style={{
+                  backgroundColor: selectedItemColor?.bg,
+                  color: selectedItemColor?.text,
+                  borderColor: selectedItemColor?.border,
+                }}
+              >
+                <span className={styles.tagLabel}>{selectedItem.label}</span>
+                <button
+                  type="button"
+                  className={styles.removeButton}
+                  onClick={handleRemove}
+                  aria-label="제거"
+                >
+                  <X className={styles.removeIcon} />
+                </button>
+              </div>
+            ) : (
+              <div className={styles.placeholder}>
+                <span>선택하세요</span>
+                <ChevronDown className={styles.chevronIcon} />
+              </div>
+            )}
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className={styles.popoverContent} align="start">
+          <div className={styles.dropdownHeader}>
+            <span className={styles.headerText}>옵션 선택 또는 생성</span>
+          </div>
+          <div className={styles.searchContainer}>
+            <Input
+              placeholder="검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
+              autoFocus
+            />
+          </div>
+          <div className={styles.optionsList}>
+            {filteredMenuItems.length === 0 ? (
+              <div className={styles.emptyState}>검색 결과가 없습니다</div>
+            ) : (
+              filteredMenuItems.map((item) => {
+                const itemColor = getTagColor(item.label)
+                const isSelected = item.value === value
+                
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`${styles.optionTag} ${isSelected ? styles.optionTagSelected : ''}`}
+                    style={{
+                      backgroundColor: itemColor.bg,
+                      color: itemColor.text,
+                      borderColor: itemColor.border,
+                    }}
+                    onClick={() => onSelectChange(item.value)}
+                  >
+                    <span className={styles.optionLabel}>{item.label}</span>
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

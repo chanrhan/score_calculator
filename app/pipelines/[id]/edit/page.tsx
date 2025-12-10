@@ -495,6 +495,7 @@ export default function PipelineEditPage() {
               pipelineId={pipeline.id} 
               dbPipelineId={dbPipelineId} 
               selectedComponentId={selectedComponentId}
+              onFocusComplete={() => setSelectedComponentId(undefined)}
             />
           </div>
         </div>

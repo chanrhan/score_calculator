@@ -95,12 +95,14 @@ export default function Canvas({
   pipelineId, 
   dbPipelineId, 
   readOnly = false,
-  selectedComponentId 
+  selectedComponentId,
+  onFocusComplete
 }: { 
   pipelineId: string; 
   dbPipelineId?: number | null; 
   readOnly?: boolean;
   selectedComponentId?: number;
+  onFocusComplete?: () => void;
 }) {
   return (
     <ReactFlowProvider>
@@ -111,6 +113,7 @@ export default function Canvas({
             dbPipelineId={dbPipelineId} 
             readOnly={readOnly}
             selectedComponentId={selectedComponentId}
+            onFocusComplete={onFocusComplete}
           />
         </BlockGridSyncProvider>
       </BlockCombineProvider>
@@ -122,12 +125,14 @@ function CanvasContent({
   pipelineId, 
   dbPipelineId, 
   readOnly = false,
-  selectedComponentId 
+  selectedComponentId,
+  onFocusComplete
 }: { 
   pipelineId: string; 
   dbPipelineId?: number | null; 
   readOnly?: boolean;
   selectedComponentId?: number;
+  onFocusComplete?: () => void;
 }) {
   // 파이프라인 상태를 구독하여 변경 시 리렌더
   const pipeline = usePipelines(s => s.pipelines.find(p => p.id === pipelineId))!;
@@ -279,6 +284,7 @@ function CanvasContent({
   // 타임라인 바에서 컴포넌트 클릭 시 해당 컴포넌트 노드로 포커싱
   React.useEffect(() => {
     if (selectedComponentId === undefined || !pipeline) return;
+    
     const nodeId = `comp-${selectedComponentId}`;
     const node = rf.getNode(nodeId as any);
     if (!node) return;
@@ -286,8 +292,12 @@ function CanvasContent({
     // 노드가 준비된 뒤에만 포커스 적용
     requestAnimationFrame(() => {
       rf.fitView({ nodes: [node], padding: 0.3, duration: 500, maxZoom: 1.5 });
+      // 포커싱 완료 후 콜백 호출 (다음 프레임에서 실행하여 애니메이션 완료 대기)
+      setTimeout(() => {
+        onFocusComplete?.();
+      }, 600); // 애니메이션 duration(500ms) + 여유 시간
     });
-  }, [selectedComponentId, pipeline, rf]);
+  }, [selectedComponentId, pipeline, rf, onFocusComplete]);
 
 
   const onDrop: React.DragEventHandler = async (e) => {

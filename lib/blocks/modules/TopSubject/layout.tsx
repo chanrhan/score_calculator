@@ -56,7 +56,6 @@ export const TopSubjectLayout: {
               }}
               autoFit={true}
             />
-            <span className={topSubjectStyles.label}>기준</span>
             <Token
               element={createTokenElement({
                 menu_key: TOKEN_MENU_KEYS.SCORE_TYPE,
@@ -72,7 +71,7 @@ export const TopSubjectLayout: {
               }}
               autoFit={true}
             />
-            <span className={topSubjectStyles.label}>상위</span>
+            <span className={topSubjectStyles.label}>기준, 상위</span>
             <InputField
               element={createInputFieldElement({
                 value: topCount,
@@ -86,7 +85,7 @@ export const TopSubjectLayout: {
               }}
               autoFit={true}
             />
-            <span className={topSubjectStyles.label}>개</span>
+            <span className={topSubjectStyles.label}>개 반영</span>
           </div>
           <div 
             className={topSubjectStyles.checkboxRow}
