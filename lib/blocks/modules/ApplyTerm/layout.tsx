@@ -6,9 +6,8 @@ import { BlockInstance } from '../../BlockInstance';
 import { GenericBlockLayoutRenderer } from '../../layout/GenericBlockLayoutRenderer';
 import { RenderCellContext } from '../../layout/BlockLayoutRenderer';
 import { LayoutComponent, BlockPropertyValues, getLayoutComponent } from '../common/types';
-import { createTokenElement, createInputFieldElement } from '../common/elementHelpers';
+import { createTokenElement } from '../common/elementHelpers';
 import { Token } from '@/components/builder/block_builder/CellElement/Token';
-import { InputField } from '@/components/builder/block_builder/CellElement/InputField';
 import { TOKEN_MENU_KEYS } from '@/lib/data/token-menus';
 import styles from '@/components/builder/Primitives/ComponentGrid.module.css';
 import applyTermStyles from './ApplyTerm.module.css';
@@ -45,11 +44,25 @@ export const ApplyTermLayout: {
       );
     },
   body: ({ properties, readOnly, onChange }) => {
-      const terms = properties.terms || '';
+      const term_1_1 = properties.term_1_1 || false;
+      const term_1_2 = properties.term_1_2 || false;
+      const term_2_1 = properties.term_2_1 || false;
+      const term_2_2 = properties.term_2_2 || false;
+      const term_3_1 = properties.term_3_1 || false;
+      const term_3_2 = properties.term_3_2 || false;
       const topCount = properties.top_count !== undefined ? String(properties.top_count) : '0';
       const useTopCount = properties.use_top_count || false;
       
-      const handleCheckboxClick = (e: React.MouseEvent) => {
+      const handleTermCheckboxClick = (termKey: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!readOnly && onChange) {
+          const currentValue = properties[termKey as keyof typeof properties] || false;
+          onChange(termKey, !currentValue);
+        }
+      };
+
+      const handleTopCountCheckboxClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
         if (!readOnly && onChange) {
@@ -58,27 +71,58 @@ export const ApplyTermLayout: {
         }
       };
       
+      const terms = [
+        { key: 'term_1_1', label: '1-1', checked: term_1_1 },
+        { key: 'term_1_2', label: '1-2', checked: term_1_2 },
+        { key: 'term_2_1', label: '2-1', checked: term_2_1 },
+        { key: 'term_2_2', label: '2-2', checked: term_2_2 },
+        { key: 'term_3_1', label: '3-1', checked: term_3_1 },
+        { key: 'term_3_2', label: '3-2', checked: term_3_2 },
+      ];
+      
       return (
         <div className={applyTermStyles.body}>
-          <div className={applyTermStyles.row}>
-            <span className={applyTermStyles.label}>학기:</span>
-            <InputField
-              element={createInputFieldElement({
-                value: terms,
-                optional: false,
-                visible: true,
-              })}
-              onChange={(value) => {
-                if (!readOnly) {
-                  onChange?.('terms', value);
-                }
-              }}
-              autoFit={true}
-            />
+          <div className={applyTermStyles.termGrid}>
+            {terms.map((term) => (
+              <div
+                key={term.key}
+                className={applyTermStyles.termCheckboxRow}
+                onClick={(e) => handleTermCheckboxClick(term.key, e)}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                style={{ cursor: readOnly ? 'not-allowed' : 'pointer' }}
+              >
+                <div 
+                  className={`${applyTermStyles.checkbox} ${term.checked ? applyTermStyles.checkboxChecked : ''}`}
+                  onClick={(e) => handleTermCheckboxClick(term.key, e)}
+                >
+                  {term.checked && (
+                    <svg 
+                      width="10" 
+                      height="10" 
+                      viewBox="0 0 10 10" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={applyTermStyles.checkIcon}
+                    >
+                      <path 
+                        d="M8.33334 2.5L3.75001 7.08333L1.66667 5" 
+                        stroke="currentColor" 
+                        strokeWidth="1.5" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </div>
+                <span className={applyTermStyles.termLabel}>{term.label}</span>
+              </div>
+            ))}
           </div>
           <div 
             className={applyTermStyles.checkboxRow}
-            onClick={handleCheckboxClick}
+            onClick={handleTopCountCheckboxClick}
             onMouseDown={(e) => {
               e.stopPropagation();
             }}
@@ -86,7 +130,7 @@ export const ApplyTermLayout: {
           >
             <div 
               className={`${applyTermStyles.checkbox} ${useTopCount ? applyTermStyles.checkboxChecked : ''}`}
-              onClick={handleCheckboxClick}
+              onClick={handleTopCountCheckboxClick}
             >
               {useTopCount && (
                 <svg 
@@ -112,18 +156,17 @@ export const ApplyTermLayout: {
           {useTopCount && (
             <div className={applyTermStyles.row}>
               <span className={applyTermStyles.label}>상위</span>
-              <InputField
-                element={createInputFieldElement({
-                  value: topCount,
-                  optional: false,
-                  visible: true,
-                })}
-                onChange={(value) => {
+              <input
+                type="number"
+                value={topCount}
+                onChange={(e) => {
                   if (!readOnly) {
-                    onChange?.('top_count', Number(value) || 0);
+                    onChange?.('top_count', Number(e.target.value) || 0);
                   }
                 }}
-                autoFit={true}
+                className={applyTermStyles.numberInput}
+                disabled={readOnly}
+                min="0"
               />
               <span className={applyTermStyles.label}>개</span>
             </div>

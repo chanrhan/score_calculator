@@ -4,6 +4,7 @@
 import React from 'react';
 import { BlockInstance } from '../BlockInstance';
 import { BLOCK_TYPE } from '@/types/block-types';
+import { BLOCK_TYPES } from '@/types/block-structure';
 import { Link2, ArrowLeft, ArrowRight, X, MoreVertical, Trash2, Plus } from 'lucide-react';
 import {
   DropdownMenu,
@@ -85,23 +86,48 @@ export abstract class BlockLayoutRenderer {
       readOnly
     } = context;
 
-    // 블록 타입별 색상 매핑
+    // 블록 타입별 색상 매핑 (BLOCK_TYPES에서 가져옴)
     const getBlockColor = (blockType: number): string => {
-      const colorMap: { [key: number]: string } = {
-        [BLOCK_TYPE.DIVISION]: '#10b981',
-        [BLOCK_TYPE.APPLY_SUBJECT]: '#3b82f6',
-        [BLOCK_TYPE.GRADE_RATIO]: '#3b82f6',
-        [BLOCK_TYPE.APPLY_TERM]: '#3b82f6',
-        [BLOCK_TYPE.TOP_SUBJECT]: '#3b82f6',
-        [BLOCK_TYPE.SUBJECT_GROUP_RATIO]: '#3b82f6',
-        [BLOCK_TYPE.SEPARATION_RATIO]: '#3b82f6',
-        [BLOCK_TYPE.SCORE_MAP]: '#3b82f6',
-        [BLOCK_TYPE.FORMULA]: '#3b82f6',
-        [BLOCK_TYPE.VARIABLE]: '#ef4444',
-        [BLOCK_TYPE.CONDITION]: '#8b5cf6',
-        [BLOCK_TYPE.AGGREGATION]: '#8b5cf6',
+      // BLOCK_TYPE ID를 BLOCK_TYPES 키로 변환
+      const blockTypeKeyMap: { [key: number]: keyof typeof BLOCK_TYPES } = {
+        [BLOCK_TYPE.APPLY_SUBJECT]: 'ApplySubject',
+        [BLOCK_TYPE.APPLY_TERM]: 'ApplyTerm',
+        [BLOCK_TYPE.TOP_SUBJECT]: 'TopSubject',
+        [BLOCK_TYPE.AGGREGATION]: 'Aggregation',
+        [BLOCK_TYPE.FORMULA]: 'Formula',
+        [BLOCK_TYPE.CONDITION]: 'Condition',
+        [BLOCK_TYPE.SCORE_MAP]: 'ScoreMap',
+        [BLOCK_TYPE.DECIMAL]: 'Decimal',
+        [BLOCK_TYPE.RATIO]: 'Ratio',
+        [BLOCK_TYPE.GRADE_RATIO]: 'GradeRatio',
+        [BLOCK_TYPE.SUBJECT_GROUP_RATIO]: 'SubjectGroupRatio',
+        [BLOCK_TYPE.SEPARATION_RATIO]: 'SeparationRatio',
+        [BLOCK_TYPE.VARIABLE]: 'Variable',
       };
-      return colorMap[blockType] || '#6b7280';
+      
+      const blockTypeKey = blockTypeKeyMap[blockType];
+      if (blockTypeKey && BLOCK_TYPES[blockTypeKey]) {
+        const color = BLOCK_TYPES[blockTypeKey].color;
+        // 색상 이름을 hex 색상으로 변환
+        const colorHexMap: { [key: string]: string } = {
+          'gray': '#6b7280',
+          'blue': '#3b82f6',
+          'purple': '#8b5cf6',
+          'green': '#10b981',
+          'red': '#ef4444',
+          'yellow': '#eab308',
+          'orange': '#f97316',
+          'pink': '#ec4899',
+        };
+        return colorHexMap[color || 'blue'] || '#6b7280';
+      }
+      
+      // DIVISION 블록은 기본 green
+      if (blockType === BLOCK_TYPE.DIVISION) {
+        return '#10b981';
+      }
+      
+      return '#6b7280';
     };
 
     const tooltip = (blockIdToSubjectNames[block.block_id] || []).filter(Boolean).join(', ');
@@ -110,13 +136,13 @@ export abstract class BlockLayoutRenderer {
     const isHovered = hoveredBlockId === block.block_id;
 
     // var_scope 토글을 표시할 블록 타입 확인
-    const shouldShowScopeToggle = [
+    const shouldShowScopeToggle = ([
       BLOCK_TYPE.FORMULA,
       BLOCK_TYPE.CONDITION,
       BLOCK_TYPE.SCORE_MAP,
       BLOCK_TYPE.DECIMAL,
       BLOCK_TYPE.RATIO,
-    ].includes(block.block_type);
+    ] as number[]).includes(block.block_type);
 
     const currentVarScope = (block as any).getVarScope() as '0' | '1';
 

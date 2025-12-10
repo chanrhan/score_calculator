@@ -11,7 +11,12 @@ export class ApplyTermBlockInstance extends BlockInstance {
   };
   
   private bodyCells: Array<{
-    terms: string;
+    term_1_1: boolean;
+    term_1_2: boolean;
+    term_2_1: boolean;
+    term_2_2: boolean;
+    term_3_1: boolean;
+    term_3_2: boolean;
     top_count: number;
     use_top_count?: boolean;
   }>;
@@ -21,7 +26,7 @@ export class ApplyTermBlockInstance extends BlockInstance {
     
     // 기본값 정의
     const defaultIncludeOption = '0';
-    const defaultTerms = '';
+    const defaultTermValue = false;
     const defaultTopCount = 0;
     const defaultUseTopCount = false;
     
@@ -43,14 +48,51 @@ export class ApplyTermBlockInstance extends BlockInstance {
     if (data.body_cells && Array.isArray(data.body_cells) && data.body_cells.length > 0) {
       this.bodyCells = data.body_cells.map((row: any) => {
         if (typeof row === 'object' && row !== null && !Array.isArray(row)) {
+          // 기존 terms 문자열이 있으면 파싱하여 마이그레이션
+          let term_1_1 = defaultTermValue;
+          let term_1_2 = defaultTermValue;
+          let term_2_1 = defaultTermValue;
+          let term_2_2 = defaultTermValue;
+          let term_3_1 = defaultTermValue;
+          let term_3_2 = defaultTermValue;
+
+          if (row.terms !== undefined && typeof row.terms === 'string' && row.terms.trim() !== '') {
+            // 기존 문자열 형식 파싱 (예: "1-1|1-2|2-1")
+            const terms = row.terms.split('|').map((t: string) => t.trim());
+            term_1_1 = terms.includes('1-1');
+            term_1_2 = terms.includes('1-2');
+            term_2_1 = terms.includes('2-1');
+            term_2_2 = terms.includes('2-2');
+            term_3_1 = terms.includes('3-1');
+            term_3_2 = terms.includes('3-2');
+          } else {
+            // 새로운 boolean 속성 사용
+            term_1_1 = row.term_1_1 !== undefined ? Boolean(row.term_1_1) : defaultTermValue;
+            term_1_2 = row.term_1_2 !== undefined ? Boolean(row.term_1_2) : defaultTermValue;
+            term_2_1 = row.term_2_1 !== undefined ? Boolean(row.term_2_1) : defaultTermValue;
+            term_2_2 = row.term_2_2 !== undefined ? Boolean(row.term_2_2) : defaultTermValue;
+            term_3_1 = row.term_3_1 !== undefined ? Boolean(row.term_3_1) : defaultTermValue;
+            term_3_2 = row.term_3_2 !== undefined ? Boolean(row.term_3_2) : defaultTermValue;
+          }
+
           return {
-            terms: row.terms !== undefined ? String(row.terms) : defaultTerms,
+            term_1_1,
+            term_1_2,
+            term_2_1,
+            term_2_2,
+            term_3_1,
+            term_3_2,
             top_count: row.top_count !== undefined ? Number(row.top_count) : defaultTopCount,
             use_top_count: row.use_top_count !== undefined ? Boolean(row.use_top_count) : defaultUseTopCount,
           };
         }
         return {
-          terms: defaultTerms,
+          term_1_1: defaultTermValue,
+          term_1_2: defaultTermValue,
+          term_2_1: defaultTermValue,
+          term_2_2: defaultTermValue,
+          term_3_1: defaultTermValue,
+          term_3_2: defaultTermValue,
           top_count: defaultTopCount,
           use_top_count: defaultUseTopCount,
         };
@@ -58,7 +100,12 @@ export class ApplyTermBlockInstance extends BlockInstance {
     } else {
       // 기본 1*1 구조
       this.bodyCells = [{
-        terms: defaultTerms,
+        term_1_1: defaultTermValue,
+        term_1_2: defaultTermValue,
+        term_2_1: defaultTermValue,
+        term_2_2: defaultTermValue,
+        term_3_1: defaultTermValue,
+        term_3_2: defaultTermValue,
         top_count: defaultTopCount,
         use_top_count: defaultUseTopCount,
       }];
@@ -76,10 +123,17 @@ export class ApplyTermBlockInstance extends BlockInstance {
       }
     } else {
       if (this.bodyCells[rowIndex]) {
-        if (elementIndex === 0) {
-          this.bodyCells[rowIndex].terms = String(value);
-        } else if (elementIndex === 1) {
-          this.bodyCells[rowIndex].top_count = Number(value) || 0;
+        // 체크박스 속성 업데이트 (elementIndex: 0=term_1_1, 1=term_1_2, 2=term_2_1, 3=term_2_2, 4=term_3_1, 5=term_3_2)
+        const termMap: { [key: number]: keyof typeof this.bodyCells[0] } = {
+          0: 'term_1_1',
+          1: 'term_1_2',
+          2: 'term_2_1',
+          3: 'term_2_2',
+          4: 'term_3_1',
+          5: 'term_3_2',
+        };
+        if (termMap[elementIndex]) {
+          (this.bodyCells[rowIndex] as any)[termMap[elementIndex]] = Boolean(value);
         }
       }
     }
@@ -87,7 +141,12 @@ export class ApplyTermBlockInstance extends BlockInstance {
 
   addRow(rowIndex?: number): void {
     const newRow = {
-      terms: '',
+      term_1_1: false,
+      term_1_2: false,
+      term_2_1: false,
+      term_2_2: false,
+      term_3_1: false,
+      term_3_2: false,
       top_count: 0,
       use_top_count: false,
     };
@@ -142,7 +201,12 @@ export class ApplyTermBlockInstance extends BlockInstance {
   getBodyCellValues(rowIndex: number, colIndex: number): any[] {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return [
-        this.bodyCells[rowIndex].terms,
+        this.bodyCells[rowIndex].term_1_1,
+        this.bodyCells[rowIndex].term_1_2,
+        this.bodyCells[rowIndex].term_2_1,
+        this.bodyCells[rowIndex].term_2_2,
+        this.bodyCells[rowIndex].term_3_1,
+        this.bodyCells[rowIndex].term_3_2,
         this.bodyCells[rowIndex].top_count,
       ];
     }
@@ -161,7 +225,12 @@ export class ApplyTermBlockInstance extends BlockInstance {
   getBodyProperties(rowIndex: number, colIndex: number): Record<string, any> {
     if (colIndex === 0 && this.bodyCells[rowIndex]) {
       return {
-        terms: this.bodyCells[rowIndex].terms,
+        term_1_1: this.bodyCells[rowIndex].term_1_1,
+        term_1_2: this.bodyCells[rowIndex].term_1_2,
+        term_2_1: this.bodyCells[rowIndex].term_2_1,
+        term_2_2: this.bodyCells[rowIndex].term_2_2,
+        term_3_1: this.bodyCells[rowIndex].term_3_1,
+        term_3_2: this.bodyCells[rowIndex].term_3_2,
         top_count: this.bodyCells[rowIndex].top_count,
         use_top_count: this.bodyCells[rowIndex].use_top_count || false,
       };
@@ -173,8 +242,10 @@ export class ApplyTermBlockInstance extends BlockInstance {
     if (propertyName === 'include_option') {
       this.headerCell.include_option = value;
     } else if (rowIndex !== undefined && this.bodyCells[rowIndex]) {
-      if (propertyName === 'terms') {
-        this.bodyCells[rowIndex].terms = String(value);
+      if (propertyName === 'term_1_1' || propertyName === 'term_1_2' || 
+          propertyName === 'term_2_1' || propertyName === 'term_2_2' || 
+          propertyName === 'term_3_1' || propertyName === 'term_3_2') {
+        (this.bodyCells[rowIndex] as any)[propertyName] = Boolean(value);
       } else if (propertyName === 'top_count') {
         this.bodyCells[rowIndex].top_count = Number(value) || 0;
       } else if (propertyName === 'use_top_count') {

@@ -151,7 +151,7 @@ export interface FlowBlock {
 export const BLOCK_TYPES = {
   ApplySubject: {
     name: 'ApplySubject',
-    color: 'blue',
+    color: 'gray',
     col_editable: false,
     cols: [
       {
@@ -186,7 +186,7 @@ export const BLOCK_TYPES = {
 
   ApplyTerm: {
     name: 'ApplyTerm',
-    color: 'blue',
+    color: 'gray',
     col_editable: false,
     cols: [
       {
@@ -228,7 +228,7 @@ export const BLOCK_TYPES = {
 
   TopSubject: {
     name: 'TopSubject',
-    color: 'blue',
+    color: 'gray',
     col_editable: false,
     cols: [
       {
@@ -249,7 +249,7 @@ export const BLOCK_TYPES = {
 
   SubjectGroupRatio: {
     name: 'SubjectGroupRatio',
-    color: 'blue',
+    color: 'green',
     col_editable: true,
     cols: [
       {
@@ -277,7 +277,7 @@ export const BLOCK_TYPES = {
 
   SeparationRatio: {
     name: 'SeparationRatio',
-    color: 'blue',
+    color: 'green',
     col_editable: false,
     cols: [
       {
@@ -315,7 +315,7 @@ export const BLOCK_TYPES = {
 
   GradeRatio: {
     name: 'GradeRatio',
-    color: 'blue',
+    color: 'green',
     col_editable: false,
     cols: [
       {
@@ -388,7 +388,7 @@ export const BLOCK_TYPES = {
 
   Formula: {
     name: 'Formula',
-    color: 'blue',
+    color: 'purple',
     col_editable: false,
     cols: [
       {
@@ -514,7 +514,7 @@ export const BLOCK_TYPES = {
 
   Ratio: {
     name: 'Ratio',
-    color: 'blue',
+    color: 'green',
     col_editable: false,
     cols: [
       {

@@ -6,13 +6,31 @@ import { CalculationLogManager } from "./CalculationLogManager";
 export class ApplyTermBlockExecutor extends BlockExecutor {
     public override readonly type : number = BLOCK_TYPE.APPLY_TERM;
     public override readonly name : string = "TermFilter";
-    private termsString : string;
+    private enabledTerms : string[];
     private topTerms : number;
 
     constructor(blockId: number, caseIndex: number, headerData: any, bodyData: any) {
         super(blockId, caseIndex);
-        const terms = bodyData?.terms || '';
-        this.termsString = Array.isArray(terms) ? terms.join('|') : terms;
+        
+        // 각 학기별 boolean 속성에서 활성화된 학기 목록 생성
+        const enabledTermsList: string[] = [];
+        
+        // 기존 terms 문자열 형식 지원 (마이그레이션)
+        if (bodyData?.terms && typeof bodyData.terms === 'string' && bodyData.terms.trim() !== '') {
+            const terms = bodyData.terms.split('|').map((t: string) => t.trim()).filter((t: string) => t !== '');
+            enabledTermsList.push(...terms);
+        } else {
+            // 새로운 boolean 속성 사용
+            if (bodyData?.term_1_1) enabledTermsList.push('1-1');
+            if (bodyData?.term_1_2) enabledTermsList.push('1-2');
+            if (bodyData?.term_2_1) enabledTermsList.push('2-1');
+            if (bodyData?.term_2_2) enabledTermsList.push('2-2');
+            if (bodyData?.term_3_1) enabledTermsList.push('3-1');
+            if (bodyData?.term_3_2) enabledTermsList.push('3-2');
+        }
+        
+        this.enabledTerms = enabledTermsList;
+        
         // use_top_count가 true일 때만 top_count 사용
         const useTopCount = bodyData?.use_top_count || false;
         this.topTerms = useTopCount ? (bodyData?.top_count || 0) : 0;
@@ -21,9 +39,8 @@ export class ApplyTermBlockExecutor extends BlockExecutor {
     public override execute(ctx: Context, subjects: Subject[]) : { ctx: Context, subjects: Subject[] } {
         const logManager = new CalculationLogManager();
 
-        const terms = this.termsString.split('|');
         subjects.forEach(subject => {
-        if(!terms.includes(`${subject.grade}-${subject.term}`)){
+        if(!this.enabledTerms.includes(`${subject.grade}-${subject.term}`)){
             subject.filtered_block_id = this.blockId;
             logManager.addLog(subject.seqNumber, {
             input_key: null,
