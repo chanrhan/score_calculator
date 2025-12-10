@@ -252,14 +252,9 @@ function renderTableCell({
 
       const divisionType = header[colIndex]?.division_type || ''
       
-      // cell 객체를 JSON.stringify로 직렬화하여 변경 감지
-      const cellString = React.useMemo(() => JSON.stringify(cell), [cell])
-      
       // rowspan 속성은 UI에 표시하지 않으므로 제외
-      const cellData = React.useMemo(() => {
-        const { rowspan: _, ...cellDataWithoutRowspan } = cell || {}
-        return cellDataWithoutRowspan
-      }, [cellString])
+      const { rowspan: _, ...cellDataWithoutRowspan } = cell || {}
+      const cellData = cellDataWithoutRowspan
       
       const CellTypeComponent = divisionType ? getDivisionHeadCellType(divisionType) : null
 
