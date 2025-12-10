@@ -26,26 +26,31 @@ export const AggregationLayout: {
       const func = properties.func || '0';
       const outputProp = properties.output_prop || 'finalScore';
       
+      // "과목 개수" (value: '2') 선택 시 첫 번째 토큰 숨김
+      const shouldHideFirstToken = func === '2';
+      
       return (
         <div className={aggregationStyles.body}>
           <div className={aggregationStyles.row}>
-            <Token
-              element={createTokenElement({
-                menu_key: TOKEN_MENU_KEYS.VARIABLE,
-                value: inputProp,
-                optional: false,
-                visible: true,
-                var_use: true,
-                var_store: true,
-              })}
-              onChange={(value) => {
-                if (!readOnly) {
-                  onChange?.('input_prop', value);
-                }
-              }}
-              autoFit={true}
-              varScope="0" // 과목 scope
-            />
+            {!shouldHideFirstToken && (
+              <Token
+                element={createTokenElement({
+                  menu_key: TOKEN_MENU_KEYS.VARIABLE,
+                  value: inputProp,
+                  optional: false,
+                  visible: true,
+                  var_use: true,
+                  var_store: true,
+                })}
+                onChange={(value) => {
+                  if (!readOnly) {
+                    onChange?.('input_prop', value);
+                  }
+                }}
+                autoFit={true}
+                varScope="0" // 과목 scope
+              />
+            )}
             <Token
               element={createTokenElement({
                 menu_key: TOKEN_MENU_KEYS.AGGREGATION_FUNC,

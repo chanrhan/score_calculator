@@ -153,7 +153,8 @@ export const SCORE_TYPE_MENU: TokenMenu = {
     { label: '석차등급', value: 'rankingGrade', scope: 0 }, // 과목
     { label: '성취도등급', value: 'achievement', scope: 0 }, // 과목
     { label: '평어등급', value: 'assessment', scope: 0 }, // 과목
-    { label: '기준점수', value: 'score', scope: 0 }, // 과목
+    { label: '기준점수', value: 'score', scope: 0 }, // 과목,
+    {label: '최종점수', value: 'finalScore', scope: 1 }, // 과목,
   ]
 } as const
 

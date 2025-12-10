@@ -320,7 +320,7 @@ export class runCaseExecution {
           }
           return subjects;
         }
-        return [];
+        return [];  
       }
       case "majorCode": {
         const majorCodes: Array<string> = cellValue as Array<string> || [];
@@ -345,7 +345,7 @@ export class runCaseExecution {
         return [];
       case "subjectGroupUnitSum":
         const stdValue = Number(cell.values[0]);
-        const compareOpt = Number(cell.values[1]);
+        const compareOpt = cell.values[1] !== undefined ? Number(cell.values[1]) : 1; // 기본값: 1 (이하)
         const unitSumMap = new Map<string, number>();
         subjects.forEach(subject => {
           if (subject.filtered_block_id > 0) {
