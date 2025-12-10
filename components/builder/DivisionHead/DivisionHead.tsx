@@ -2,9 +2,9 @@
 
 import * as React from 'react'
 import { DivisionHeadData, DivisionHeadHeader, DivisionHeadBody } from '@/types/division-head'
-import { calculateRowspan, addRowToDivisionHead, removeRowFromDivisionHead, addColumnToDivisionHead, removeColumnFromDivisionHead } from '@/lib/utils/divisionHeadUtils'
+import { calculateRowspan, addRowToDivisionHead, removeRowFromDivisionHead, addColumnToDivisionHead, removeColumnFromDivisionHead, copyRowInDivisionHead } from '@/lib/utils/divisionHeadUtils'
 import { Token } from '../block_builder/CellElement/Token'
-import { MoreVertical, Plus, Trash2 } from 'lucide-react'
+import { MoreVertical, Plus, Trash2, Copy } from 'lucide-react'
 import { getDivisionHeadCellType } from './cellTypes'
 import {
   DropdownMenu,
@@ -397,6 +397,58 @@ function renderTableCell({
               </ContextMenuItem>
               <ContextMenuItem
                 onClick={() => {
+                  try {
+                    // 구분 헤드에 행 복사
+                    const newBody = copyRowInDivisionHead(body, bodyRowIndex, colIndex)
+                    onChange({ ...data, body: newBody })
+                    
+                    // 블록에도 행 추가 후 데이터 복사
+                    if (onInsertRow && blocks) {
+                      const updatedBlocks = blocks.map(block => {
+                        const blockBodyRowIndex = rowIndex - 2
+                        // 행 추가
+                        block.addRow(blockBodyRowIndex)
+                        
+                        // 선택한 행의 데이터를 새 행에 복사
+                        const dbFormat = block.toDbFormat()
+                        if (dbFormat.body_cells && Array.isArray(dbFormat.body_cells)) {
+                          const sourceRow = dbFormat.body_cells[blockBodyRowIndex]
+                          const newRowIndex = blockBodyRowIndex + 1
+                          
+                          if (sourceRow && dbFormat.body_cells[newRowIndex]) {
+                            // 깊은 복사하여 새 행에 데이터 복사
+                            if (typeof sourceRow === 'object' && sourceRow !== null && !Array.isArray(sourceRow)) {
+                              // 객체 형태인 경우
+                              dbFormat.body_cells[newRowIndex] = JSON.parse(JSON.stringify(sourceRow))
+                            } else if (Array.isArray(sourceRow)) {
+                              // 배열 형태인 경우
+                              dbFormat.body_cells[newRowIndex] = JSON.parse(JSON.stringify(sourceRow))
+                            }
+                            
+                            // 복사된 데이터를 다시 블록에 적용
+                            // BlockInstance의 구조에 따라 적절히 업데이트
+                            if (block.data && block.data.body_cells) {
+                              block.data.body_cells = dbFormat.body_cells
+                            }
+                          }
+                        }
+                        
+                        return block
+                      })
+                      onInsertRow(updatedBlocks)
+                    }
+                  } catch (error) {
+                    console.error('행 복사 실패:', error)
+                    // 에러 발생 시 사용자에게 알림 (선택사항)
+                  }
+                }}
+                disabled={rowspan === 0}
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                행 복사
+              </ContextMenuItem>
+              <ContextMenuItem
+                onClick={() => {
                   if (body.length <= 1) return
                   const newBody = removeRowFromDivisionHead(body, bodyRowIndex)
                   onChange({ ...data, body: newBody })
@@ -581,6 +633,51 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
       }
     } catch (error) {
       console.error('행 추가 실패:', error)
+      // 에러 발생 시 사용자에게 알림 (선택사항)
+    }
+  }
+
+  const handleCopyRow = (rowIndex: number, colIndex: number) => {
+    try {
+      // 구분 헤드에 행 복사
+      const newBody = copyRowInDivisionHead(body, rowIndex, colIndex)
+      onChange({ ...data, body: newBody })
+      
+      // 블록에도 행 추가 후 데이터 복사
+      if (onInsertRow && blocks) {
+        const updatedBlocks = blocks.map(block => {
+          // 행 추가
+          block.addRow(rowIndex)
+          
+          // 선택한 행의 데이터를 새 행에 복사
+          const dbFormat = block.toDbFormat()
+          if (dbFormat.body_cells && Array.isArray(dbFormat.body_cells)) {
+            const sourceRow = dbFormat.body_cells[rowIndex]
+            const newRowIndex = rowIndex + 1
+            
+            if (sourceRow && dbFormat.body_cells[newRowIndex]) {
+              // 깊은 복사하여 새 행에 데이터 복사
+              if (typeof sourceRow === 'object' && sourceRow !== null && !Array.isArray(sourceRow)) {
+                // 객체 형태인 경우
+                dbFormat.body_cells[newRowIndex] = JSON.parse(JSON.stringify(sourceRow))
+              } else if (Array.isArray(sourceRow)) {
+                // 배열 형태인 경우
+                dbFormat.body_cells[newRowIndex] = JSON.parse(JSON.stringify(sourceRow))
+              }
+              
+              // 복사된 데이터를 다시 블록에 적용
+              if (block.data && block.data.body_cells) {
+                block.data.body_cells = dbFormat.body_cells
+              }
+            }
+          }
+          
+          return block
+        })
+        onInsertRow(updatedBlocks)
+      }
+    } catch (error) {
+      console.error('행 복사 실패:', error)
       // 에러 발생 시 사용자에게 알림 (선택사항)
     }
   }
@@ -835,6 +932,19 @@ export const DivisionHead: React.FC<DivisionHeadProps> = ({
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       행 추가
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onClick={() => {
+                        try {
+                          handleCopyRow(rowIndex, colIndex)
+                        } catch (error) {
+                          console.error('행 복사 실패:', error)
+                        }
+                      }}
+                      disabled={rowspan === 0}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      행 복사
                     </ContextMenuItem>
                     <ContextMenuItem
                       onClick={() => handleRemoveRow(rowIndex)}

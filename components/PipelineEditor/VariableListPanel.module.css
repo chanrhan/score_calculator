@@ -119,9 +119,114 @@
   margin-bottom: 4px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
 }
 
 .variableItemCustom:hover {
   background: #dbeafe;
+}
+
+.variableName {
+  flex: 1;
+  min-width: 0;
+}
+
+.variableActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.variableItemCustom:hover .variableActions {
+  opacity: 1;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  border-radius: 3px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.iconButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.variableItemEdit {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editInput {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  outline: none;
+}
+
+.editInput:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.addButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  border-radius: 3px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.addButton:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+
+.addButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.addIcon {
+  width: 14px;
+  height: 14px;
 }
 

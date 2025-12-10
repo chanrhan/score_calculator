@@ -98,6 +98,52 @@ export function addRowToDivisionHead(
 }
 
 /**
+ * 행 복사
+ * 선택한 행의 데이터를 복사하여 바로 아래에 새 행을 추가합니다.
+ * - addRowToDivisionHead를 먼저 호출하여 빈 행 추가 (rowspan 규칙 적용)
+ * - 추가된 새 행에 선택한 행의 데이터를 깊은 복사 (rowspan 속성 제외)
+ */
+export function copyRowInDivisionHead(
+  body: DivisionHeadBody,
+  selectedRowIndex: number,
+  selectedColIndex: number
+): DivisionHeadBody {
+  if (!body || body.length === 0) {
+    // 빈 바디인 경우 기본 행 추가 (rowspan: 1)
+    return [[{ rowspan: 1 }]];
+  }
+  
+  // rowspan=0인 셀에서는 행 복사 불가
+  const selectedCell = body[selectedRowIndex]?.[selectedColIndex];
+  if (selectedCell?.rowspan === 0) {
+    throw new Error('rowspan=0인 셀에서는 행을 복사할 수 없습니다.');
+  }
+  
+  // 먼저 addRowToDivisionHead를 호출하여 빈 행 추가 (rowspan 규칙 적용)
+  const newBody = addRowToDivisionHead(body, selectedRowIndex, selectedColIndex);
+  const insertRowIndex = selectedRowIndex + 1;
+  const totalCols = body[0]?.length || 0;
+  
+  // 선택한 행의 데이터를 새 행에 깊은 복사 (rowspan 제외)
+  const sourceRow = body[selectedRowIndex];
+  if (sourceRow) {
+    for (let colIndex = 0; colIndex < totalCols; colIndex++) {
+      const sourceCell = sourceRow[colIndex];
+      const newCell = newBody[insertRowIndex]?.[colIndex];
+      
+      if (sourceCell && newCell) {
+        // rowspan 속성을 제외하고 나머지 모든 속성을 깊은 복사
+        const { rowspan, ...cellDataWithoutRowspan } = sourceCell;
+        // newCell의 rowspan은 유지하고 나머지 데이터만 복사
+        Object.assign(newCell, JSON.parse(JSON.stringify(cellDataWithoutRowspan)));
+      }
+    }
+  }
+  
+  return newBody;
+}
+
+/**
  * 행 삭제
  * division-head-rowspan-rule.md 규칙에 따른 구현:
  * r행을 삭제했을 경우:
